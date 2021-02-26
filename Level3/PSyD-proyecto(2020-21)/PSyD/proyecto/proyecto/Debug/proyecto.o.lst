@@ -1,0 +1,4768 @@
+   1              		.cpu arm7tdmi
+   2              		.fpu softvfp
+   3              		.eabi_attribute 20, 1
+   4              		.eabi_attribute 21, 1
+   5              		.eabi_attribute 23, 3
+   6              		.eabi_attribute 24, 1
+   7              		.eabi_attribute 25, 1
+   8              		.eabi_attribute 26, 1
+   9              		.eabi_attribute 30, 6
+  10              		.eabi_attribute 18, 4
+  11              		.file	"proyecto.c"
+  21              	.Ltext0:
+  22              		.file 1 "../proyecto.c"
+ 2774              		.align	2
+ 2775              		.global	intToStr
+ 2777              	intToStr:
+ 2778              	.LFB0:
+   1:../proyecto.c **** #include "sintesisVoz.h"
+   2:../proyecto.c **** #include "os_cpu.h"
+   3:../proyecto.c **** #include "os_cfg.h"
+   4:../proyecto.c **** #include "ucos_ii.h"
+   5:../proyecto.c **** 
+   6:../proyecto.c **** #include <common_types.h>
+   7:../proyecto.c **** #include <system.h>
+   8:../proyecto.c **** #include <uart.h>
+   9:../proyecto.c **** #include <uda1341ts.h>
+  10:../proyecto.c **** #include <adc.h>
+  11:../proyecto.c **** #include <lcd.h>
+  12:../proyecto.c **** #include <iis.h>
+  13:../proyecto.c **** #include <s3c44b0x.h>
+  14:../proyecto.c **** #include <s3cev40.h>
+  15:../proyecto.c **** #include <rtc.h>
+  16:../proyecto.c **** #include <ts.h>
+  17:../proyecto.c **** #include <timers.h>
+  18:../proyecto.c **** #include <keypad.h>
+  19:../proyecto.c **** 
+  20:../proyecto.c **** #define TASK_STK_SIZE    10*1024
+  21:../proyecto.c **** #define KEYPAD_QUEUE_SIZE 64
+  22:../proyecto.c **** 
+  23:../proyecto.c **** OS_STK Task1Stk[TASK_STK_SIZE];
+  24:../proyecto.c **** OS_STK Task2Stk[TASK_STK_SIZE];
+  25:../proyecto.c **** OS_STK TaskStartStk[TASK_STK_SIZE];
+  26:../proyecto.c **** 
+  27:../proyecto.c **** OS_EVENT *uart0Sem;                /* Semáforo para el acceso mutex a la UART0 */
+  28:../proyecto.c **** OS_EVENT *keypadQueue;             /* Cola para scancodes de teclas pulsadas */
+  29:../proyecto.c **** void     *keypadQueueTable[KEYPAD_QUEUE_SIZE];
+  30:../proyecto.c **** void isr_keypad( void ) __attribute__ ((interrupt ("IRQ")));
+  31:../proyecto.c **** void isr_tick( void ) __attribute__ ((interrupt ("IRQ")));
+  32:../proyecto.c **** 
+  33:../proyecto.c **** void Task1( void *id );
+  34:../proyecto.c **** void Task2( void *id );
+  35:../proyecto.c **** void TaskStart( void *pdata );
+  36:../proyecto.c **** 
+  37:../proyecto.c **** char *hpC, *mpC, opChar;
+  38:../proyecto.c **** char bufAH[5], bufAM[5], bufCal[5];
+  39:../proyecto.c **** uint8 menu, alarma, calculadora, ponerHora, h, m, contH, contM, activarAlarma;
+  40:../proyecto.c **** int8 op1, op2, contOp1, contOp2, resul, op, horaFijada;
+  41:../proyecto.c **** volatile boolean flag;
+  42:../proyecto.c **** extern uint8 font[];
+  43:../proyecto.c **** extern void OSTickISR( void );       /* RTI del tick del sistema */
+  44:../proyecto.c **** 
+  45:../proyecto.c **** extern void OS_CPU_isr_pb( void );   /* RTI (wrapper) por pulsación teclado */
+  46:../proyecto.c **** void isr_pb( void ); /* Función invocada por el anterior wrapper que atiende al dispositivo*/
+  47:../proyecto.c **** 
+  48:../proyecto.c **** char *intToStr(uint32 m, char a){
+ 2779              		.loc 1 48 0
+ 2780              		.cfi_startproc
+ 2781              		@ Function supports interworking.
+ 2782              		@ args = 0, pretend = 0, frame = 24
+ 2783              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2784 0000 0DC0A0E1 		mov	ip, sp
+ 2785              	.LCFI0:
+ 2786              		.cfi_def_cfa_register 12
+ 2787 0004 00D82DE9 		stmfd	sp!, {fp, ip, lr, pc}
+ 2788 0008 04B04CE2 		sub	fp, ip, #4
+ 2789              		.cfi_offset 14, -8
+ 2790              		.cfi_offset 13, -12
+ 2791              		.cfi_offset 11, -16
+ 2792              	.LCFI1:
+ 2793              		.cfi_def_cfa 11, 4
+ 2794 000c 18D04DE2 		sub	sp, sp, #24
+ 2795 0010 20000BE5 		str	r0, [fp, #-32]
+ 2796 0014 0130A0E1 		mov	r3, r1
+ 2797 0018 21304BE5 		strb	r3, [fp, #-33]
+  49:../proyecto.c ****     int c;
+  50:../proyecto.c ****     if(a == 'h'){
+ 2798              		.loc 1 50 0
+ 2799 001c 21305BE5 		ldrb	r3, [fp, #-33]	@ zero_extendqisi2
+ 2800 0020 680053E3 		cmp	r3, #104
+ 2801 0024 2100001A 		bne	.L2
+ 2802              	.LBB2:
+  51:../proyecto.c ****     	char *hmp;
+  52:../proyecto.c **** 		hmp = bufAH + 5;
+ 2803              		.loc 1 52 0
+ 2804 0028 14319FE5 		ldr	r3, .L6
+ 2805 002c 10300BE5 		str	r3, [fp, #-16]
+  53:../proyecto.c **** 		*hmp = '\0';
+ 2806              		.loc 1 53 0
+ 2807 0030 10301BE5 		ldr	r3, [fp, #-16]
+ 2808 0034 0020A0E3 		mov	r2, #0
+ 2809 0038 0020C3E5 		strb	r2, [r3, #0]
+ 2810              	.L3:
+  54:../proyecto.c **** 		do {
+  55:../proyecto.c **** 			c = m % 10;
+ 2811              		.loc 1 55 0 discriminator 1
+ 2812 003c 20101BE5 		ldr	r1, [fp, #-32]
+ 2813 0040 00319FE5 		ldr	r3, .L6+4
+ 2814 0044 912383E0 		umull	r2, r3, r1, r3
+ 2815 0048 A321A0E1 		mov	r2, r3, lsr #3
+ 2816 004c 0230A0E1 		mov	r3, r2
+ 2817 0050 0331A0E1 		mov	r3, r3, asl #2
+ 2818 0054 023083E0 		add	r3, r3, r2
+ 2819 0058 8330A0E1 		mov	r3, r3, asl #1
+ 2820 005c 012063E0 		rsb	r2, r3, r1
+ 2821 0060 18200BE5 		str	r2, [fp, #-24]
+  56:../proyecto.c **** 			*--hmp = '0' + c;
+ 2822              		.loc 1 56 0 discriminator 1
+ 2823 0064 10301BE5 		ldr	r3, [fp, #-16]
+ 2824 0068 013043E2 		sub	r3, r3, #1
+ 2825 006c 10300BE5 		str	r3, [fp, #-16]
+ 2826 0070 18301BE5 		ldr	r3, [fp, #-24]
+ 2827 0074 FF3003E2 		and	r3, r3, #255
+ 2828 0078 303083E2 		add	r3, r3, #48
+ 2829 007c FF2003E2 		and	r2, r3, #255
+ 2830 0080 10301BE5 		ldr	r3, [fp, #-16]
+ 2831 0084 0020C3E5 		strb	r2, [r3, #0]
+  57:../proyecto.c **** 			m /= 10;
+ 2832              		.loc 1 57 0 discriminator 1
+ 2833 0088 20201BE5 		ldr	r2, [fp, #-32]
+ 2834 008c B4309FE5 		ldr	r3, .L6+4
+ 2835 0090 921383E0 		umull	r1, r3, r2, r3
+ 2836 0094 A331A0E1 		mov	r3, r3, lsr #3
+ 2837 0098 20300BE5 		str	r3, [fp, #-32]
+  58:../proyecto.c **** 		} while( m > 0 );
+ 2838              		.loc 1 58 0 discriminator 1
+ 2839 009c 20301BE5 		ldr	r3, [fp, #-32]
+ 2840 00a0 000053E3 		cmp	r3, #0
+ 2841 00a4 E4FFFF1A 		bne	.L3
+  59:../proyecto.c **** 		return hmp;
+ 2842              		.loc 1 59 0
+ 2843 00a8 10301BE5 		ldr	r3, [fp, #-16]
+ 2844 00ac 200000EA 		b	.L4
+ 2845              	.L2:
+ 2846              	.LBE2:
+ 2847              	.LBB3:
+  60:../proyecto.c ****     }
+  61:../proyecto.c ****     else{
+  62:../proyecto.c **** 		char *hmp2 = bufAM + 5;
+ 2848              		.loc 1 62 0
+ 2849 00b0 94309FE5 		ldr	r3, .L6+8
+ 2850 00b4 14300BE5 		str	r3, [fp, #-20]
+  63:../proyecto.c **** 		*hmp2 = '\0';
+ 2851              		.loc 1 63 0
+ 2852 00b8 14301BE5 		ldr	r3, [fp, #-20]
+ 2853 00bc 0020A0E3 		mov	r2, #0
+ 2854 00c0 0020C3E5 		strb	r2, [r3, #0]
+ 2855              	.L5:
+  64:../proyecto.c **** 		do {
+  65:../proyecto.c **** 			c = m % 10;
+ 2856              		.loc 1 65 0 discriminator 1
+ 2857 00c4 20101BE5 		ldr	r1, [fp, #-32]
+ 2858 00c8 78309FE5 		ldr	r3, .L6+4
+ 2859 00cc 912383E0 		umull	r2, r3, r1, r3
+ 2860 00d0 A321A0E1 		mov	r2, r3, lsr #3
+ 2861 00d4 0230A0E1 		mov	r3, r2
+ 2862 00d8 0331A0E1 		mov	r3, r3, asl #2
+ 2863 00dc 023083E0 		add	r3, r3, r2
+ 2864 00e0 8330A0E1 		mov	r3, r3, asl #1
+ 2865 00e4 012063E0 		rsb	r2, r3, r1
+ 2866 00e8 18200BE5 		str	r2, [fp, #-24]
+  66:../proyecto.c **** 			*--hmp2 = '0' + c;
+ 2867              		.loc 1 66 0 discriminator 1
+ 2868 00ec 14301BE5 		ldr	r3, [fp, #-20]
+ 2869 00f0 013043E2 		sub	r3, r3, #1
+ 2870 00f4 14300BE5 		str	r3, [fp, #-20]
+ 2871 00f8 18301BE5 		ldr	r3, [fp, #-24]
+ 2872 00fc FF3003E2 		and	r3, r3, #255
+ 2873 0100 303083E2 		add	r3, r3, #48
+ 2874 0104 FF2003E2 		and	r2, r3, #255
+ 2875 0108 14301BE5 		ldr	r3, [fp, #-20]
+ 2876 010c 0020C3E5 		strb	r2, [r3, #0]
+  67:../proyecto.c **** 			m /= 10;
+ 2877              		.loc 1 67 0 discriminator 1
+ 2878 0110 20201BE5 		ldr	r2, [fp, #-32]
+ 2879 0114 2C309FE5 		ldr	r3, .L6+4
+ 2880 0118 921383E0 		umull	r1, r3, r2, r3
+ 2881 011c A331A0E1 		mov	r3, r3, lsr #3
+ 2882 0120 20300BE5 		str	r3, [fp, #-32]
+  68:../proyecto.c **** 		} while( m > 0 );
+ 2883              		.loc 1 68 0 discriminator 1
+ 2884 0124 20301BE5 		ldr	r3, [fp, #-32]
+ 2885 0128 000053E3 		cmp	r3, #0
+ 2886 012c E4FFFF1A 		bne	.L5
+  69:../proyecto.c **** 		return hmp2;
+ 2887              		.loc 1 69 0
+ 2888 0130 14301BE5 		ldr	r3, [fp, #-20]
+ 2889              	.L4:
+ 2890              	.LBE3:
+  70:../proyecto.c ****     }
+  71:../proyecto.c **** }
+ 2891              		.loc 1 71 0
+ 2892 0134 0300A0E1 		mov	r0, r3
+ 2893 0138 0CD04BE2 		sub	sp, fp, #12
+ 2894 013c 00689DE8 		ldmfd	sp, {fp, sp, lr}
+ 2895 0140 1EFF2FE1 		bx	lr
+ 2896              	.L7:
+ 2897              		.align	2
+ 2898              	.L6:
+ 2899 0144 05000000 		.word	bufAH+5
+ 2900 0148 CDCCCCCC 		.word	-858993459
+ 2901 014c 05000000 		.word	bufAM+5
+ 2902              		.cfi_endproc
+ 2903              	.LFE0:
+ 2905              		.align	2
+ 2906              		.global	intToStrC
+ 2908              	intToStrC:
+ 2909              	.LFB1:
+  72:../proyecto.c **** 
+  73:../proyecto.c **** char *intToStrC(uint32 m){
+ 2910              		.loc 1 73 0
+ 2911              		.cfi_startproc
+ 2912              		@ Function supports interworking.
+ 2913              		@ args = 0, pretend = 0, frame = 16
+ 2914              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2915 0150 0DC0A0E1 		mov	ip, sp
+ 2916              	.LCFI2:
+ 2917              		.cfi_def_cfa_register 12
+ 2918 0154 00D82DE9 		stmfd	sp!, {fp, ip, lr, pc}
+ 2919 0158 04B04CE2 		sub	fp, ip, #4
+ 2920              		.cfi_offset 14, -8
+ 2921              		.cfi_offset 13, -12
+ 2922              		.cfi_offset 11, -16
+ 2923              	.LCFI3:
+ 2924              		.cfi_def_cfa 11, 4
+ 2925 015c 10D04DE2 		sub	sp, sp, #16
+ 2926 0160 18000BE5 		str	r0, [fp, #-24]
+  74:../proyecto.c ****     int c;
+  75:../proyecto.c **** 	char *hmp;
+  76:../proyecto.c **** 	hmp = bufCal + 5;
+ 2927              		.loc 1 76 0
+ 2928 0164 8C309FE5 		ldr	r3, .L10
+ 2929 0168 10300BE5 		str	r3, [fp, #-16]
+  77:../proyecto.c **** 	*hmp = '\0';
+ 2930              		.loc 1 77 0
+ 2931 016c 10301BE5 		ldr	r3, [fp, #-16]
+ 2932 0170 0020A0E3 		mov	r2, #0
+ 2933 0174 0020C3E5 		strb	r2, [r3, #0]
+ 2934              	.L9:
+  78:../proyecto.c **** 	do {
+  79:../proyecto.c **** 		c = m % 10;
+ 2935              		.loc 1 79 0 discriminator 1
+ 2936 0178 18101BE5 		ldr	r1, [fp, #-24]
+ 2937 017c 78309FE5 		ldr	r3, .L10+4
+ 2938 0180 912383E0 		umull	r2, r3, r1, r3
+ 2939 0184 A321A0E1 		mov	r2, r3, lsr #3
+ 2940 0188 0230A0E1 		mov	r3, r2
+ 2941 018c 0331A0E1 		mov	r3, r3, asl #2
+ 2942 0190 023083E0 		add	r3, r3, r2
+ 2943 0194 8330A0E1 		mov	r3, r3, asl #1
+ 2944 0198 012063E0 		rsb	r2, r3, r1
+ 2945 019c 14200BE5 		str	r2, [fp, #-20]
+  80:../proyecto.c **** 		*--hmp = '0' + c;
+ 2946              		.loc 1 80 0 discriminator 1
+ 2947 01a0 10301BE5 		ldr	r3, [fp, #-16]
+ 2948 01a4 013043E2 		sub	r3, r3, #1
+ 2949 01a8 10300BE5 		str	r3, [fp, #-16]
+ 2950 01ac 14301BE5 		ldr	r3, [fp, #-20]
+ 2951 01b0 FF3003E2 		and	r3, r3, #255
+ 2952 01b4 303083E2 		add	r3, r3, #48
+ 2953 01b8 FF2003E2 		and	r2, r3, #255
+ 2954 01bc 10301BE5 		ldr	r3, [fp, #-16]
+ 2955 01c0 0020C3E5 		strb	r2, [r3, #0]
+  81:../proyecto.c **** 		m /= 10;
+ 2956              		.loc 1 81 0 discriminator 1
+ 2957 01c4 18201BE5 		ldr	r2, [fp, #-24]
+ 2958 01c8 2C309FE5 		ldr	r3, .L10+4
+ 2959 01cc 921383E0 		umull	r1, r3, r2, r3
+ 2960 01d0 A331A0E1 		mov	r3, r3, lsr #3
+ 2961 01d4 18300BE5 		str	r3, [fp, #-24]
+  82:../proyecto.c **** 	} while( m > 0 );
+ 2962              		.loc 1 82 0 discriminator 1
+ 2963 01d8 18301BE5 		ldr	r3, [fp, #-24]
+ 2964 01dc 000053E3 		cmp	r3, #0
+ 2965 01e0 E4FFFF1A 		bne	.L9
+  83:../proyecto.c **** 	return hmp;
+ 2966              		.loc 1 83 0
+ 2967 01e4 10301BE5 		ldr	r3, [fp, #-16]
+  84:../proyecto.c **** }
+ 2968              		.loc 1 84 0
+ 2969 01e8 0300A0E1 		mov	r0, r3
+ 2970 01ec 0CD04BE2 		sub	sp, fp, #12
+ 2971 01f0 00689DE8 		ldmfd	sp, {fp, sp, lr}
+ 2972 01f4 1EFF2FE1 		bx	lr
+ 2973              	.L11:
+ 2974              		.align	2
+ 2975              	.L10:
+ 2976 01f8 05000000 		.word	bufCal+5
+ 2977 01fc CDCCCCCC 		.word	-858993459
+ 2978              		.cfi_endproc
+ 2979              	.LFE1:
+ 2981              		.align	2
+ 2982              		.global	lcd_putchar_xTam
+ 2984              	lcd_putchar_xTam:
+ 2985              	.LFB2:
+  85:../proyecto.c **** 
+  86:../proyecto.c **** void lcd_putchar_xTam( uint16 x, uint16 y, uint8 color, char ch , uint8 tam)
+  87:../proyecto.c **** {
+ 2986              		.loc 1 87 0
+ 2987              		.cfi_startproc
+ 2988              		@ Function supports interworking.
+ 2989              		@ args = 4, pretend = 0, frame = 24
+ 2990              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2991 0200 0DC0A0E1 		mov	ip, sp
+ 2992              	.LCFI4:
+ 2993              		.cfi_def_cfa_register 12
+ 2994 0204 00D82DE9 		stmfd	sp!, {fp, ip, lr, pc}
+ 2995 0208 04B04CE2 		sub	fp, ip, #4
+ 2996              		.cfi_offset 14, -8
+ 2997              		.cfi_offset 13, -12
+ 2998              		.cfi_offset 11, -16
+ 2999              	.LCFI5:
+ 3000              		.cfi_def_cfa 11, 4
+ 3001 020c 18D04DE2 		sub	sp, sp, #24
+ 3002 0210 BE014BE1 		strh	r0, [fp, #-30]	@ movhi
+ 3003 0214 B0124BE1 		strh	r1, [fp, #-32]	@ movhi
+ 3004 0218 21204BE5 		strb	r2, [fp, #-33]
+ 3005 021c 22304BE5 		strb	r3, [fp, #-34]
+  88:../proyecto.c ****     uint8 line, row, i, j;
+  89:../proyecto.c ****     uint8 *bitmap;
+  90:../proyecto.c ****     uint16 save = x;
+ 3006              		.loc 1 90 0
+ 3007 0220 BE315BE1 		ldrh	r3, [fp, #-30]	@ movhi
+ 3008 0224 B2314BE1 		strh	r3, [fp, #-18]	@ movhi
+  91:../proyecto.c **** 
+  92:../proyecto.c ****     bitmap = font + ch*16;
+ 3009              		.loc 1 92 0
+ 3010 0228 22305BE5 		ldrb	r3, [fp, #-34]	@ zero_extendqisi2
+ 3011 022c 0332A0E1 		mov	r3, r3, asl #4
+ 3012 0230 0320A0E1 		mov	r2, r3
+ 3013 0234 D0319FE5 		ldr	r3, .L27
+ 3014 0238 033082E0 		add	r3, r2, r3
+ 3015 023c 18300BE5 		str	r3, [fp, #-24]
+  93:../proyecto.c ****     for( line=0; line<16; ++line ){
+ 3016              		.loc 1 93 0
+ 3017 0240 0030A0E3 		mov	r3, #0
+ 3018 0244 0D304BE5 		strb	r3, [fp, #-13]
+ 3019 0248 690000EA 		b	.L13
+ 3020              	.L26:
+  94:../proyecto.c ****     	x = save;
+ 3021              		.loc 1 94 0
+ 3022 024c B2315BE1 		ldrh	r3, [fp, #-18]	@ movhi
+ 3023 0250 BE314BE1 		strh	r3, [fp, #-30]	@ movhi
+  95:../proyecto.c ****         for( row=0; row<8; ++row ){
+ 3024              		.loc 1 95 0
+ 3025 0254 0030A0E3 		mov	r3, #0
+ 3026 0258 0E304BE5 		strb	r3, [fp, #-14]
+ 3027 025c 580000EA 		b	.L14
+ 3028              	.L25:
+  96:../proyecto.c ****             if( bitmap[line] & (0x80 >> row) ){
+ 3029              		.loc 1 96 0
+ 3030 0260 0D305BE5 		ldrb	r3, [fp, #-13]	@ zero_extendqisi2
+ 3031 0264 18201BE5 		ldr	r2, [fp, #-24]
+ 3032 0268 033082E0 		add	r3, r2, r3
+ 3033 026c 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 3034 0270 0320A0E1 		mov	r2, r3
+ 3035 0274 0E305BE5 		ldrb	r3, [fp, #-14]	@ zero_extendqisi2
+ 3036 0278 8010A0E3 		mov	r1, #128
+ 3037 027c 5133A0E1 		mov	r3, r1, asr r3
+ 3038 0280 033002E0 		and	r3, r2, r3
+ 3039 0284 000053E3 		cmp	r3, #0
+ 3040 0288 2200000A 		beq	.L15
+  97:../proyecto.c ****             	for (i = x; i < x+tam; i++)
+ 3041              		.loc 1 97 0
+ 3042 028c BE315BE1 		ldrh	r3, [fp, #-30]	@ movhi
+ 3043 0290 0F304BE5 		strb	r3, [fp, #-15]
+ 3044 0294 180000EA 		b	.L16
+ 3045              	.L19:
+  98:../proyecto.c ****             		for (j = y; j < y+tam; j++)
+ 3046              		.loc 1 98 0
+ 3047 0298 B0325BE1 		ldrh	r3, [fp, #-32]	@ movhi
+ 3048 029c 10304BE5 		strb	r3, [fp, #-16]
+ 3049 02a0 0C0000EA 		b	.L17
+ 3050              	.L18:
+  99:../proyecto.c ****             			lcd_putpixel( i, j, BLACK );
+ 3051              		.loc 1 99 0 discriminator 2
+ 3052 02a4 0F305BE5 		ldrb	r3, [fp, #-15]	@ zero_extendqisi2
+ 3053 02a8 0338A0E1 		mov	r3, r3, asl #16
+ 3054 02ac 2328A0E1 		mov	r2, r3, lsr #16
+ 3055 02b0 10305BE5 		ldrb	r3, [fp, #-16]	@ zero_extendqisi2
+ 3056 02b4 0338A0E1 		mov	r3, r3, asl #16
+ 3057 02b8 2338A0E1 		mov	r3, r3, lsr #16
+ 3058 02bc 0200A0E1 		mov	r0, r2
+ 3059 02c0 0310A0E1 		mov	r1, r3
+ 3060 02c4 0F20A0E3 		mov	r2, #15
+ 3061 02c8 FEFFFFEB 		bl	lcd_putpixel
+  98:../proyecto.c ****             		for (j = y; j < y+tam; j++)
+ 3062              		.loc 1 98 0 discriminator 2
+ 3063 02cc 10305BE5 		ldrb	r3, [fp, #-16]
+ 3064 02d0 013083E2 		add	r3, r3, #1
+ 3065 02d4 10304BE5 		strb	r3, [fp, #-16]
+ 3066              	.L17:
+  98:../proyecto.c ****             		for (j = y; j < y+tam; j++)
+ 3067              		.loc 1 98 0 is_stmt 0 discriminator 1
+ 3068 02d8 10205BE5 		ldrb	r2, [fp, #-16]	@ zero_extendqisi2
+ 3069 02dc B0125BE1 		ldrh	r1, [fp, #-32]
+ 3070 02e0 0430DBE5 		ldrb	r3, [fp, #4]	@ zero_extendqisi2
+ 3071 02e4 033081E0 		add	r3, r1, r3
+ 3072 02e8 030052E1 		cmp	r2, r3
+ 3073 02ec ECFFFFBA 		blt	.L18
+  97:../proyecto.c ****             	for (i = x; i < x+tam; i++)
+ 3074              		.loc 1 97 0 is_stmt 1
+ 3075 02f0 0F305BE5 		ldrb	r3, [fp, #-15]
+ 3076 02f4 013083E2 		add	r3, r3, #1
+ 3077 02f8 0F304BE5 		strb	r3, [fp, #-15]
+ 3078              	.L16:
+  97:../proyecto.c ****             	for (i = x; i < x+tam; i++)
+ 3079              		.loc 1 97 0 is_stmt 0 discriminator 1
+ 3080 02fc 0F205BE5 		ldrb	r2, [fp, #-15]	@ zero_extendqisi2
+ 3081 0300 BE115BE1 		ldrh	r1, [fp, #-30]
+ 3082 0304 0430DBE5 		ldrb	r3, [fp, #4]	@ zero_extendqisi2
+ 3083 0308 033081E0 		add	r3, r1, r3
+ 3084 030c 030052E1 		cmp	r2, r3
+ 3085 0310 E0FFFFBA 		blt	.L19
+  97:../proyecto.c ****             	for (i = x; i < x+tam; i++)
+ 3086              		.loc 1 97 0
+ 3087 0314 210000EA 		b	.L20
+ 3088              	.L15:
+ 100:../proyecto.c ****             }
+ 101:../proyecto.c ****             else{
+ 102:../proyecto.c ****             	for (i = x; i < x+tam; i++)
+ 3089              		.loc 1 102 0 is_stmt 1
+ 3090 0318 BE315BE1 		ldrh	r3, [fp, #-30]	@ movhi
+ 3091 031c 0F304BE5 		strb	r3, [fp, #-15]
+ 3092 0320 180000EA 		b	.L21
+ 3093              	.L24:
+ 103:../proyecto.c ****             		for (j = y; j < y+tam; j++)
+ 3094              		.loc 1 103 0
+ 3095 0324 B0325BE1 		ldrh	r3, [fp, #-32]	@ movhi
+ 3096 0328 10304BE5 		strb	r3, [fp, #-16]
+ 3097 032c 0C0000EA 		b	.L22
+ 3098              	.L23:
+ 104:../proyecto.c ****             			lcd_putpixel( i, j, WHITE );
+ 3099              		.loc 1 104 0 discriminator 2
+ 3100 0330 0F305BE5 		ldrb	r3, [fp, #-15]	@ zero_extendqisi2
+ 3101 0334 0338A0E1 		mov	r3, r3, asl #16
+ 3102 0338 2328A0E1 		mov	r2, r3, lsr #16
+ 3103 033c 10305BE5 		ldrb	r3, [fp, #-16]	@ zero_extendqisi2
+ 3104 0340 0338A0E1 		mov	r3, r3, asl #16
+ 3105 0344 2338A0E1 		mov	r3, r3, lsr #16
+ 3106 0348 0200A0E1 		mov	r0, r2
+ 3107 034c 0310A0E1 		mov	r1, r3
+ 3108 0350 0020A0E3 		mov	r2, #0
+ 3109 0354 FEFFFFEB 		bl	lcd_putpixel
+ 103:../proyecto.c ****             		for (j = y; j < y+tam; j++)
+ 3110              		.loc 1 103 0 discriminator 2
+ 3111 0358 10305BE5 		ldrb	r3, [fp, #-16]
+ 3112 035c 013083E2 		add	r3, r3, #1
+ 3113 0360 10304BE5 		strb	r3, [fp, #-16]
+ 3114              	.L22:
+ 103:../proyecto.c ****             		for (j = y; j < y+tam; j++)
+ 3115              		.loc 1 103 0 is_stmt 0 discriminator 1
+ 3116 0364 10205BE5 		ldrb	r2, [fp, #-16]	@ zero_extendqisi2
+ 3117 0368 B0125BE1 		ldrh	r1, [fp, #-32]
+ 3118 036c 0430DBE5 		ldrb	r3, [fp, #4]	@ zero_extendqisi2
+ 3119 0370 033081E0 		add	r3, r1, r3
+ 3120 0374 030052E1 		cmp	r2, r3
+ 3121 0378 ECFFFFBA 		blt	.L23
+ 102:../proyecto.c ****             	for (i = x; i < x+tam; i++)
+ 3122              		.loc 1 102 0 is_stmt 1
+ 3123 037c 0F305BE5 		ldrb	r3, [fp, #-15]
+ 3124 0380 013083E2 		add	r3, r3, #1
+ 3125 0384 0F304BE5 		strb	r3, [fp, #-15]
+ 3126              	.L21:
+ 102:../proyecto.c ****             	for (i = x; i < x+tam; i++)
+ 3127              		.loc 1 102 0 is_stmt 0 discriminator 1
+ 3128 0388 0F205BE5 		ldrb	r2, [fp, #-15]	@ zero_extendqisi2
+ 3129 038c BE115BE1 		ldrh	r1, [fp, #-30]
+ 3130 0390 0430DBE5 		ldrb	r3, [fp, #4]	@ zero_extendqisi2
+ 3131 0394 033081E0 		add	r3, r1, r3
+ 3132 0398 030052E1 		cmp	r2, r3
+ 3133 039c E0FFFFBA 		blt	.L24
+ 3134              	.L20:
+ 105:../proyecto.c ****             }
+ 106:../proyecto.c ****             x += tam;
+ 3135              		.loc 1 106 0 is_stmt 1
+ 3136 03a0 0430DBE5 		ldrb	r3, [fp, #4]	@ zero_extendqisi2
+ 3137 03a4 0338A0E1 		mov	r3, r3, asl #16
+ 3138 03a8 2328A0E1 		mov	r2, r3, lsr #16
+ 3139 03ac BE315BE1 		ldrh	r3, [fp, #-30]	@ movhi
+ 3140 03b0 033082E0 		add	r3, r2, r3
+ 3141 03b4 BE314BE1 		strh	r3, [fp, #-30]	@ movhi
+  95:../proyecto.c ****         for( row=0; row<8; ++row ){
+ 3142              		.loc 1 95 0
+ 3143 03b8 0E305BE5 		ldrb	r3, [fp, #-14]
+ 3144 03bc 013083E2 		add	r3, r3, #1
+ 3145 03c0 0E304BE5 		strb	r3, [fp, #-14]
+ 3146              	.L14:
+  95:../proyecto.c ****         for( row=0; row<8; ++row ){
+ 3147              		.loc 1 95 0 is_stmt 0 discriminator 1
+ 3148 03c4 0E305BE5 		ldrb	r3, [fp, #-14]	@ zero_extendqisi2
+ 3149 03c8 070053E3 		cmp	r3, #7
+ 3150 03cc A3FFFF9A 		bls	.L25
+ 107:../proyecto.c ****         }
+ 108:../proyecto.c ****         y += tam;
+ 3151              		.loc 1 108 0 is_stmt 1
+ 3152 03d0 0430DBE5 		ldrb	r3, [fp, #4]	@ zero_extendqisi2
+ 3153 03d4 0338A0E1 		mov	r3, r3, asl #16
+ 3154 03d8 2328A0E1 		mov	r2, r3, lsr #16
+ 3155 03dc B0325BE1 		ldrh	r3, [fp, #-32]	@ movhi
+ 3156 03e0 033082E0 		add	r3, r2, r3
+ 3157 03e4 B0324BE1 		strh	r3, [fp, #-32]	@ movhi
+  93:../proyecto.c ****     for( line=0; line<16; ++line ){
+ 3158              		.loc 1 93 0
+ 3159 03e8 0D305BE5 		ldrb	r3, [fp, #-13]
+ 3160 03ec 013083E2 		add	r3, r3, #1
+ 3161 03f0 0D304BE5 		strb	r3, [fp, #-13]
+ 3162              	.L13:
+  93:../proyecto.c ****     for( line=0; line<16; ++line ){
+ 3163              		.loc 1 93 0 is_stmt 0 discriminator 1
+ 3164 03f4 0D305BE5 		ldrb	r3, [fp, #-13]	@ zero_extendqisi2
+ 3165 03f8 0F0053E3 		cmp	r3, #15
+ 3166 03fc 92FFFF9A 		bls	.L26
+ 109:../proyecto.c ****     }
+ 110:../proyecto.c **** }
+ 3167              		.loc 1 110 0 is_stmt 1
+ 3168 0400 0CD04BE2 		sub	sp, fp, #12
+ 3169 0404 00689DE8 		ldmfd	sp, {fp, sp, lr}
+ 3170 0408 1EFF2FE1 		bx	lr
+ 3171              	.L28:
+ 3172              		.align	2
+ 3173              	.L27:
+ 3174 040c 00000000 		.word	font
+ 3175              		.cfi_endproc
+ 3176              	.LFE2:
+ 3178              		.align	2
+ 3179              		.global	lcd_puts_xTam
+ 3181              	lcd_puts_xTam:
+ 3182              	.LFB3:
+ 111:../proyecto.c **** 
+ 112:../proyecto.c **** void lcd_puts_xTam( uint16 x, uint16 y, uint8 color, char *s , uint8 tam)
+ 113:../proyecto.c **** {
+ 3183              		.loc 1 113 0
+ 3184              		.cfi_startproc
+ 3185              		@ Function supports interworking.
+ 3186              		@ args = 4, pretend = 0, frame = 16
+ 3187              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3188 0410 0DC0A0E1 		mov	ip, sp
+ 3189              	.LCFI6:
+ 3190              		.cfi_def_cfa_register 12
+ 3191 0414 00D82DE9 		stmfd	sp!, {fp, ip, lr, pc}
+ 3192 0418 04B04CE2 		sub	fp, ip, #4
+ 3193              		.cfi_offset 14, -8
+ 3194              		.cfi_offset 13, -12
+ 3195              		.cfi_offset 11, -16
+ 3196              	.LCFI7:
+ 3197              		.cfi_def_cfa 11, 4
+ 3198 041c 18D04DE2 		sub	sp, sp, #24
+ 3199 0420 18300BE5 		str	r3, [fp, #-24]
+ 3200 0424 BE004BE1 		strh	r0, [fp, #-14]	@ movhi
+ 3201 0428 B0114BE1 		strh	r1, [fp, #-16]	@ movhi
+ 3202 042c 0230A0E1 		mov	r3, r2
+ 3203 0430 11304BE5 		strb	r3, [fp, #-17]
+ 114:../proyecto.c **** 	while( *s  ) {
+ 3204              		.loc 1 114 0
+ 3205 0434 220000EA 		b	.L30
+ 3206              	.L34:
+ 115:../proyecto.c **** 		lcd_putchar_xTam( x, y, color, *s++ , tam);
+ 3207              		.loc 1 115 0
+ 3208 0438 18301BE5 		ldr	r3, [fp, #-24]
+ 3209 043c 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 3210 0440 18201BE5 		ldr	r2, [fp, #-24]
+ 3211 0444 012082E2 		add	r2, r2, #1
+ 3212 0448 18200BE5 		str	r2, [fp, #-24]
+ 3213 044c BE005BE1 		ldrh	r0, [fp, #-14]
+ 3214 0450 B0115BE1 		ldrh	r1, [fp, #-16]
+ 3215 0454 11205BE5 		ldrb	r2, [fp, #-17]	@ zero_extendqisi2
+ 3216 0458 04C0DBE5 		ldrb	ip, [fp, #4]	@ zero_extendqisi2
+ 3217 045c 00C08DE5 		str	ip, [sp, #0]
+ 3218 0460 FEFFFFEB 		bl	lcd_putchar_xTam
+ 116:../proyecto.c **** 		if(tam == 2) x += 14;
+ 3219              		.loc 1 116 0
+ 3220 0464 0430DBE5 		ldrb	r3, [fp, #4]	@ zero_extendqisi2
+ 3221 0468 020053E3 		cmp	r3, #2
+ 3222 046c 0300001A 		bne	.L31
+ 3223              		.loc 1 116 0 is_stmt 0 discriminator 1
+ 3224 0470 BE305BE1 		ldrh	r3, [fp, #-14]	@ movhi
+ 3225 0474 0E3083E2 		add	r3, r3, #14
+ 3226 0478 BE304BE1 		strh	r3, [fp, #-14]	@ movhi
+ 3227 047c 100000EA 		b	.L30
+ 3228              	.L31:
+ 117:../proyecto.c **** 		else if(tam == 3) x += 24;
+ 3229              		.loc 1 117 0 is_stmt 1
+ 3230 0480 0430DBE5 		ldrb	r3, [fp, #4]	@ zero_extendqisi2
+ 3231 0484 030053E3 		cmp	r3, #3
+ 3232 0488 0300001A 		bne	.L32
+ 3233              		.loc 1 117 0 is_stmt 0 discriminator 1
+ 3234 048c BE305BE1 		ldrh	r3, [fp, #-14]	@ movhi
+ 3235 0490 183083E2 		add	r3, r3, #24
+ 3236 0494 BE304BE1 		strh	r3, [fp, #-14]	@ movhi
+ 3237 0498 090000EA 		b	.L30
+ 3238              	.L32:
+ 118:../proyecto.c **** 		else if(tam == 4) x += 32;
+ 3239              		.loc 1 118 0 is_stmt 1
+ 3240 049c 0430DBE5 		ldrb	r3, [fp, #4]	@ zero_extendqisi2
+ 3241 04a0 040053E3 		cmp	r3, #4
+ 3242 04a4 0300001A 		bne	.L33
+ 3243              		.loc 1 118 0 is_stmt 0 discriminator 1
+ 3244 04a8 BE305BE1 		ldrh	r3, [fp, #-14]	@ movhi
+ 3245 04ac 203083E2 		add	r3, r3, #32
+ 3246 04b0 BE304BE1 		strh	r3, [fp, #-14]	@ movhi
+ 3247 04b4 020000EA 		b	.L30
+ 3248              	.L33:
+ 119:../proyecto.c **** 		else x += 46;
+ 3249              		.loc 1 119 0 is_stmt 1
+ 3250 04b8 BE305BE1 		ldrh	r3, [fp, #-14]	@ movhi
+ 3251 04bc 2E3083E2 		add	r3, r3, #46
+ 3252 04c0 BE304BE1 		strh	r3, [fp, #-14]	@ movhi
+ 3253              	.L30:
+ 114:../proyecto.c **** 	while( *s  ) {
+ 3254              		.loc 1 114 0 discriminator 1
+ 3255 04c4 18301BE5 		ldr	r3, [fp, #-24]
+ 3256 04c8 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 3257 04cc 000053E3 		cmp	r3, #0
+ 3258 04d0 D8FFFF1A 		bne	.L34
+ 120:../proyecto.c **** 	}
+ 121:../proyecto.c **** }
+ 3259              		.loc 1 121 0
+ 3260 04d4 0CD04BE2 		sub	sp, fp, #12
+ 3261 04d8 00689DE8 		ldmfd	sp, {fp, sp, lr}
+ 3262 04dc 1EFF2FE1 		bx	lr
+ 3263              		.cfi_endproc
+ 3264              	.LFE3:
+ 3266              		.section	.rodata
+ 3267              		.align	2
+ 3268              	.LC0:
+ 3269 0000 70697069 		.ascii	"pipipipi \000"
+ 3269      70697069 
+ 3269      2000
+ 3270 000a 0000     		.align	2
+ 3271              	.LC1:
+ 3272 000c 20200000 		.ascii	"  \000\000"
+ 3273              		.text
+ 3274              		.align	2
+ 3275              		.global	uart0_putTimeLCD
+ 3277              	uart0_putTimeLCD:
+ 3278              	.LFB4:
+ 122:../proyecto.c **** 
+ 123:../proyecto.c **** void uart0_putTimeLCD( void )
+ 124:../proyecto.c **** {
+ 3279              		.loc 1 124 0
+ 3280              		.cfi_startproc
+ 3281              		@ Function supports interworking.
+ 3282              		@ args = 0, pretend = 0, frame = 80
+ 3283              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3284 04e0 0DC0A0E1 		mov	ip, sp
+ 3285              	.LCFI8:
+ 3286              		.cfi_def_cfa_register 12
+ 3287 04e4 00D82DE9 		stmfd	sp!, {fp, ip, lr, pc}
+ 3288 04e8 04B04CE2 		sub	fp, ip, #4
+ 3289              		.cfi_offset 14, -8
+ 3290              		.cfi_offset 13, -12
+ 3291              		.cfi_offset 11, -16
+ 3292              	.LCFI9:
+ 3293              		.cfi_def_cfa 11, 4
+ 3294 04ec 58D04DE2 		sub	sp, sp, #88
+ 125:../proyecto.c **** 	uint8  c;
+ 126:../proyecto.c **** 	char bufH[5], bufM[5], bufS[5];
+ 127:../proyecto.c **** 	char *hp = bufH + 5;
+ 3295              		.loc 1 127 0
+ 3296 04f0 40304BE2 		sub	r3, fp, #64
+ 3297 04f4 053083E2 		add	r3, r3, #5
+ 3298 04f8 10300BE5 		str	r3, [fp, #-16]
+ 128:../proyecto.c **** 	char *mp = bufM + 5;
+ 3299              		.loc 1 128 0
+ 3300 04fc 48304BE2 		sub	r3, fp, #72
+ 3301 0500 053083E2 		add	r3, r3, #5
+ 3302 0504 14300BE5 		str	r3, [fp, #-20]
+ 129:../proyecto.c **** 	char *sp = bufS + 5;
+ 3303              		.loc 1 129 0
+ 3304 0508 50304BE2 		sub	r3, fp, #80
+ 3305 050c 053083E2 		add	r3, r3, #5
+ 3306 0510 18300BE5 		str	r3, [fp, #-24]
+ 130:../proyecto.c **** 	*hp = '\0';
+ 3307              		.loc 1 130 0
+ 3308 0514 10301BE5 		ldr	r3, [fp, #-16]
+ 3309 0518 0020A0E3 		mov	r2, #0
+ 3310 051c 0020C3E5 		strb	r2, [r3, #0]
+ 131:../proyecto.c **** 	*mp = '\0';
+ 3311              		.loc 1 131 0
+ 3312 0520 14301BE5 		ldr	r3, [fp, #-20]
+ 3313 0524 0020A0E3 		mov	r2, #0
+ 3314 0528 0020C3E5 		strb	r2, [r3, #0]
+ 132:../proyecto.c **** 	*sp = '\0';
+ 3315              		.loc 1 132 0
+ 3316 052c 18301BE5 		ldr	r3, [fp, #-24]
+ 3317 0530 0020A0E3 		mov	r2, #0
+ 3318 0534 0020C3E5 		strb	r2, [r3, #0]
+ 133:../proyecto.c **** 	rtc_time_t rtc_time;
+ 134:../proyecto.c **** 
+ 135:../proyecto.c **** 	if(horaFijada){
+ 3319              		.loc 1 135 0
+ 3320 0538 54339FE5 		ldr	r3, .L47
+ 3321 053c 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 3322 0540 000053E3 		cmp	r3, #0
+ 3323 0544 0D00000A 		beq	.L36
+ 136:../proyecto.c **** 		rtc_time.hour = contH;
+ 3324              		.loc 1 136 0
+ 3325 0548 48339FE5 		ldr	r3, .L47+4
+ 3326 054c 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 3327 0550 56304BE5 		strb	r3, [fp, #-86]
+ 137:../proyecto.c **** 		rtc_time.min = contM;
+ 3328              		.loc 1 137 0
+ 3329 0554 40339FE5 		ldr	r3, .L47+8
+ 3330 0558 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 3331 055c 57304BE5 		strb	r3, [fp, #-87]
+ 138:../proyecto.c **** 		rtc_time.sec = 0;
+ 3332              		.loc 1 138 0
+ 3333 0560 0030A0E3 		mov	r3, #0
+ 3334 0564 58304BE5 		strb	r3, [fp, #-88]
+ 139:../proyecto.c **** 		rtc_puttime( &rtc_time );
+ 3335              		.loc 1 139 0
+ 3336 0568 58304BE2 		sub	r3, fp, #88
+ 3337 056c 0300A0E1 		mov	r0, r3
+ 3338 0570 FEFFFFEB 		bl	rtc_puttime
+ 140:../proyecto.c **** 		horaFijada = 0;
+ 3339              		.loc 1 140 0
+ 3340 0574 18339FE5 		ldr	r3, .L47
+ 3341 0578 0020A0E3 		mov	r2, #0
+ 3342 057c 0020C3E5 		strb	r2, [r3, #0]
+ 3343              	.L36:
+ 141:../proyecto.c **** 	}
+ 142:../proyecto.c **** 
+ 143:../proyecto.c **** 	rtc_gettime( &rtc_time );
+ 3344              		.loc 1 143 0
+ 3345 0580 58304BE2 		sub	r3, fp, #88
+ 3346 0584 0300A0E1 		mov	r0, r3
+ 3347 0588 FEFFFFEB 		bl	rtc_gettime
+ 144:../proyecto.c **** 	uint32 hh = (uint32)rtc_time.hour;
+ 3348              		.loc 1 144 0
+ 3349 058c 56305BE5 		ldrb	r3, [fp, #-86]	@ zero_extendqisi2
+ 3350 0590 1C300BE5 		str	r3, [fp, #-28]
+ 145:../proyecto.c **** 	uint32 mm = (uint32)rtc_time.min;
+ 3351              		.loc 1 145 0
+ 3352 0594 57305BE5 		ldrb	r3, [fp, #-87]	@ zero_extendqisi2
+ 3353 0598 20300BE5 		str	r3, [fp, #-32]
+ 146:../proyecto.c **** 	uint32 s = (uint32)rtc_time.sec;
+ 3354              		.loc 1 146 0
+ 3355 059c 58305BE5 		ldrb	r3, [fp, #-88]	@ zero_extendqisi2
+ 3356 05a0 24300BE5 		str	r3, [fp, #-36]
+ 147:../proyecto.c **** 	uint32 hSave = hh, mSave = mm, sSave = s;
+ 3357              		.loc 1 147 0
+ 3358 05a4 1C301BE5 		ldr	r3, [fp, #-28]
+ 3359 05a8 28300BE5 		str	r3, [fp, #-40]
+ 3360 05ac 20301BE5 		ldr	r3, [fp, #-32]
+ 3361 05b0 2C300BE5 		str	r3, [fp, #-44]
+ 3362 05b4 24301BE5 		ldr	r3, [fp, #-36]
+ 3363 05b8 30300BE5 		str	r3, [fp, #-48]
+ 3364              	.L37:
+ 148:../proyecto.c **** 
+ 149:../proyecto.c **** 	do {
+ 150:../proyecto.c **** 		c = hh % 10;
+ 3365              		.loc 1 150 0 discriminator 1
+ 3366 05bc 1C101BE5 		ldr	r1, [fp, #-28]
+ 3367 05c0 D8329FE5 		ldr	r3, .L47+12
+ 3368 05c4 912383E0 		umull	r2, r3, r1, r3
+ 3369 05c8 A321A0E1 		mov	r2, r3, lsr #3
+ 3370 05cc 0230A0E1 		mov	r3, r2
+ 3371 05d0 0331A0E1 		mov	r3, r3, asl #2
+ 3372 05d4 023083E0 		add	r3, r3, r2
+ 3373 05d8 8330A0E1 		mov	r3, r3, asl #1
+ 3374 05dc 012063E0 		rsb	r2, r3, r1
+ 3375 05e0 0230A0E1 		mov	r3, r2
+ 3376 05e4 31304BE5 		strb	r3, [fp, #-49]
+ 151:../proyecto.c **** 		*--hp = '0' + c;
+ 3377              		.loc 1 151 0 discriminator 1
+ 3378 05e8 10301BE5 		ldr	r3, [fp, #-16]
+ 3379 05ec 013043E2 		sub	r3, r3, #1
+ 3380 05f0 10300BE5 		str	r3, [fp, #-16]
+ 3381 05f4 31305BE5 		ldrb	r3, [fp, #-49]
+ 3382 05f8 303083E2 		add	r3, r3, #48
+ 3383 05fc FF2003E2 		and	r2, r3, #255
+ 3384 0600 10301BE5 		ldr	r3, [fp, #-16]
+ 3385 0604 0020C3E5 		strb	r2, [r3, #0]
+ 152:../proyecto.c **** 		hh /= 10;
+ 3386              		.loc 1 152 0 discriminator 1
+ 3387 0608 1C201BE5 		ldr	r2, [fp, #-28]
+ 3388 060c 8C329FE5 		ldr	r3, .L47+12
+ 3389 0610 921383E0 		umull	r1, r3, r2, r3
+ 3390 0614 A331A0E1 		mov	r3, r3, lsr #3
+ 3391 0618 1C300BE5 		str	r3, [fp, #-28]
+ 153:../proyecto.c **** 	} while( hh > 0 );
+ 3392              		.loc 1 153 0 discriminator 1
+ 3393 061c 1C301BE5 		ldr	r3, [fp, #-28]
+ 3394 0620 000053E3 		cmp	r3, #0
+ 3395 0624 E4FFFF1A 		bne	.L37
+ 3396              	.L38:
+ 154:../proyecto.c **** 	do {
+ 155:../proyecto.c **** 		c = mm % 10;
+ 3397              		.loc 1 155 0 discriminator 1
+ 3398 0628 20101BE5 		ldr	r1, [fp, #-32]
+ 3399 062c 6C329FE5 		ldr	r3, .L47+12
+ 3400 0630 912383E0 		umull	r2, r3, r1, r3
+ 3401 0634 A321A0E1 		mov	r2, r3, lsr #3
+ 3402 0638 0230A0E1 		mov	r3, r2
+ 3403 063c 0331A0E1 		mov	r3, r3, asl #2
+ 3404 0640 023083E0 		add	r3, r3, r2
+ 3405 0644 8330A0E1 		mov	r3, r3, asl #1
+ 3406 0648 012063E0 		rsb	r2, r3, r1
+ 3407 064c 0230A0E1 		mov	r3, r2
+ 3408 0650 31304BE5 		strb	r3, [fp, #-49]
+ 156:../proyecto.c **** 		*--mp = '0' + c;
+ 3409              		.loc 1 156 0 discriminator 1
+ 3410 0654 14301BE5 		ldr	r3, [fp, #-20]
+ 3411 0658 013043E2 		sub	r3, r3, #1
+ 3412 065c 14300BE5 		str	r3, [fp, #-20]
+ 3413 0660 31305BE5 		ldrb	r3, [fp, #-49]
+ 3414 0664 303083E2 		add	r3, r3, #48
+ 3415 0668 FF2003E2 		and	r2, r3, #255
+ 3416 066c 14301BE5 		ldr	r3, [fp, #-20]
+ 3417 0670 0020C3E5 		strb	r2, [r3, #0]
+ 157:../proyecto.c **** 		mm /= 10;
+ 3418              		.loc 1 157 0 discriminator 1
+ 3419 0674 20201BE5 		ldr	r2, [fp, #-32]
+ 3420 0678 20329FE5 		ldr	r3, .L47+12
+ 3421 067c 921383E0 		umull	r1, r3, r2, r3
+ 3422 0680 A331A0E1 		mov	r3, r3, lsr #3
+ 3423 0684 20300BE5 		str	r3, [fp, #-32]
+ 158:../proyecto.c **** 	} while( mm > 0 );
+ 3424              		.loc 1 158 0 discriminator 1
+ 3425 0688 20301BE5 		ldr	r3, [fp, #-32]
+ 3426 068c 000053E3 		cmp	r3, #0
+ 3427 0690 E4FFFF1A 		bne	.L38
+ 3428              	.L39:
+ 159:../proyecto.c **** 	do {
+ 160:../proyecto.c **** 		c = s % 10;
+ 3429              		.loc 1 160 0 discriminator 1
+ 3430 0694 24101BE5 		ldr	r1, [fp, #-36]
+ 3431 0698 00329FE5 		ldr	r3, .L47+12
+ 3432 069c 912383E0 		umull	r2, r3, r1, r3
+ 3433 06a0 A321A0E1 		mov	r2, r3, lsr #3
+ 3434 06a4 0230A0E1 		mov	r3, r2
+ 3435 06a8 0331A0E1 		mov	r3, r3, asl #2
+ 3436 06ac 023083E0 		add	r3, r3, r2
+ 3437 06b0 8330A0E1 		mov	r3, r3, asl #1
+ 3438 06b4 012063E0 		rsb	r2, r3, r1
+ 3439 06b8 0230A0E1 		mov	r3, r2
+ 3440 06bc 31304BE5 		strb	r3, [fp, #-49]
+ 161:../proyecto.c **** 		*--sp = '0' + c;
+ 3441              		.loc 1 161 0 discriminator 1
+ 3442 06c0 18301BE5 		ldr	r3, [fp, #-24]
+ 3443 06c4 013043E2 		sub	r3, r3, #1
+ 3444 06c8 18300BE5 		str	r3, [fp, #-24]
+ 3445 06cc 31305BE5 		ldrb	r3, [fp, #-49]
+ 3446 06d0 303083E2 		add	r3, r3, #48
+ 3447 06d4 FF2003E2 		and	r2, r3, #255
+ 3448 06d8 18301BE5 		ldr	r3, [fp, #-24]
+ 3449 06dc 0020C3E5 		strb	r2, [r3, #0]
+ 162:../proyecto.c **** 		s /= 10;
+ 3450              		.loc 1 162 0 discriminator 1
+ 3451 06e0 24201BE5 		ldr	r2, [fp, #-36]
+ 3452 06e4 B4319FE5 		ldr	r3, .L47+12
+ 3453 06e8 921383E0 		umull	r1, r3, r2, r3
+ 3454 06ec A331A0E1 		mov	r3, r3, lsr #3
+ 3455 06f0 24300BE5 		str	r3, [fp, #-36]
+ 163:../proyecto.c **** 	} while( s > 0 );
+ 3456              		.loc 1 163 0 discriminator 1
+ 3457 06f4 24301BE5 		ldr	r3, [fp, #-36]
+ 3458 06f8 000053E3 		cmp	r3, #0
+ 3459 06fc E4FFFF1A 		bne	.L39
+ 164:../proyecto.c **** 
+ 165:../proyecto.c ****     if(hSave < 10) {*hp--; *hp = '0'+(uint8)0;}
+ 3460              		.loc 1 165 0
+ 3461 0700 28301BE5 		ldr	r3, [fp, #-40]
+ 3462 0704 090053E3 		cmp	r3, #9
+ 3463 0708 0500008A 		bhi	.L40
+ 3464              		.loc 1 165 0 is_stmt 0 discriminator 1
+ 3465 070c 10301BE5 		ldr	r3, [fp, #-16]
+ 3466 0710 013043E2 		sub	r3, r3, #1
+ 3467 0714 10300BE5 		str	r3, [fp, #-16]
+ 3468 0718 10301BE5 		ldr	r3, [fp, #-16]
+ 3469 071c 3020A0E3 		mov	r2, #48
+ 3470 0720 0020C3E5 		strb	r2, [r3, #0]
+ 3471              	.L40:
+ 166:../proyecto.c ****     if(mSave < 10) {*mp--; *mp = '0'+(uint8)0;}
+ 3472              		.loc 1 166 0 is_stmt 1
+ 3473 0724 2C301BE5 		ldr	r3, [fp, #-44]
+ 3474 0728 090053E3 		cmp	r3, #9
+ 3475 072c 0500008A 		bhi	.L41
+ 3476              		.loc 1 166 0 is_stmt 0 discriminator 1
+ 3477 0730 14301BE5 		ldr	r3, [fp, #-20]
+ 3478 0734 013043E2 		sub	r3, r3, #1
+ 3479 0738 14300BE5 		str	r3, [fp, #-20]
+ 3480 073c 14301BE5 		ldr	r3, [fp, #-20]
+ 3481 0740 3020A0E3 		mov	r2, #48
+ 3482 0744 0020C3E5 		strb	r2, [r3, #0]
+ 3483              	.L41:
+ 167:../proyecto.c **** 
+ 168:../proyecto.c ****     if(hSave == h && mSave == m && activarAlarma && flag)
+ 3484              		.loc 1 168 0 is_stmt 1
+ 3485 0748 54319FE5 		ldr	r3, .L47+16
+ 3486 074c 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 3487 0750 0320A0E1 		mov	r2, r3
+ 3488 0754 28301BE5 		ldr	r3, [fp, #-40]
+ 3489 0758 030052E1 		cmp	r2, r3
+ 3490 075c 1000001A 		bne	.L42
+ 3491              		.loc 1 168 0 is_stmt 0 discriminator 1
+ 3492 0760 40319FE5 		ldr	r3, .L47+20
+ 3493 0764 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 3494 0768 0320A0E1 		mov	r2, r3
+ 3495 076c 2C301BE5 		ldr	r3, [fp, #-44]
+ 3496 0770 030052E1 		cmp	r2, r3
+ 3497 0774 0A00001A 		bne	.L42
+ 3498 0778 2C319FE5 		ldr	r3, .L47+24
+ 3499 077c 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 3500 0780 000053E3 		cmp	r3, #0
+ 3501 0784 0600000A 		beq	.L42
+ 3502 0788 20319FE5 		ldr	r3, .L47+28
+ 3503 078c 0030D3E5 		ldrb	r3, [r3, #0]
+ 3504 0790 FF3003E2 		and	r3, r3, #255
+ 3505 0794 000053E3 		cmp	r3, #0
+ 3506 0798 0100000A 		beq	.L42
+ 169:../proyecto.c ****     	iis_textToSpeech( "pipipipi " );
+ 3507              		.loc 1 169 0 is_stmt 1
+ 3508 079c 10019FE5 		ldr	r0, .L47+32
+ 3509 07a0 FEFFFFEB 		bl	iis_textToSpeech
+ 3510              	.L42:
+ 170:../proyecto.c **** 
+ 171:../proyecto.c ****     hpC = hp;
+ 3511              		.loc 1 171 0
+ 3512 07a4 0C319FE5 		ldr	r3, .L47+36
+ 3513 07a8 10201BE5 		ldr	r2, [fp, #-16]
+ 3514 07ac 002083E5 		str	r2, [r3, #0]
+ 172:../proyecto.c ****     mpC = mp;
+ 3515              		.loc 1 172 0
+ 3516 07b0 04319FE5 		ldr	r3, .L47+40
+ 3517 07b4 14201BE5 		ldr	r2, [fp, #-20]
+ 3518 07b8 002083E5 		str	r2, [r3, #0]
+ 173:../proyecto.c **** 
+ 174:../proyecto.c ****     if(!menu){
+ 3519              		.loc 1 174 0
+ 3520 07bc FC309FE5 		ldr	r3, .L47+44
+ 3521 07c0 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 3522 07c4 000053E3 		cmp	r3, #0
+ 3523 07c8 2E00001A 		bne	.L35
+ 3524              	.LBB4:
+ 175:../proyecto.c ****     	lcd_puts_xTam( 44, 60, BLACK, hp, 6);
+ 3525              		.loc 1 175 0
+ 3526 07cc 0630A0E3 		mov	r3, #6
+ 3527 07d0 00308DE5 		str	r3, [sp, #0]
+ 3528 07d4 2C00A0E3 		mov	r0, #44
+ 3529 07d8 3C10A0E3 		mov	r1, #60
+ 3530 07dc 0F20A0E3 		mov	r2, #15
+ 3531 07e0 10301BE5 		ldr	r3, [fp, #-16]
+ 3532 07e4 FEFFFFEB 		bl	lcd_puts_xTam
+ 176:../proyecto.c ****     	lcd_puts_xTam( 161, 60, BLACK, mp, 6);
+ 3533              		.loc 1 176 0
+ 3534 07e8 0630A0E3 		mov	r3, #6
+ 3535 07ec 00308DE5 		str	r3, [sp, #0]
+ 3536 07f0 A100A0E3 		mov	r0, #161
+ 3537 07f4 3C10A0E3 		mov	r1, #60
+ 3538 07f8 0F20A0E3 		mov	r2, #15
+ 3539 07fc 14301BE5 		ldr	r3, [fp, #-20]
+ 3540 0800 FEFFFFEB 		bl	lcd_puts_xTam
+ 177:../proyecto.c **** 
+ 178:../proyecto.c ****     	char * borrar = "  \0";
+ 3541              		.loc 1 178 0
+ 3542 0804 B8309FE5 		ldr	r3, .L47+48
+ 3543 0808 38300BE5 		str	r3, [fp, #-56]
+ 179:../proyecto.c ****     	if(sSave == 10 || sSave == 0)
+ 3544              		.loc 1 179 0
+ 3545 080c 30301BE5 		ldr	r3, [fp, #-48]
+ 3546 0810 0A0053E3 		cmp	r3, #10
+ 3547 0814 0200000A 		beq	.L44
+ 3548              		.loc 1 179 0 is_stmt 0 discriminator 1
+ 3549 0818 30301BE5 		ldr	r3, [fp, #-48]
+ 3550 081c 000053E3 		cmp	r3, #0
+ 3551 0820 0600001A 		bne	.L45
+ 3552              	.L44:
+ 180:../proyecto.c ****     		lcd_puts_xTam( 126, 147, WHITE, borrar, 3);
+ 3553              		.loc 1 180 0 is_stmt 1
+ 3554 0824 0330A0E3 		mov	r3, #3
+ 3555 0828 00308DE5 		str	r3, [sp, #0]
+ 3556 082c 7E00A0E3 		mov	r0, #126
+ 3557 0830 9310A0E3 		mov	r1, #147
+ 3558 0834 0020A0E3 		mov	r2, #0
+ 3559 0838 38301BE5 		ldr	r3, [fp, #-56]
+ 3560 083c FEFFFFEB 		bl	lcd_puts_xTam
+ 3561              	.L45:
+ 181:../proyecto.c ****     	if(sSave < 10)lcd_puts_xTam( 136, 145, BLACK, sp, 3);
+ 3562              		.loc 1 181 0
+ 3563 0840 30301BE5 		ldr	r3, [fp, #-48]
+ 3564 0844 090053E3 		cmp	r3, #9
+ 3565 0848 0700008A 		bhi	.L46
+ 3566              		.loc 1 181 0 is_stmt 0 discriminator 1
+ 3567 084c 0330A0E3 		mov	r3, #3
+ 3568 0850 00308DE5 		str	r3, [sp, #0]
+ 3569 0854 8800A0E3 		mov	r0, #136
+ 3570 0858 9110A0E3 		mov	r1, #145
+ 3571 085c 0F20A0E3 		mov	r2, #15
+ 3572 0860 18301BE5 		ldr	r3, [fp, #-24]
+ 3573 0864 FEFFFFEB 		bl	lcd_puts_xTam
+ 3574 0868 060000EA 		b	.L35
+ 3575              	.L46:
+ 182:../proyecto.c ****     	else lcd_puts_xTam( 126, 147, BLACK, sp, 3);
+ 3576              		.loc 1 182 0 is_stmt 1
+ 3577 086c 0330A0E3 		mov	r3, #3
+ 3578 0870 00308DE5 		str	r3, [sp, #0]
+ 3579 0874 7E00A0E3 		mov	r0, #126
+ 3580 0878 9310A0E3 		mov	r1, #147
+ 3581 087c 0F20A0E3 		mov	r2, #15
+ 3582 0880 18301BE5 		ldr	r3, [fp, #-24]
+ 3583 0884 FEFFFFEB 		bl	lcd_puts_xTam
+ 3584              	.L35:
+ 3585              	.LBE4:
+ 183:../proyecto.c ****     }
+ 184:../proyecto.c **** }
+ 3586              		.loc 1 184 0
+ 3587 0888 0CD04BE2 		sub	sp, fp, #12
+ 3588 088c 00689DE8 		ldmfd	sp, {fp, sp, lr}
+ 3589 0890 1EFF2FE1 		bx	lr
+ 3590              	.L48:
+ 3591              		.align	2
+ 3592              	.L47:
+ 3593 0894 00000000 		.word	horaFijada
+ 3594 0898 00000000 		.word	contH
+ 3595 089c 00000000 		.word	contM
+ 3596 08a0 CDCCCCCC 		.word	-858993459
+ 3597 08a4 00000000 		.word	h
+ 3598 08a8 00000000 		.word	m
+ 3599 08ac 00000000 		.word	activarAlarma
+ 3600 08b0 00000000 		.word	flag
+ 3601 08b4 00000000 		.word	.LC0
+ 3602 08b8 00000000 		.word	hpC
+ 3603 08bc 00000000 		.word	mpC
+ 3604 08c0 00000000 		.word	menu
+ 3605 08c4 0C000000 		.word	.LC1
+ 3606              		.cfi_endproc
+ 3607              	.LFE4:
+ 3609              		.align	2
+ 3610              		.global	TaskStart
+ 3612              	TaskStart:
+ 3613              	.LFB5:
+ 185:../proyecto.c **** 
+ 186:../proyecto.c **** void TaskStart( void *pdata )
+ 187:../proyecto.c **** {
+ 3614              		.loc 1 187 0
+ 3615              		.cfi_startproc
+ 3616              		@ Function supports interworking.
+ 3617              		@ args = 0, pretend = 0, frame = 16
+ 3618              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3619 08c8 0DC0A0E1 		mov	ip, sp
+ 3620              	.LCFI10:
+ 3621              		.cfi_def_cfa_register 12
+ 3622 08cc 00D82DE9 		stmfd	sp!, {fp, ip, lr, pc}
+ 3623 08d0 04B04CE2 		sub	fp, ip, #4
+ 3624              		.cfi_offset 14, -8
+ 3625              		.cfi_offset 13, -12
+ 3626              		.cfi_offset 11, -16
+ 3627              	.LCFI11:
+ 3628              		.cfi_def_cfa 11, 4
+ 3629 08d4 10D04DE2 		sub	sp, sp, #16
+ 3630 08d8 18000BE5 		str	r0, [fp, #-24]
+ 188:../proyecto.c ****     const char id1 = '1'; /* Identificadores de tareas */
+ 3631              		.loc 1 188 0
+ 3632 08dc 3130A0E3 		mov	r3, #49
+ 3633 08e0 0D304BE5 		strb	r3, [fp, #-13]
+ 189:../proyecto.c ****     const char id2 = '2';
+ 3634              		.loc 1 189 0
+ 3635 08e4 3230A0E3 		mov	r3, #50
+ 3636 08e8 0E304BE5 		strb	r3, [fp, #-14]
+ 190:../proyecto.c **** 
+ 191:../proyecto.c ****     OS_ENTER_CRITICAL();
+ 3637              		.loc 1 191 0
+ 3638              	@ 191 "../proyecto.c" 1
+ 3639 08ec 00000FE1 		mrs   r0, cpsr
+ 3640              	@ 0 "" 2
+ 3641              	@ 191 "../proyecto.c" 1
+ 3642 08f0 04002DE5 		stmfd sp!, {r0}
+ 3643              	@ 0 "" 2
+ 3644              	@ 191 "../proyecto.c" 1
+ 3645 08f4 C00080E3 		orr   r0, r0, #0b11000000
+ 3646              	@ 0 "" 2
+ 3647              	@ 191 "../proyecto.c" 1
+ 3648 08f8 00F021E1 		msr   cpsr_c, r0
+ 3649              	@ 0 "" 2
+ 192:../proyecto.c ****     timer0_open_tick( OSTickISR, OS_TICKS_PER_SEC );  /* Instala OSTickISR como RTI del timer0     
+ 3650              		.loc 1 192 0
+ 3651 08fc 50009FE5 		ldr	r0, .L50
+ 3652 0900 6410A0E3 		mov	r1, #100
+ 3653 0904 FEFFFFEB 		bl	timer0_open_tick
+ 193:../proyecto.c ****     OS_EXIT_CRITICAL();
+ 3654              		.loc 1 193 0
+ 3655              	@ 193 "../proyecto.c" 1
+ 3656 0908 04009DE4 		ldmfd sp!, {r0}
+ 3657              	@ 0 "" 2
+ 3658              	@ 193 "../proyecto.c" 1
+ 3659 090c 00F021E1 		msr   cpsr_c, r0
+ 3660              	@ 0 "" 2
+ 194:../proyecto.c **** 
+ 195:../proyecto.c ****     OSTaskCreate( Task1, (void *)&id1, &Task1Stk[TASK_STK_SIZE - 1], 1 );      /* Crea las tareas d
+ 3661              		.loc 1 195 0
+ 3662 0910 0D304BE2 		sub	r3, fp, #13
+ 3663 0914 3C009FE5 		ldr	r0, .L50+4
+ 3664 0918 0310A0E1 		mov	r1, r3
+ 3665 091c 38209FE5 		ldr	r2, .L50+8
+ 3666 0920 0130A0E3 		mov	r3, #1
+ 3667 0924 FEFFFFEB 		bl	OSTaskCreate
+ 196:../proyecto.c ****     OSTaskCreate( Task2, (void *)&id2, &Task2Stk[TASK_STK_SIZE - 1], 2 );
+ 3668              		.loc 1 196 0
+ 3669 0928 0E304BE2 		sub	r3, fp, #14
+ 3670 092c 2C009FE5 		ldr	r0, .L50+12
+ 3671 0930 0310A0E1 		mov	r1, r3
+ 3672 0934 28209FE5 		ldr	r2, .L50+16
+ 3673 0938 0230A0E3 		mov	r3, #2
+ 3674 093c FEFFFFEB 		bl	OSTaskCreate
+ 197:../proyecto.c **** 
+ 198:../proyecto.c ****     OSTaskDel(OS_PRIO_SELF);             /* La tarea inicial de arranque se auto-elimina */
+ 3675              		.loc 1 198 0
+ 3676 0940 FF00A0E3 		mov	r0, #255
+ 3677 0944 FEFFFFEB 		bl	OSTaskDel
+ 199:../proyecto.c **** }
+ 3678              		.loc 1 199 0
+ 3679 0948 0CD04BE2 		sub	sp, fp, #12
+ 3680 094c 00689DE8 		ldmfd	sp, {fp, sp, lr}
+ 3681 0950 1EFF2FE1 		bx	lr
+ 3682              	.L51:
+ 3683              		.align	2
+ 3684              	.L50:
+ 3685 0954 00000000 		.word	OSTickISR
+ 3686 0958 00000000 		.word	Task1
+ 3687 095c FC9F0000 		.word	Task1Stk+40956
+ 3688 0960 00000000 		.word	Task2
+ 3689 0964 FC9F0000 		.word	Task2Stk+40956
+ 3690              		.cfi_endproc
+ 3691              	.LFE5:
+ 3693              		.align	2
+ 3694              		.global	isr_tick
+ 3696              	isr_tick:
+ 3697              	.LFB6:
+ 200:../proyecto.c **** 
+ 201:../proyecto.c **** void isr_tick( void )
+ 202:../proyecto.c **** {
+ 3698              		.loc 1 202 0
+ 3699              		.cfi_startproc
+ 3700              		@ Interrupt Service Routine.
+ 3701              		@ args = 0, pretend = 0, frame = 0
+ 3702              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3703 0968 04C02DE5 		str	ip, [sp, #-4]!
+ 3704 096c 0DC0A0E1 		mov	ip, sp
+ 3705              	.LCFI12:
+ 3706              		.cfi_def_cfa_register 12
+ 3707 0970 0FD82DE9 		stmfd	sp!, {r0, r1, r2, r3, fp, ip, lr, pc}
+ 3708 0974 04B04CE2 		sub	fp, ip, #4
+ 3709              		.cfi_offset 14, -8
+ 3710              		.cfi_offset 13, -12
+ 3711              		.cfi_offset 11, -16
+ 3712              		.cfi_offset 3, -20
+ 3713              		.cfi_offset 2, -24
+ 3714              		.cfi_offset 1, -28
+ 3715              		.cfi_offset 0, -32
+ 3716              	.LCFI13:
+ 3717              		.cfi_def_cfa 11, 4
+ 203:../proyecto.c **** 	uart0_putTimeLCD( );
+ 3718              		.loc 1 203 0
+ 3719 0978 FEFFFFEB 		bl	uart0_putTimeLCD
+ 204:../proyecto.c **** 	I_ISPC = BIT_TICK;
+ 3720              		.loc 1 204 0
+ 3721 097c 14309FE5 		ldr	r3, .L53
+ 3722 0980 0126A0E3 		mov	r2, #1048576
+ 3723 0984 002083E5 		str	r2, [r3, #0]
+ 205:../proyecto.c **** }
+ 3724              		.loc 1 205 0
+ 3725 0988 1CD04BE2 		sub	sp, fp, #28
+ 3726 098c 0F689DE8 		ldmfd	sp, {r0, r1, r2, r3, fp, sp, lr}
+ 3727 0990 04C09DE4 		ldmfd	sp!, {ip}
+ 3728 0994 04F05EE2 		subs	pc, lr, #4
+ 3729              	.L54:
+ 3730              		.align	2
+ 3731              	.L53:
+ 3732 0998 2400E001 		.word	31457316
+ 3733              		.cfi_endproc
+ 3734              	.LFE6:
+ 3736              		.section	.rodata
+ 3737              		.align	2
+ 3738              	.LC2:
+ 3739 0010 4F504349 		.ascii	"OPCIONES DEL MENU\000"
+ 3739      4F4E4553 
+ 3739      2044454C 
+ 3739      204D454E 
+ 3739      5500
+ 3740 0022 0000     		.align	2
+ 3741              	.LC3:
+ 3742 0024 302E2043 		.ascii	"0. Calculadora \000"
+ 3742      616C6375 
+ 3742      6C61646F 
+ 3742      72612000 
+ 3743              		.align	2
+ 3744              	.LC4:
+ 3745 0034 312E2041 		.ascii	"1. Alarma\000"
+ 3745      6C61726D 
+ 3745      6100
+ 3746 003e 0000     		.align	2
+ 3747              	.LC5:
+ 3748 0040 322E2050 		.ascii	"2. Poner hora\000"
+ 3748      6F6E6572 
+ 3748      20686F72 
+ 3748      6100
+ 3749 004e 0000     		.align	2
+ 3750              	.LC6:
+ 3751 0050 486F7261 		.ascii	"Hora fijada\000"
+ 3751      2066696A 
+ 3751      61646100 
+ 3752              		.align	2
+ 3753              	.LC7:
+ 3754 005c 416C6172 		.ascii	"Alarma activada\000"
+ 3754      6D612061 
+ 3754      63746976 
+ 3754      61646100 
+ 3755              		.align	2
+ 3756              	.LC8:
+ 3757 006c 416C6172 		.ascii	"Alarma desactivada\000"
+ 3757      6D612064 
+ 3757      65736163 
+ 3757      74697661 
+ 3757      646100
+ 3758 007f 00       		.align	2
+ 3759              	.LC9:
+ 3760 0080 3A00     		.ascii	":\000"
+ 3761 0082 0000     		.align	2
+ 3762              	.LC10:
+ 3763 0084 3000     		.ascii	"0\000"
+ 3764 0086 0000     		.align	2
+ 3765              	.LC11:
+ 3766 0088 43616C63 		.ascii	"Calculadora.\000"
+ 3766      756C6164 
+ 3766      6F72612E 
+ 3766      00
+ 3767 0095 000000   		.align	2
+ 3768              	.LC12:
+ 3769 0098 496E7472 		.ascii	"Introduzca operandos\000"
+ 3769      6F64757A 
+ 3769      6361206F 
+ 3769      70657261 
+ 3769      6E646F73 
+ 3770 00ad 000000   		.align	2
+ 3771              	.LC13:
+ 3772 00b0 3100     		.ascii	"1\000"
+ 3773 00b2 0000     		.align	2
+ 3774              	.LC14:
+ 3775 00b4 496E7472 		.ascii	"Introduzca alarma\000"
+ 3775      6F64757A 
+ 3775      63612061 
+ 3775      6C61726D 
+ 3775      6100
+ 3776 00c6 0000     		.align	2
+ 3777              	.LC15:
+ 3778 00c8 3200     		.ascii	"2\000"
+ 3779 00ca 0000     		.align	2
+ 3780              	.LC16:
+ 3781 00cc 46696A61 		.ascii	"Fija hora:\000"
+ 3781      20686F72 
+ 3781      613A00
+ 3782 00d7 00       		.align	2
+ 3783              	.LC17:
+ 3784 00d8 6D617300 		.ascii	"mas\000"
+ 3785              		.align	2
+ 3786              	.LC18:
+ 3787 00dc 2B00     		.ascii	"+\000"
+ 3788 00de 0000     		.align	2
+ 3789              	.LC19:
+ 3790 00e0 6D656E6F 		.ascii	"menos\000"
+ 3790      7300
+ 3791 00e6 0000     		.align	2
+ 3792              	.LC20:
+ 3793 00e8 2D00     		.ascii	"-\000"
+ 3794 00ea 0000     		.align	2
+ 3795              	.LC21:
+ 3796 00ec 706F7200 		.ascii	"por\000"
+ 3797              		.align	2
+ 3798              	.LC22:
+ 3799 00f0 7800     		.ascii	"x\000"
+ 3800 00f2 0000     		.align	2
+ 3801              	.LC23:
+ 3802 00f4 49677561 		.ascii	"Igual a\000"
+ 3802      6C206100 
+ 3803              		.align	2
+ 3804              	.LC24:
+ 3805 00fc 3D00     		.ascii	"=\000"
+ 3806 00fe 0000     		.align	2
+ 3807              	.LC25:
+ 3808 0100 6E756D65 		.ascii	"numero mayor que 59\000"
+ 3808      726F206D 
+ 3808      61796F72 
+ 3808      20717565 
+ 3808      20353900 
+ 3809              		.text
+ 3810              		.align	2
+ 3811              		.global	isr_keypad
+ 3813              	isr_keypad:
+ 3814              	.LFB7:
+ 206:../proyecto.c **** 
+ 207:../proyecto.c **** void isr_keypad( void )
+ 208:../proyecto.c **** {
+ 3815              		.loc 1 208 0
+ 3816              		.cfi_startproc
+ 3817              		@ Interrupt Service Routine.
+ 3818              		@ args = 0, pretend = 0, frame = 48
+ 3819              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3820 099c 04C02DE5 		str	ip, [sp, #-4]!
+ 3821 09a0 0DC0A0E1 		mov	ip, sp
+ 3822              	.LCFI14:
+ 3823              		.cfi_def_cfa_register 12
+ 3824 09a4 0FD82DE9 		stmfd	sp!, {r0, r1, r2, r3, fp, ip, lr, pc}
+ 3825 09a8 04B04CE2 		sub	fp, ip, #4
+ 3826              		.cfi_offset 14, -8
+ 3827              		.cfi_offset 13, -12
+ 3828              		.cfi_offset 11, -16
+ 3829              		.cfi_offset 3, -20
+ 3830              		.cfi_offset 2, -24
+ 3831              		.cfi_offset 1, -28
+ 3832              		.cfi_offset 0, -32
+ 3833              	.LCFI15:
+ 3834              		.cfi_def_cfa 11, 4
+ 3835 09ac 38D04DE2 		sub	sp, sp, #56
+ 209:../proyecto.c ****     uint8 scancode, horas, minutos, c;
+ 210:../proyecto.c ****     uint16 time;
+ 211:../proyecto.c ****     char *str, *hmp, *hmpp, *s, *s2, *cOp1, *cOp2;
+ 212:../proyecto.c ****     char buf[3], buf2[3];
+ 213:../proyecto.c **** 
+ 214:../proyecto.c ****     scancode = keypad_getchartime( &time );
+ 3836              		.loc 1 214 0
+ 3837 09b0 3E304BE2 		sub	r3, fp, #62
+ 3838 09b4 0300A0E1 		mov	r0, r3
+ 3839 09b8 FEFFFFEB 		bl	keypad_getchartime
+ 3840 09bc 0030A0E1 		mov	r3, r0
+ 3841 09c0 25304BE5 		strb	r3, [fp, #-37]
+ 215:../proyecto.c ****     if(flag){
+ 3842              		.loc 1 215 0
+ 3843 09c4 E03D9FE5 		ldr	r3, .L191
+ 3844 09c8 0030D3E5 		ldrb	r3, [r3, #0]
+ 3845 09cc FF3003E2 		and	r3, r3, #255
+ 3846 09d0 000053E3 		cmp	r3, #0
+ 3847 09d4 3307000A 		beq	.L56
+ 216:../proyecto.c ****     flag = FALSE;
+ 3848              		.loc 1 216 0
+ 3849 09d8 CC3D9FE5 		ldr	r3, .L191
+ 3850 09dc 0020A0E3 		mov	r2, #0
+ 3851 09e0 0020C3E5 		strb	r2, [r3, #0]
+ 217:../proyecto.c **** 		switch( scancode )
+ 3852              		.loc 1 217 0
+ 3853 09e4 25305BE5 		ldrb	r3, [fp, #-37]	@ zero_extendqisi2
+ 3854 09e8 0F0053E3 		cmp	r3, #15
+ 3855 09ec 03F19F97 		ldrls	pc, [pc, r3, asl #2]
+ 3856 09f0 290700EA 		b	.L57
+ 3857              	.L69:
+ 3858 09f4 D00C0000 		.word	.L58
+ 3859 09f8 18110000 		.word	.L59
+ 3860 09fc B4150000 		.word	.L60
+ 3861 0a00 241A0000 		.word	.L61
+ 3862 0a04 241A0000 		.word	.L61
+ 3863 0a08 241A0000 		.word	.L61
+ 3864 0a0c 4C1E0000 		.word	.L62
+ 3865 0a10 4C1E0000 		.word	.L62
+ 3866 0a14 4C1E0000 		.word	.L62
+ 3867 0a18 4C1E0000 		.word	.L62
+ 3868 0a1c 30220000 		.word	.L63
+ 3869 0a20 BC220000 		.word	.L64
+ 3870 0a24 340A0000 		.word	.L65
+ 3871 0a28 48230000 		.word	.L66
+ 3872 0a2c D4230000 		.word	.L67
+ 3873 0a30 A00B0000 		.word	.L68
+ 3874              	.L65:
+ 218:../proyecto.c **** 		{
+ 219:../proyecto.c **** 			case 0xc: //Entrar al menu y contHoras(en fijar hora)
+ 220:../proyecto.c **** 				menu = 1;
+ 3875              		.loc 1 220 0
+ 3876 0a34 743D9FE5 		ldr	r3, .L191+4
+ 3877 0a38 0120A0E3 		mov	r2, #1
+ 3878 0a3c 0020C3E5 		strb	r2, [r3, #0]
+ 221:../proyecto.c **** 				contH = contM = alarma = calculadora = ponerHora = 0;
+ 3879              		.loc 1 221 0
+ 3880 0a40 A83D9FE5 		ldr	r3, .L191+68
+ 3881 0a44 0020A0E3 		mov	r2, #0
+ 3882 0a48 0020C3E5 		strb	r2, [r3, #0]
+ 3883 0a4c 9C3D9FE5 		ldr	r3, .L191+68
+ 3884 0a50 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 3885 0a54 F43D9FE5 		ldr	r3, .L191+164
+ 3886 0a58 0020C3E5 		strb	r2, [r3, #0]
+ 3887 0a5c EC3D9FE5 		ldr	r3, .L191+164
+ 3888 0a60 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 3889 0a64 903D9FE5 		ldr	r3, .L191+80
+ 3890 0a68 0020C3E5 		strb	r2, [r3, #0]
+ 3891 0a6c 883D9FE5 		ldr	r3, .L191+80
+ 3892 0a70 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 3893 0a74 8C3D9FE5 		ldr	r3, .L191+92
+ 3894 0a78 0020C3E5 		strb	r2, [r3, #0]
+ 3895 0a7c 843D9FE5 		ldr	r3, .L191+92
+ 3896 0a80 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 3897 0a84 783D9FE5 		ldr	r3, .L191+88
+ 3898 0a88 0020C3E5 		strb	r2, [r3, #0]
+ 222:../proyecto.c **** 				op1 = op2 = contOp1 = contOp2 = resul = op = 0;
+ 3899              		.loc 1 222 0
+ 3900 0a8c 943D9FE5 		ldr	r3, .L191+124
+ 3901 0a90 0020A0E3 		mov	r2, #0
+ 3902 0a94 0020C3E5 		strb	r2, [r3, #0]
+ 3903 0a98 883D9FE5 		ldr	r3, .L191+124
+ 3904 0a9c 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 3905 0aa0 A03D9FE5 		ldr	r3, .L191+156
+ 3906 0aa4 0020C3E5 		strb	r2, [r3, #0]
+ 3907 0aa8 983D9FE5 		ldr	r3, .L191+156
+ 3908 0aac 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 3909 0ab0 743D9FE5 		ldr	r3, .L191+128
+ 3910 0ab4 0020C3E5 		strb	r2, [r3, #0]
+ 3911 0ab8 6C3D9FE5 		ldr	r3, .L191+128
+ 3912 0abc 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 3913 0ac0 543D9FE5 		ldr	r3, .L191+112
+ 3914 0ac4 0020C3E5 		strb	r2, [r3, #0]
+ 3915 0ac8 4C3D9FE5 		ldr	r3, .L191+112
+ 3916 0acc 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 3917 0ad0 683D9FE5 		ldr	r3, .L191+148
+ 3918 0ad4 0020C3E5 		strb	r2, [r3, #0]
+ 3919 0ad8 603D9FE5 		ldr	r3, .L191+148
+ 3920 0adc 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 3921 0ae0 543D9FE5 		ldr	r3, .L191+144
+ 3922 0ae4 0020C3E5 		strb	r2, [r3, #0]
+ 223:../proyecto.c **** 				lcd_clear();
+ 3923              		.loc 1 223 0
+ 3924 0ae8 FEFFFFEB 		bl	lcd_clear
+ 224:../proyecto.c **** 				str = "OPCIONES DEL MENU";
+ 3925              		.loc 1 224 0
+ 3926 0aec C03C9FE5 		ldr	r3, .L191+8
+ 3927 0af0 2C300BE5 		str	r3, [fp, #-44]
+ 225:../proyecto.c **** 				lcd_puts_xTam( 5, 20, BLACK, str, 2);
+ 3928              		.loc 1 225 0
+ 3929 0af4 0230A0E3 		mov	r3, #2
+ 3930 0af8 00308DE5 		str	r3, [sp, #0]
+ 3931 0afc 0500A0E3 		mov	r0, #5
+ 3932 0b00 1410A0E3 		mov	r1, #20
+ 3933 0b04 0F20A0E3 		mov	r2, #15
+ 3934 0b08 2C301BE5 		ldr	r3, [fp, #-44]
+ 3935 0b0c FEFFFFEB 		bl	lcd_puts_xTam
+ 226:../proyecto.c **** 				iis_textToSpeech( str );
+ 3936              		.loc 1 226 0
+ 3937 0b10 2C001BE5 		ldr	r0, [fp, #-44]
+ 3938 0b14 FEFFFFEB 		bl	iis_textToSpeech
+ 227:../proyecto.c **** 				str = "0. Calculadora ";
+ 3939              		.loc 1 227 0
+ 3940 0b18 983C9FE5 		ldr	r3, .L191+12
+ 3941 0b1c 2C300BE5 		str	r3, [fp, #-44]
+ 228:../proyecto.c **** 				lcd_puts_xTam( 10, 80, BLACK, str, 2);
+ 3942              		.loc 1 228 0
+ 3943 0b20 0230A0E3 		mov	r3, #2
+ 3944 0b24 00308DE5 		str	r3, [sp, #0]
+ 3945 0b28 0A00A0E3 		mov	r0, #10
+ 3946 0b2c 5010A0E3 		mov	r1, #80
+ 3947 0b30 0F20A0E3 		mov	r2, #15
+ 3948 0b34 2C301BE5 		ldr	r3, [fp, #-44]
+ 3949 0b38 FEFFFFEB 		bl	lcd_puts_xTam
+ 229:../proyecto.c **** 				iis_textToSpeech( str );
+ 3950              		.loc 1 229 0
+ 3951 0b3c 2C001BE5 		ldr	r0, [fp, #-44]
+ 3952 0b40 FEFFFFEB 		bl	iis_textToSpeech
+ 230:../proyecto.c **** 				str = "1. Alarma";
+ 3953              		.loc 1 230 0
+ 3954 0b44 703C9FE5 		ldr	r3, .L191+16
+ 3955 0b48 2C300BE5 		str	r3, [fp, #-44]
+ 231:../proyecto.c **** 				lcd_puts_xTam( 10, 120, BLACK, str, 2);
+ 3956              		.loc 1 231 0
+ 3957 0b4c 0230A0E3 		mov	r3, #2
+ 3958 0b50 00308DE5 		str	r3, [sp, #0]
+ 3959 0b54 0A00A0E3 		mov	r0, #10
+ 3960 0b58 7810A0E3 		mov	r1, #120
+ 3961 0b5c 0F20A0E3 		mov	r2, #15
+ 3962 0b60 2C301BE5 		ldr	r3, [fp, #-44]
+ 3963 0b64 FEFFFFEB 		bl	lcd_puts_xTam
+ 232:../proyecto.c **** 				iis_textToSpeech( str );
+ 3964              		.loc 1 232 0
+ 3965 0b68 2C001BE5 		ldr	r0, [fp, #-44]
+ 3966 0b6c FEFFFFEB 		bl	iis_textToSpeech
+ 233:../proyecto.c **** 				str = "2. Poner hora";
+ 3967              		.loc 1 233 0
+ 3968 0b70 483C9FE5 		ldr	r3, .L191+20
+ 3969 0b74 2C300BE5 		str	r3, [fp, #-44]
+ 234:../proyecto.c **** 				lcd_puts_xTam( 10, 160, BLACK, str, 2);
+ 3970              		.loc 1 234 0
+ 3971 0b78 0230A0E3 		mov	r3, #2
+ 3972 0b7c 00308DE5 		str	r3, [sp, #0]
+ 3973 0b80 0A00A0E3 		mov	r0, #10
+ 3974 0b84 A010A0E3 		mov	r1, #160
+ 3975 0b88 0F20A0E3 		mov	r2, #15
+ 3976 0b8c 2C301BE5 		ldr	r3, [fp, #-44]
+ 3977 0b90 FEFFFFEB 		bl	lcd_puts_xTam
+ 235:../proyecto.c **** 				iis_textToSpeech( str );
+ 3978              		.loc 1 235 0
+ 3979 0b94 2C001BE5 		ldr	r0, [fp, #-44]
+ 3980 0b98 FEFFFFEB 		bl	iis_textToSpeech
+ 236:../proyecto.c **** 				break;
+ 3981              		.loc 1 236 0
+ 3982 0b9c BE0600EA 		b	.L57
+ 3983              	.L68:
+ 237:../proyecto.c **** 			case 0xf: //Entrar modo reloj, activar/desactivar alarma y fijar hora
+ 238:../proyecto.c **** 				menu = calculadora = op1 = op2 = contOp1 = contOp2 = resul = op = 0;
+ 3984              		.loc 1 238 0
+ 3985 0ba0 803C9FE5 		ldr	r3, .L191+124
+ 3986 0ba4 0020A0E3 		mov	r2, #0
+ 3987 0ba8 0020C3E5 		strb	r2, [r3, #0]
+ 3988 0bac 743C9FE5 		ldr	r3, .L191+124
+ 3989 0bb0 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 3990 0bb4 8C3C9FE5 		ldr	r3, .L191+156
+ 3991 0bb8 0020C3E5 		strb	r2, [r3, #0]
+ 3992 0bbc 843C9FE5 		ldr	r3, .L191+156
+ 3993 0bc0 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 3994 0bc4 603C9FE5 		ldr	r3, .L191+128
+ 3995 0bc8 0020C3E5 		strb	r2, [r3, #0]
+ 3996 0bcc 583C9FE5 		ldr	r3, .L191+128
+ 3997 0bd0 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 3998 0bd4 403C9FE5 		ldr	r3, .L191+112
+ 3999 0bd8 0020C3E5 		strb	r2, [r3, #0]
+ 4000 0bdc 383C9FE5 		ldr	r3, .L191+112
+ 4001 0be0 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 4002 0be4 543C9FE5 		ldr	r3, .L191+148
+ 4003 0be8 0020C3E5 		strb	r2, [r3, #0]
+ 4004 0bec 4C3C9FE5 		ldr	r3, .L191+148
+ 4005 0bf0 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 4006 0bf4 403C9FE5 		ldr	r3, .L191+144
+ 4007 0bf8 0020C3E5 		strb	r2, [r3, #0]
+ 4008 0bfc 383C9FE5 		ldr	r3, .L191+144
+ 4009 0c00 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4010 0c04 FF2003E2 		and	r2, r3, #255
+ 4011 0c08 403C9FE5 		ldr	r3, .L191+164
+ 4012 0c0c 0020C3E5 		strb	r2, [r3, #0]
+ 4013 0c10 383C9FE5 		ldr	r3, .L191+164
+ 4014 0c14 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 4015 0c18 903B9FE5 		ldr	r3, .L191+4
+ 4016 0c1c 0020C3E5 		strb	r2, [r3, #0]
+ 239:../proyecto.c **** 				if(ponerHora){
+ 4017              		.loc 1 239 0
+ 4018 0c20 C83B9FE5 		ldr	r3, .L191+68
+ 4019 0c24 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4020 0c28 000053E3 		cmp	r3, #0
+ 4021 0c2c 0800000A 		beq	.L70
+ 240:../proyecto.c **** 					iis_textToSpeech( "Hora fijada" );
+ 4022              		.loc 1 240 0
+ 4023 0c30 8C0B9FE5 		ldr	r0, .L191+24
+ 4024 0c34 FEFFFFEB 		bl	iis_textToSpeech
+ 241:../proyecto.c **** 					horaFijada = 1;
+ 4025              		.loc 1 241 0
+ 4026 0c38 883B9FE5 		ldr	r3, .L191+28
+ 4027 0c3c 0120A0E3 		mov	r2, #1
+ 4028 0c40 0020C3E5 		strb	r2, [r3, #0]
+ 242:../proyecto.c **** 					ponerHora = 0;
+ 4029              		.loc 1 242 0
+ 4030 0c44 A43B9FE5 		ldr	r3, .L191+68
+ 4031 0c48 0020A0E3 		mov	r2, #0
+ 4032 0c4c 0020C3E5 		strb	r2, [r3, #0]
+ 4033 0c50 150000EA 		b	.L71
+ 4034              	.L70:
+ 243:../proyecto.c **** 				}
+ 244:../proyecto.c **** 				else {
+ 245:../proyecto.c **** 					if(!activarAlarma || alarma) {
+ 4035              		.loc 1 245 0
+ 4036 0c54 703B9FE5 		ldr	r3, .L191+32
+ 4037 0c58 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4038 0c5c 000053E3 		cmp	r3, #0
+ 4039 0c60 0300000A 		beq	.L72
+ 4040              		.loc 1 245 0 is_stmt 0 discriminator 1
+ 4041 0c64 903B9FE5 		ldr	r3, .L191+80
+ 4042 0c68 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4043 0c6c 000053E3 		cmp	r3, #0
+ 4044 0c70 0500000A 		beq	.L73
+ 4045              	.L72:
+ 246:../proyecto.c **** 						activarAlarma = 1;
+ 4046              		.loc 1 246 0 is_stmt 1
+ 4047 0c74 503B9FE5 		ldr	r3, .L191+32
+ 4048 0c78 0120A0E3 		mov	r2, #1
+ 4049 0c7c 0020C3E5 		strb	r2, [r3, #0]
+ 247:../proyecto.c **** 						iis_textToSpeech( "Alarma activada" );
+ 4050              		.loc 1 247 0
+ 4051 0c80 480B9FE5 		ldr	r0, .L191+36
+ 4052 0c84 FEFFFFEB 		bl	iis_textToSpeech
+ 4053 0c88 040000EA 		b	.L74
+ 4054              	.L73:
+ 248:../proyecto.c **** 					}
+ 249:../proyecto.c **** 					else {
+ 250:../proyecto.c **** 						activarAlarma = 0;
+ 4055              		.loc 1 250 0
+ 4056 0c8c 383B9FE5 		ldr	r3, .L191+32
+ 4057 0c90 0020A0E3 		mov	r2, #0
+ 4058 0c94 0020C3E5 		strb	r2, [r3, #0]
+ 251:../proyecto.c **** 						iis_textToSpeech( "Alarma desactivada" );
+ 4059              		.loc 1 251 0
+ 4060 0c98 340B9FE5 		ldr	r0, .L191+40
+ 4061 0c9c FEFFFFEB 		bl	iis_textToSpeech
+ 4062              	.L74:
+ 252:../proyecto.c **** 					}
+ 253:../proyecto.c **** 					alarma = 0;
+ 4063              		.loc 1 253 0
+ 4064 0ca0 543B9FE5 		ldr	r3, .L191+80
+ 4065 0ca4 0020A0E3 		mov	r2, #0
+ 4066 0ca8 0020C3E5 		strb	r2, [r3, #0]
+ 4067              	.L71:
+ 254:../proyecto.c **** 				}
+ 255:../proyecto.c **** 
+ 256:../proyecto.c **** 				lcd_clear();
+ 4068              		.loc 1 256 0
+ 4069 0cac FEFFFFEB 		bl	lcd_clear
+ 257:../proyecto.c **** 				lcd_puts_xTam( 126, 72,BLACK, ":", 5);
+ 4070              		.loc 1 257 0
+ 4071 0cb0 0530A0E3 		mov	r3, #5
+ 4072 0cb4 00308DE5 		str	r3, [sp, #0]
+ 4073 0cb8 7E00A0E3 		mov	r0, #126
+ 4074 0cbc 4810A0E3 		mov	r1, #72
+ 4075 0cc0 0F20A0E3 		mov	r2, #15
+ 4076 0cc4 283B9FE5 		ldr	r3, .L191+72
+ 4077 0cc8 FEFFFFEB 		bl	lcd_puts_xTam
+ 258:../proyecto.c **** 				break;
+ 4078              		.loc 1 258 0
+ 4079 0ccc 720600EA 		b	.L57
+ 4080              	.L58:
+ 259:../proyecto.c **** 			case 0x0: //Entrar opcion calculadora, Hora en fijar hora, numero 0 en alarma y calculadora
+ 260:../proyecto.c **** 				if(menu){
+ 4081              		.loc 1 260 0
+ 4082 0cd0 D83A9FE5 		ldr	r3, .L191+4
+ 4083 0cd4 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4084 0cd8 000053E3 		cmp	r3, #0
+ 4085 0cdc 3706000A 		beq	.L163
+ 261:../proyecto.c **** 					if(alarma){
+ 4086              		.loc 1 261 0
+ 4087 0ce0 143B9FE5 		ldr	r3, .L191+80
+ 4088 0ce4 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4089 0ce8 000053E3 		cmp	r3, #0
+ 4090 0cec 5900000A 		beq	.L76
+ 262:../proyecto.c **** 						if(contH < 2) {
+ 4091              		.loc 1 262 0
+ 4092 0cf0 0C3B9FE5 		ldr	r3, .L191+88
+ 4093 0cf4 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4094 0cf8 010053E3 		cmp	r3, #1
+ 4095 0cfc 2600008A 		bhi	.L77
+ 263:../proyecto.c **** 							if(contH == 0) h = 0;
+ 4096              		.loc 1 263 0
+ 4097 0d00 FC3A9FE5 		ldr	r3, .L191+88
+ 4098 0d04 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4099 0d08 000053E3 		cmp	r3, #0
+ 4100 0d0c 0200001A 		bne	.L78
+ 4101              		.loc 1 263 0 is_stmt 0 discriminator 1
+ 4102 0d10 E83A9FE5 		ldr	r3, .L191+84
+ 4103 0d14 0020A0E3 		mov	r2, #0
+ 4104 0d18 0020C3E5 		strb	r2, [r3, #0]
+ 4105              	.L78:
+ 264:../proyecto.c **** 							iis_textToSpeech( "0" );
+ 4106              		.loc 1 264 0 is_stmt 1
+ 4107 0d1c B40A9FE5 		ldr	r0, .L191+44
+ 4108 0d20 FEFFFFEB 		bl	iis_textToSpeech
+ 265:../proyecto.c **** 							contH++;
+ 4109              		.loc 1 265 0
+ 4110 0d24 D83A9FE5 		ldr	r3, .L191+88
+ 4111 0d28 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4112 0d2c 013083E2 		add	r3, r3, #1
+ 4113 0d30 FF2003E2 		and	r2, r3, #255
+ 4114 0d34 C83A9FE5 		ldr	r3, .L191+88
+ 4115 0d38 0020C3E5 		strb	r2, [r3, #0]
+ 266:../proyecto.c **** 							hmp=intToStr(h, 'h');
+ 4116              		.loc 1 266 0
+ 4117 0d3c BC3A9FE5 		ldr	r3, .L191+84
+ 4118 0d40 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4119 0d44 0300A0E1 		mov	r0, r3
+ 4120 0d48 6810A0E3 		mov	r1, #104
+ 4121 0d4c FEFFFFEB 		bl	intToStr
+ 4122 0d50 20000BE5 		str	r0, [fp, #-32]
+ 267:../proyecto.c **** 							if(h < 10) {*hmp--; *hmp = '0'+(uint8)0;}
+ 4123              		.loc 1 267 0
+ 4124 0d54 A43A9FE5 		ldr	r3, .L191+84
+ 4125 0d58 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4126 0d5c 090053E3 		cmp	r3, #9
+ 4127 0d60 0500008A 		bhi	.L79
+ 4128              		.loc 1 267 0 is_stmt 0 discriminator 1
+ 4129 0d64 20301BE5 		ldr	r3, [fp, #-32]
+ 4130 0d68 013043E2 		sub	r3, r3, #1
+ 4131 0d6c 20300BE5 		str	r3, [fp, #-32]
+ 4132 0d70 20301BE5 		ldr	r3, [fp, #-32]
+ 4133 0d74 3020A0E3 		mov	r2, #48
+ 4134 0d78 0020C3E5 		strb	r2, [r3, #0]
+ 4135              	.L79:
+ 268:../proyecto.c **** 							lcd_puts_xTam( 44, 60, BLACK, hmp, 6);
+ 4136              		.loc 1 268 0 is_stmt 1
+ 4137 0d7c 0630A0E3 		mov	r3, #6
+ 4138 0d80 00308DE5 		str	r3, [sp, #0]
+ 4139 0d84 2C00A0E3 		mov	r0, #44
+ 4140 0d88 3C10A0E3 		mov	r1, #60
+ 4141 0d8c 0F20A0E3 		mov	r2, #15
+ 4142 0d90 20301BE5 		ldr	r3, [fp, #-32]
+ 4143 0d94 FEFFFFEB 		bl	lcd_puts_xTam
+ 269:../proyecto.c **** 						}
+ 270:../proyecto.c **** 						else if(contH == 2 && contM < 2) {
+ 271:../proyecto.c **** 							if(contM == 0) m = 0;
+ 272:../proyecto.c **** 							iis_textToSpeech( "0" );
+ 273:../proyecto.c **** 							contM++;
+ 274:../proyecto.c **** 							hmpp=intToStr(m, 'm');
+ 275:../proyecto.c **** 							if(m < 10) {*hmpp--; *hmpp = '0'+(uint8)0;}
+ 276:../proyecto.c **** 							lcd_puts_xTam( 161, 60, BLACK, hmpp, 6);
+ 277:../proyecto.c **** 						}
+ 278:../proyecto.c **** 					}
+ 279:../proyecto.c **** 					else if(calculadora){
+ 280:../proyecto.c **** 						if(contOp1 < 2 && op1 > 0){
+ 281:../proyecto.c **** 							op1 *= 10;
+ 282:../proyecto.c **** 							contOp1++;
+ 283:../proyecto.c **** 
+ 284:../proyecto.c **** 							iis_textToSpeech( "0" );
+ 285:../proyecto.c **** 							cOp1=intToStrC(op1);
+ 286:../proyecto.c **** 							lcd_puts_xTam( 44, 72, BLACK, cOp1, 4);
+ 287:../proyecto.c **** 						}
+ 288:../proyecto.c **** 						else if(op == 1 && op2 > 0){
+ 289:../proyecto.c **** 							op2 *= 10;
+ 290:../proyecto.c **** 							contOp2++;
+ 291:../proyecto.c **** 
+ 292:../proyecto.c **** 							iis_textToSpeech( "0" );
+ 293:../proyecto.c **** 							cOp2=intToStrC(op2);
+ 294:../proyecto.c **** 							lcd_puts_xTam( 171, 72, BLACK, cOp2, 4);
+ 295:../proyecto.c **** 						}
+ 296:../proyecto.c **** 					}
+ 297:../proyecto.c **** 					else if(ponerHora){
+ 298:../proyecto.c **** 						contH++;
+ 299:../proyecto.c **** 						if(contH == 24) contH = 0;
+ 300:../proyecto.c **** 						hmp=intToStr(contH, 'h');
+ 301:../proyecto.c **** 						if(contH < 10) {*hmp--; *hmp = '0'+(uint8)0;}
+ 302:../proyecto.c **** 						lcd_puts_xTam( 44, 60, BLACK, hmp, 6);
+ 303:../proyecto.c **** 					}
+ 304:../proyecto.c **** 					else{
+ 305:../proyecto.c **** 						op1 = op2 = contOp1 = contOp2 = resul = op = 0;
+ 306:../proyecto.c **** 						calculadora = 1;
+ 307:../proyecto.c **** 						lcd_clear();
+ 308:../proyecto.c **** 						str = "Calculadora.";
+ 309:../proyecto.c **** 						lcd_puts_xTam( 10, 20, BLACK, str, 2);
+ 310:../proyecto.c **** 						iis_textToSpeech( "Introduzca operandos" );
+ 311:../proyecto.c **** 					}
+ 312:../proyecto.c **** 				}
+ 313:../proyecto.c **** 				break;
+ 4144              		.loc 1 313 0
+ 4145 0d98 3F0600EA 		b	.L57
+ 4146              	.L77:
+ 270:../proyecto.c **** 						else if(contH == 2 && contM < 2) {
+ 4147              		.loc 1 270 0
+ 4148 0d9c 603A9FE5 		ldr	r3, .L191+88
+ 4149 0da0 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4150 0da4 020053E3 		cmp	r3, #2
+ 4151 0da8 0606001A 		bne	.L164
+ 270:../proyecto.c **** 						else if(contH == 2 && contM < 2) {
+ 4152              		.loc 1 270 0 is_stmt 0 discriminator 1
+ 4153 0dac 543A9FE5 		ldr	r3, .L191+92
+ 4154 0db0 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4155 0db4 010053E3 		cmp	r3, #1
+ 4156 0db8 0406008A 		bhi	.L165
+ 271:../proyecto.c **** 							if(contM == 0) m = 0;
+ 4157              		.loc 1 271 0 is_stmt 1
+ 4158 0dbc 443A9FE5 		ldr	r3, .L191+92
+ 4159 0dc0 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4160 0dc4 000053E3 		cmp	r3, #0
+ 4161 0dc8 0200001A 		bne	.L80
+ 271:../proyecto.c **** 							if(contM == 0) m = 0;
+ 4162              		.loc 1 271 0 is_stmt 0 discriminator 1
+ 4163 0dcc 383A9FE5 		ldr	r3, .L191+96
+ 4164 0dd0 0020A0E3 		mov	r2, #0
+ 4165 0dd4 0020C3E5 		strb	r2, [r3, #0]
+ 4166              	.L80:
+ 272:../proyecto.c **** 							iis_textToSpeech( "0" );
+ 4167              		.loc 1 272 0 is_stmt 1
+ 4168 0dd8 F8099FE5 		ldr	r0, .L191+44
+ 4169 0ddc FEFFFFEB 		bl	iis_textToSpeech
+ 273:../proyecto.c **** 							contM++;
+ 4170              		.loc 1 273 0
+ 4171 0de0 203A9FE5 		ldr	r3, .L191+92
+ 4172 0de4 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4173 0de8 013083E2 		add	r3, r3, #1
+ 4174 0dec FF2003E2 		and	r2, r3, #255
+ 4175 0df0 103A9FE5 		ldr	r3, .L191+92
+ 4176 0df4 0020C3E5 		strb	r2, [r3, #0]
+ 274:../proyecto.c **** 							hmpp=intToStr(m, 'm');
+ 4177              		.loc 1 274 0
+ 4178 0df8 0C3A9FE5 		ldr	r3, .L191+96
+ 4179 0dfc 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4180 0e00 0300A0E1 		mov	r0, r3
+ 4181 0e04 6D10A0E3 		mov	r1, #109
+ 4182 0e08 FEFFFFEB 		bl	intToStr
+ 4183 0e0c 24000BE5 		str	r0, [fp, #-36]
+ 275:../proyecto.c **** 							if(m < 10) {*hmpp--; *hmpp = '0'+(uint8)0;}
+ 4184              		.loc 1 275 0
+ 4185 0e10 F4399FE5 		ldr	r3, .L191+96
+ 4186 0e14 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4187 0e18 090053E3 		cmp	r3, #9
+ 4188 0e1c 0500008A 		bhi	.L81
+ 275:../proyecto.c **** 							if(m < 10) {*hmpp--; *hmpp = '0'+(uint8)0;}
+ 4189              		.loc 1 275 0 is_stmt 0 discriminator 1
+ 4190 0e20 24301BE5 		ldr	r3, [fp, #-36]
+ 4191 0e24 013043E2 		sub	r3, r3, #1
+ 4192 0e28 24300BE5 		str	r3, [fp, #-36]
+ 4193 0e2c 24301BE5 		ldr	r3, [fp, #-36]
+ 4194 0e30 3020A0E3 		mov	r2, #48
+ 4195 0e34 0020C3E5 		strb	r2, [r3, #0]
+ 4196              	.L81:
+ 276:../proyecto.c **** 							lcd_puts_xTam( 161, 60, BLACK, hmpp, 6);
+ 4197              		.loc 1 276 0 is_stmt 1
+ 4198 0e38 0630A0E3 		mov	r3, #6
+ 4199 0e3c 00308DE5 		str	r3, [sp, #0]
+ 4200 0e40 A100A0E3 		mov	r0, #161
+ 4201 0e44 3C10A0E3 		mov	r1, #60
+ 4202 0e48 0F20A0E3 		mov	r2, #15
+ 4203 0e4c 24301BE5 		ldr	r3, [fp, #-36]
+ 4204 0e50 FEFFFFEB 		bl	lcd_puts_xTam
+ 4205              		.loc 1 313 0
+ 4206 0e54 100600EA 		b	.L57
+ 4207              	.L76:
+ 279:../proyecto.c **** 					else if(calculadora){
+ 4208              		.loc 1 279 0
+ 4209 0e58 F0399FE5 		ldr	r3, .L191+164
+ 4210 0e5c 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4211 0e60 000053E3 		cmp	r3, #0
+ 4212 0e64 5B00000A 		beq	.L82
+ 280:../proyecto.c **** 						if(contOp1 < 2 && op1 > 0){
+ 4213              		.loc 1 280 0
+ 4214 0e68 AC399FE5 		ldr	r3, .L191+112
+ 4215 0e6c 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4216 0e70 033CA0E1 		mov	r3, r3, asl #24
+ 4217 0e74 433CA0E1 		mov	r3, r3, asr #24
+ 4218 0e78 010053E3 		cmp	r3, #1
+ 4219 0e7c 270000CA 		bgt	.L83
+ 280:../proyecto.c **** 						if(contOp1 < 2 && op1 > 0){
+ 4220              		.loc 1 280 0 is_stmt 0 discriminator 1
+ 4221 0e80 B4399FE5 		ldr	r3, .L191+144
+ 4222 0e84 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4223 0e88 033CA0E1 		mov	r3, r3, asl #24
+ 4224 0e8c 433CA0E1 		mov	r3, r3, asr #24
+ 4225 0e90 000053E3 		cmp	r3, #0
+ 4226 0e94 210000DA 		ble	.L83
+ 281:../proyecto.c **** 							op1 *= 10;
+ 4227              		.loc 1 281 0 is_stmt 1
+ 4228 0e98 9C399FE5 		ldr	r3, .L191+144
+ 4229 0e9c 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4230 0ea0 FF3003E2 		and	r3, r3, #255
+ 4231 0ea4 0320A0E1 		mov	r2, r3
+ 4232 0ea8 0221A0E1 		mov	r2, r2, asl #2
+ 4233 0eac 033082E0 		add	r3, r2, r3
+ 4234 0eb0 8330A0E1 		mov	r3, r3, asl #1
+ 4235 0eb4 FF3003E2 		and	r3, r3, #255
+ 4236 0eb8 FF2003E2 		and	r2, r3, #255
+ 4237 0ebc 78399FE5 		ldr	r3, .L191+144
+ 4238 0ec0 0020C3E5 		strb	r2, [r3, #0]
+ 282:../proyecto.c **** 							contOp1++;
+ 4239              		.loc 1 282 0
+ 4240 0ec4 50399FE5 		ldr	r3, .L191+112
+ 4241 0ec8 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4242 0ecc 013083E2 		add	r3, r3, #1
+ 4243 0ed0 FF2003E2 		and	r2, r3, #255
+ 4244 0ed4 40399FE5 		ldr	r3, .L191+112
+ 4245 0ed8 0020C3E5 		strb	r2, [r3, #0]
+ 284:../proyecto.c **** 							iis_textToSpeech( "0" );
+ 4246              		.loc 1 284 0
+ 4247 0edc F4089FE5 		ldr	r0, .L191+44
+ 4248 0ee0 FEFFFFEB 		bl	iis_textToSpeech
+ 285:../proyecto.c **** 							cOp1=intToStrC(op1);
+ 4249              		.loc 1 285 0
+ 4250 0ee4 50399FE5 		ldr	r3, .L191+144
+ 4251 0ee8 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4252 0eec 033CA0E1 		mov	r3, r3, asl #24
+ 4253 0ef0 433CA0E1 		mov	r3, r3, asr #24
+ 4254 0ef4 0300A0E1 		mov	r0, r3
+ 4255 0ef8 FEFFFFEB 		bl	intToStrC
+ 4256 0efc 30000BE5 		str	r0, [fp, #-48]
+ 286:../proyecto.c **** 							lcd_puts_xTam( 44, 72, BLACK, cOp1, 4);
+ 4257              		.loc 1 286 0
+ 4258 0f00 0430A0E3 		mov	r3, #4
+ 4259 0f04 00308DE5 		str	r3, [sp, #0]
+ 4260 0f08 2C00A0E3 		mov	r0, #44
+ 4261 0f0c 4810A0E3 		mov	r1, #72
+ 4262 0f10 0F20A0E3 		mov	r2, #15
+ 4263 0f14 30301BE5 		ldr	r3, [fp, #-48]
+ 4264 0f18 FEFFFFEB 		bl	lcd_puts_xTam
+ 4265              		.loc 1 313 0
+ 4266 0f1c DE0500EA 		b	.L57
+ 4267              	.L83:
+ 288:../proyecto.c **** 						else if(op == 1 && op2 > 0){
+ 4268              		.loc 1 288 0
+ 4269 0f20 00399FE5 		ldr	r3, .L191+124
+ 4270 0f24 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4271 0f28 033CA0E1 		mov	r3, r3, asl #24
+ 4272 0f2c 433CA0E1 		mov	r3, r3, asr #24
+ 4273 0f30 010053E3 		cmp	r3, #1
+ 4274 0f34 A705001A 		bne	.L166
+ 288:../proyecto.c **** 						else if(op == 1 && op2 > 0){
+ 4275              		.loc 1 288 0 is_stmt 0 discriminator 1
+ 4276 0f38 00399FE5 		ldr	r3, .L191+148
+ 4277 0f3c 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4278 0f40 033CA0E1 		mov	r3, r3, asl #24
+ 4279 0f44 433CA0E1 		mov	r3, r3, asr #24
+ 4280 0f48 000053E3 		cmp	r3, #0
+ 4281 0f4c A30500DA 		ble	.L167
+ 289:../proyecto.c **** 							op2 *= 10;
+ 4282              		.loc 1 289 0 is_stmt 1
+ 4283 0f50 E8389FE5 		ldr	r3, .L191+148
+ 4284 0f54 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4285 0f58 FF3003E2 		and	r3, r3, #255
+ 4286 0f5c 0320A0E1 		mov	r2, r3
+ 4287 0f60 0221A0E1 		mov	r2, r2, asl #2
+ 4288 0f64 033082E0 		add	r3, r2, r3
+ 4289 0f68 8330A0E1 		mov	r3, r3, asl #1
+ 4290 0f6c FF3003E2 		and	r3, r3, #255
+ 4291 0f70 FF2003E2 		and	r2, r3, #255
+ 4292 0f74 C4389FE5 		ldr	r3, .L191+148
+ 4293 0f78 0020C3E5 		strb	r2, [r3, #0]
+ 290:../proyecto.c **** 							contOp2++;
+ 4294              		.loc 1 290 0
+ 4295 0f7c A8389FE5 		ldr	r3, .L191+128
+ 4296 0f80 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4297 0f84 013083E2 		add	r3, r3, #1
+ 4298 0f88 FF2003E2 		and	r2, r3, #255
+ 4299 0f8c 98389FE5 		ldr	r3, .L191+128
+ 4300 0f90 0020C3E5 		strb	r2, [r3, #0]
+ 292:../proyecto.c **** 							iis_textToSpeech( "0" );
+ 4301              		.loc 1 292 0
+ 4302 0f94 3C089FE5 		ldr	r0, .L191+44
+ 4303 0f98 FEFFFFEB 		bl	iis_textToSpeech
+ 293:../proyecto.c **** 							cOp2=intToStrC(op2);
+ 4304              		.loc 1 293 0
+ 4305 0f9c 9C389FE5 		ldr	r3, .L191+148
+ 4306 0fa0 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4307 0fa4 033CA0E1 		mov	r3, r3, asl #24
+ 4308 0fa8 433CA0E1 		mov	r3, r3, asr #24
+ 4309 0fac 0300A0E1 		mov	r0, r3
+ 4310 0fb0 FEFFFFEB 		bl	intToStrC
+ 4311 0fb4 34000BE5 		str	r0, [fp, #-52]
+ 294:../proyecto.c **** 							lcd_puts_xTam( 171, 72, BLACK, cOp2, 4);
+ 4312              		.loc 1 294 0
+ 4313 0fb8 0430A0E3 		mov	r3, #4
+ 4314 0fbc 00308DE5 		str	r3, [sp, #0]
+ 4315 0fc0 AB00A0E3 		mov	r0, #171
+ 4316 0fc4 4810A0E3 		mov	r1, #72
+ 4317 0fc8 0F20A0E3 		mov	r2, #15
+ 4318 0fcc 34301BE5 		ldr	r3, [fp, #-52]
+ 4319 0fd0 FEFFFFEB 		bl	lcd_puts_xTam
+ 4320              		.loc 1 313 0
+ 4321 0fd4 B00500EA 		b	.L57
+ 4322              	.L82:
+ 297:../proyecto.c **** 					else if(ponerHora){
+ 4323              		.loc 1 297 0
+ 4324 0fd8 10389FE5 		ldr	r3, .L191+68
+ 4325 0fdc 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4326 0fe0 000053E3 		cmp	r3, #0
+ 4327 0fe4 2400000A 		beq	.L85
+ 298:../proyecto.c **** 						contH++;
+ 4328              		.loc 1 298 0
+ 4329 0fe8 14389FE5 		ldr	r3, .L191+88
+ 4330 0fec 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4331 0ff0 013083E2 		add	r3, r3, #1
+ 4332 0ff4 FF2003E2 		and	r2, r3, #255
+ 4333 0ff8 04389FE5 		ldr	r3, .L191+88
+ 4334 0ffc 0020C3E5 		strb	r2, [r3, #0]
+ 299:../proyecto.c **** 						if(contH == 24) contH = 0;
+ 4335              		.loc 1 299 0
+ 4336 1000 FC379FE5 		ldr	r3, .L191+88
+ 4337 1004 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4338 1008 180053E3 		cmp	r3, #24
+ 4339 100c 0200001A 		bne	.L86
+ 299:../proyecto.c **** 						if(contH == 24) contH = 0;
+ 4340              		.loc 1 299 0 is_stmt 0 discriminator 1
+ 4341 1010 EC379FE5 		ldr	r3, .L191+88
+ 4342 1014 0020A0E3 		mov	r2, #0
+ 4343 1018 0020C3E5 		strb	r2, [r3, #0]
+ 4344              	.L86:
+ 300:../proyecto.c **** 						hmp=intToStr(contH, 'h');
+ 4345              		.loc 1 300 0 is_stmt 1
+ 4346 101c E0379FE5 		ldr	r3, .L191+88
+ 4347 1020 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4348 1024 0300A0E1 		mov	r0, r3
+ 4349 1028 6810A0E3 		mov	r1, #104
+ 4350 102c FEFFFFEB 		bl	intToStr
+ 4351 1030 20000BE5 		str	r0, [fp, #-32]
+ 301:../proyecto.c **** 						if(contH < 10) {*hmp--; *hmp = '0'+(uint8)0;}
+ 4352              		.loc 1 301 0
+ 4353 1034 C8379FE5 		ldr	r3, .L191+88
+ 4354 1038 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4355 103c 090053E3 		cmp	r3, #9
+ 4356 1040 0500008A 		bhi	.L87
+ 301:../proyecto.c **** 						if(contH < 10) {*hmp--; *hmp = '0'+(uint8)0;}
+ 4357              		.loc 1 301 0 is_stmt 0 discriminator 1
+ 4358 1044 20301BE5 		ldr	r3, [fp, #-32]
+ 4359 1048 013043E2 		sub	r3, r3, #1
+ 4360 104c 20300BE5 		str	r3, [fp, #-32]
+ 4361 1050 20301BE5 		ldr	r3, [fp, #-32]
+ 4362 1054 3020A0E3 		mov	r2, #48
+ 4363 1058 0020C3E5 		strb	r2, [r3, #0]
+ 4364              	.L87:
+ 302:../proyecto.c **** 						lcd_puts_xTam( 44, 60, BLACK, hmp, 6);
+ 4365              		.loc 1 302 0 is_stmt 1
+ 4366 105c 0630A0E3 		mov	r3, #6
+ 4367 1060 00308DE5 		str	r3, [sp, #0]
+ 4368 1064 2C00A0E3 		mov	r0, #44
+ 4369 1068 3C10A0E3 		mov	r1, #60
+ 4370 106c 0F20A0E3 		mov	r2, #15
+ 4371 1070 20301BE5 		ldr	r3, [fp, #-32]
+ 4372 1074 FEFFFFEB 		bl	lcd_puts_xTam
+ 4373              		.loc 1 313 0
+ 4374 1078 870500EA 		b	.L57
+ 4375              	.L85:
+ 305:../proyecto.c **** 						op1 = op2 = contOp1 = contOp2 = resul = op = 0;
+ 4376              		.loc 1 305 0
+ 4377 107c A4379FE5 		ldr	r3, .L191+124
+ 4378 1080 0020A0E3 		mov	r2, #0
+ 4379 1084 0020C3E5 		strb	r2, [r3, #0]
+ 4380 1088 98379FE5 		ldr	r3, .L191+124
+ 4381 108c 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 4382 1090 B0379FE5 		ldr	r3, .L191+156
+ 4383 1094 0020C3E5 		strb	r2, [r3, #0]
+ 4384 1098 A8379FE5 		ldr	r3, .L191+156
+ 4385 109c 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 4386 10a0 84379FE5 		ldr	r3, .L191+128
+ 4387 10a4 0020C3E5 		strb	r2, [r3, #0]
+ 4388 10a8 7C379FE5 		ldr	r3, .L191+128
+ 4389 10ac 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 4390 10b0 64379FE5 		ldr	r3, .L191+112
+ 4391 10b4 0020C3E5 		strb	r2, [r3, #0]
+ 4392 10b8 5C379FE5 		ldr	r3, .L191+112
+ 4393 10bc 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 4394 10c0 78379FE5 		ldr	r3, .L191+148
+ 4395 10c4 0020C3E5 		strb	r2, [r3, #0]
+ 4396 10c8 70379FE5 		ldr	r3, .L191+148
+ 4397 10cc 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 4398 10d0 64379FE5 		ldr	r3, .L191+144
+ 4399 10d4 0020C3E5 		strb	r2, [r3, #0]
+ 306:../proyecto.c **** 						calculadora = 1;
+ 4400              		.loc 1 306 0
+ 4401 10d8 70379FE5 		ldr	r3, .L191+164
+ 4402 10dc 0120A0E3 		mov	r2, #1
+ 4403 10e0 0020C3E5 		strb	r2, [r3, #0]
+ 307:../proyecto.c **** 						lcd_clear();
+ 4404              		.loc 1 307 0
+ 4405 10e4 FEFFFFEB 		bl	lcd_clear
+ 308:../proyecto.c **** 						str = "Calculadora.";
+ 4406              		.loc 1 308 0
+ 4407 10e8 EC369FE5 		ldr	r3, .L191+48
+ 4408 10ec 2C300BE5 		str	r3, [fp, #-44]
+ 309:../proyecto.c **** 						lcd_puts_xTam( 10, 20, BLACK, str, 2);
+ 4409              		.loc 1 309 0
+ 4410 10f0 0230A0E3 		mov	r3, #2
+ 4411 10f4 00308DE5 		str	r3, [sp, #0]
+ 4412 10f8 0A00A0E3 		mov	r0, #10
+ 4413 10fc 1410A0E3 		mov	r1, #20
+ 4414 1100 0F20A0E3 		mov	r2, #15
+ 4415 1104 2C301BE5 		ldr	r3, [fp, #-44]
+ 4416 1108 FEFFFFEB 		bl	lcd_puts_xTam
+ 310:../proyecto.c **** 						iis_textToSpeech( "Introduzca operandos" );
+ 4417              		.loc 1 310 0
+ 4418 110c CC069FE5 		ldr	r0, .L191+52
+ 4419 1110 FEFFFFEB 		bl	iis_textToSpeech
+ 4420              		.loc 1 313 0
+ 4421 1114 600500EA 		b	.L57
+ 4422              	.L59:
+ 314:../proyecto.c **** 			case 0x1: //Entrar opcion alarma, Minutos en fijar hora, numero 1 en alarma y calculadora
+ 315:../proyecto.c **** 				if(menu){
+ 4423              		.loc 1 315 0
+ 4424 1118 90369FE5 		ldr	r3, .L191+4
+ 4425 111c 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4426 1120 000053E3 		cmp	r3, #0
+ 4427 1124 2F05000A 		beq	.L168
+ 316:../proyecto.c **** 					if(alarma){
+ 4428              		.loc 1 316 0
+ 4429 1128 CC369FE5 		ldr	r3, .L191+80
+ 4430 112c 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4431 1130 000053E3 		cmp	r3, #0
+ 4432 1134 6700000A 		beq	.L89
+ 317:../proyecto.c **** 						if(contH < 2) {
+ 4433              		.loc 1 317 0
+ 4434 1138 C4369FE5 		ldr	r3, .L191+88
+ 4435 113c 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4436 1140 010053E3 		cmp	r3, #1
+ 4437 1144 2D00008A 		bhi	.L90
+ 318:../proyecto.c **** 							if(contH == 0) h = 10;
+ 4438              		.loc 1 318 0
+ 4439 1148 B4369FE5 		ldr	r3, .L191+88
+ 4440 114c 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4441 1150 000053E3 		cmp	r3, #0
+ 4442 1154 0300001A 		bne	.L91
+ 4443              		.loc 1 318 0 is_stmt 0 discriminator 1
+ 4444 1158 A0369FE5 		ldr	r3, .L191+84
+ 4445 115c 0A20A0E3 		mov	r2, #10
+ 4446 1160 0020C3E5 		strb	r2, [r3, #0]
+ 4447 1164 050000EA 		b	.L92
+ 4448              	.L91:
+ 319:../proyecto.c **** 							else h += 1;
+ 4449              		.loc 1 319 0 is_stmt 1
+ 4450 1168 90369FE5 		ldr	r3, .L191+84
+ 4451 116c 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4452 1170 013083E2 		add	r3, r3, #1
+ 4453 1174 FF2003E2 		and	r2, r3, #255
+ 4454 1178 80369FE5 		ldr	r3, .L191+84
+ 4455 117c 0020C3E5 		strb	r2, [r3, #0]
+ 4456              	.L92:
+ 320:../proyecto.c **** 							iis_textToSpeech( "1" );
+ 4457              		.loc 1 320 0
+ 4458 1180 5C069FE5 		ldr	r0, .L191+56
+ 4459 1184 FEFFFFEB 		bl	iis_textToSpeech
+ 321:../proyecto.c **** 							contH++;
+ 4460              		.loc 1 321 0
+ 4461 1188 74369FE5 		ldr	r3, .L191+88
+ 4462 118c 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4463 1190 013083E2 		add	r3, r3, #1
+ 4464 1194 FF2003E2 		and	r2, r3, #255
+ 4465 1198 64369FE5 		ldr	r3, .L191+88
+ 4466 119c 0020C3E5 		strb	r2, [r3, #0]
+ 322:../proyecto.c **** 							hmp=intToStr(h, 'h');
+ 4467              		.loc 1 322 0
+ 4468 11a0 58369FE5 		ldr	r3, .L191+84
+ 4469 11a4 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4470 11a8 0300A0E1 		mov	r0, r3
+ 4471 11ac 6810A0E3 		mov	r1, #104
+ 4472 11b0 FEFFFFEB 		bl	intToStr
+ 4473 11b4 20000BE5 		str	r0, [fp, #-32]
+ 323:../proyecto.c **** 							if(h < 10) {*hmp--; *hmp = '0'+(uint8)0;}
+ 4474              		.loc 1 323 0
+ 4475 11b8 40369FE5 		ldr	r3, .L191+84
+ 4476 11bc 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4477 11c0 090053E3 		cmp	r3, #9
+ 4478 11c4 0500008A 		bhi	.L93
+ 4479              		.loc 1 323 0 is_stmt 0 discriminator 1
+ 4480 11c8 20301BE5 		ldr	r3, [fp, #-32]
+ 4481 11cc 013043E2 		sub	r3, r3, #1
+ 4482 11d0 20300BE5 		str	r3, [fp, #-32]
+ 4483 11d4 20301BE5 		ldr	r3, [fp, #-32]
+ 4484 11d8 3020A0E3 		mov	r2, #48
+ 4485 11dc 0020C3E5 		strb	r2, [r3, #0]
+ 4486              	.L93:
+ 324:../proyecto.c **** 							lcd_puts_xTam( 44, 60, BLACK, hmp, 6);
+ 4487              		.loc 1 324 0 is_stmt 1
+ 4488 11e0 0630A0E3 		mov	r3, #6
+ 4489 11e4 00308DE5 		str	r3, [sp, #0]
+ 4490 11e8 2C00A0E3 		mov	r0, #44
+ 4491 11ec 3C10A0E3 		mov	r1, #60
+ 4492 11f0 0F20A0E3 		mov	r2, #15
+ 4493 11f4 20301BE5 		ldr	r3, [fp, #-32]
+ 4494 11f8 FEFFFFEB 		bl	lcd_puts_xTam
+ 325:../proyecto.c **** 						}
+ 326:../proyecto.c **** 						else if(contH == 2 && contM < 2) {
+ 327:../proyecto.c **** 							if(contM == 0) m = 10;
+ 328:../proyecto.c **** 							else m += 1;
+ 329:../proyecto.c **** 							iis_textToSpeech( "1" );
+ 330:../proyecto.c **** 							contM++;
+ 331:../proyecto.c **** 							hmpp=intToStr(m, 'm');
+ 332:../proyecto.c **** 							if(m < 10) {*hmpp--; *hmpp = '0'+(uint8)0;}
+ 333:../proyecto.c **** 							lcd_puts_xTam( 161, 60, BLACK, hmpp, 6);
+ 334:../proyecto.c **** 						}
+ 335:../proyecto.c **** 					}
+ 336:../proyecto.c **** 					else if(calculadora){
+ 337:../proyecto.c **** 						if(contOp1 < 2){
+ 338:../proyecto.c **** 							if(op1 == 0) op1 = 1;
+ 339:../proyecto.c **** 							else op1 = op1 * 10 + 1;
+ 340:../proyecto.c **** 							contOp1++;
+ 341:../proyecto.c **** 
+ 342:../proyecto.c **** 							iis_textToSpeech( "1" );
+ 343:../proyecto.c **** 							cOp1=intToStrC(op1);
+ 344:../proyecto.c **** 							lcd_puts_xTam( 44, 72, BLACK, cOp1, 4);
+ 345:../proyecto.c **** 						}
+ 346:../proyecto.c **** 						else if(op == 1){
+ 347:../proyecto.c **** 							if(op2 == 0) op2 = 1;
+ 348:../proyecto.c **** 							else op2 = op2 * 10 + 1;
+ 349:../proyecto.c **** 							contOp2++;
+ 350:../proyecto.c **** 
+ 351:../proyecto.c **** 							iis_textToSpeech( "1" );
+ 352:../proyecto.c **** 							cOp2=intToStrC(op2);
+ 353:../proyecto.c **** 							lcd_puts_xTam( 171, 72, BLACK, cOp2, 4);
+ 354:../proyecto.c **** 						}
+ 355:../proyecto.c **** 					}
+ 356:../proyecto.c **** 					else if(ponerHora){
+ 357:../proyecto.c **** 						contM++;
+ 358:../proyecto.c **** 						if(contM == 59) contM = 0;
+ 359:../proyecto.c **** 
+ 360:../proyecto.c **** 						hmpp=intToStr(contM, 'm');
+ 361:../proyecto.c **** 						if(contM < 10) {*hmpp--; *hmpp = '0'+(uint8)0;}
+ 362:../proyecto.c **** 						lcd_puts_xTam( 161, 60, BLACK, hmpp, 6);
+ 363:../proyecto.c **** 					}
+ 364:../proyecto.c **** 					else {
+ 365:../proyecto.c **** 						contH = contM = h = m = 0;
+ 366:../proyecto.c **** 						alarma = 1;
+ 367:../proyecto.c **** 						lcd_clear();
+ 368:../proyecto.c **** 						str = "Introduzca alarma";
+ 369:../proyecto.c **** 						lcd_puts_xTam( 10, 20, BLACK, str, 2);
+ 370:../proyecto.c **** 						iis_textToSpeech( str );
+ 371:../proyecto.c **** 						lcd_puts_xTam( 126, 72,BLACK, ":", 5);
+ 372:../proyecto.c **** 					}
+ 373:../proyecto.c **** 				}
+ 374:../proyecto.c **** 				break;
+ 4495              		.loc 1 374 0
+ 4496 11fc 260500EA 		b	.L57
+ 4497              	.L90:
+ 326:../proyecto.c **** 						else if(contH == 2 && contM < 2) {
+ 4498              		.loc 1 326 0
+ 4499 1200 FC359FE5 		ldr	r3, .L191+88
+ 4500 1204 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4501 1208 020053E3 		cmp	r3, #2
+ 4502 120c F704001A 		bne	.L169
+ 326:../proyecto.c **** 						else if(contH == 2 && contM < 2) {
+ 4503              		.loc 1 326 0 is_stmt 0 discriminator 1
+ 4504 1210 F0359FE5 		ldr	r3, .L191+92
+ 4505 1214 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4506 1218 010053E3 		cmp	r3, #1
+ 4507 121c F504008A 		bhi	.L170
+ 327:../proyecto.c **** 							if(contM == 0) m = 10;
+ 4508              		.loc 1 327 0 is_stmt 1
+ 4509 1220 E0359FE5 		ldr	r3, .L191+92
+ 4510 1224 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4511 1228 000053E3 		cmp	r3, #0
+ 4512 122c 0300001A 		bne	.L94
+ 327:../proyecto.c **** 							if(contM == 0) m = 10;
+ 4513              		.loc 1 327 0 is_stmt 0 discriminator 1
+ 4514 1230 D4359FE5 		ldr	r3, .L191+96
+ 4515 1234 0A20A0E3 		mov	r2, #10
+ 4516 1238 0020C3E5 		strb	r2, [r3, #0]
+ 4517 123c 050000EA 		b	.L95
+ 4518              	.L94:
+ 328:../proyecto.c **** 							else m += 1;
+ 4519              		.loc 1 328 0 is_stmt 1
+ 4520 1240 C4359FE5 		ldr	r3, .L191+96
+ 4521 1244 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4522 1248 013083E2 		add	r3, r3, #1
+ 4523 124c FF2003E2 		and	r2, r3, #255
+ 4524 1250 B4359FE5 		ldr	r3, .L191+96
+ 4525 1254 0020C3E5 		strb	r2, [r3, #0]
+ 4526              	.L95:
+ 329:../proyecto.c **** 							iis_textToSpeech( "1" );
+ 4527              		.loc 1 329 0
+ 4528 1258 84059FE5 		ldr	r0, .L191+56
+ 4529 125c FEFFFFEB 		bl	iis_textToSpeech
+ 330:../proyecto.c **** 							contM++;
+ 4530              		.loc 1 330 0
+ 4531 1260 A0359FE5 		ldr	r3, .L191+92
+ 4532 1264 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4533 1268 013083E2 		add	r3, r3, #1
+ 4534 126c FF2003E2 		and	r2, r3, #255
+ 4535 1270 90359FE5 		ldr	r3, .L191+92
+ 4536 1274 0020C3E5 		strb	r2, [r3, #0]
+ 331:../proyecto.c **** 							hmpp=intToStr(m, 'm');
+ 4537              		.loc 1 331 0
+ 4538 1278 8C359FE5 		ldr	r3, .L191+96
+ 4539 127c 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4540 1280 0300A0E1 		mov	r0, r3
+ 4541 1284 6D10A0E3 		mov	r1, #109
+ 4542 1288 FEFFFFEB 		bl	intToStr
+ 4543 128c 24000BE5 		str	r0, [fp, #-36]
+ 332:../proyecto.c **** 							if(m < 10) {*hmpp--; *hmpp = '0'+(uint8)0;}
+ 4544              		.loc 1 332 0
+ 4545 1290 74359FE5 		ldr	r3, .L191+96
+ 4546 1294 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4547 1298 090053E3 		cmp	r3, #9
+ 4548 129c 0500008A 		bhi	.L96
+ 332:../proyecto.c **** 							if(m < 10) {*hmpp--; *hmpp = '0'+(uint8)0;}
+ 4549              		.loc 1 332 0 is_stmt 0 discriminator 1
+ 4550 12a0 24301BE5 		ldr	r3, [fp, #-36]
+ 4551 12a4 013043E2 		sub	r3, r3, #1
+ 4552 12a8 24300BE5 		str	r3, [fp, #-36]
+ 4553 12ac 24301BE5 		ldr	r3, [fp, #-36]
+ 4554 12b0 3020A0E3 		mov	r2, #48
+ 4555 12b4 0020C3E5 		strb	r2, [r3, #0]
+ 4556              	.L96:
+ 333:../proyecto.c **** 							lcd_puts_xTam( 161, 60, BLACK, hmpp, 6);
+ 4557              		.loc 1 333 0 is_stmt 1
+ 4558 12b8 0630A0E3 		mov	r3, #6
+ 4559 12bc 00308DE5 		str	r3, [sp, #0]
+ 4560 12c0 A100A0E3 		mov	r0, #161
+ 4561 12c4 3C10A0E3 		mov	r1, #60
+ 4562 12c8 0F20A0E3 		mov	r2, #15
+ 4563 12cc 24301BE5 		ldr	r3, [fp, #-36]
+ 4564 12d0 FEFFFFEB 		bl	lcd_puts_xTam
+ 4565              		.loc 1 374 0
+ 4566 12d4 F00400EA 		b	.L57
+ 4567              	.L89:
+ 336:../proyecto.c **** 					else if(calculadora){
+ 4568              		.loc 1 336 0
+ 4569 12d8 70359FE5 		ldr	r3, .L191+164
+ 4570 12dc 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4571 12e0 000053E3 		cmp	r3, #0
+ 4572 12e4 6300000A 		beq	.L97
+ 337:../proyecto.c **** 						if(contOp1 < 2){
+ 4573              		.loc 1 337 0
+ 4574 12e8 2C359FE5 		ldr	r3, .L191+112
+ 4575 12ec 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4576 12f0 033CA0E1 		mov	r3, r3, asl #24
+ 4577 12f4 433CA0E1 		mov	r3, r3, asr #24
+ 4578 12f8 010053E3 		cmp	r3, #1
+ 4579 12fc 2B0000CA 		bgt	.L98
+ 338:../proyecto.c **** 							if(op1 == 0) op1 = 1;
+ 4580              		.loc 1 338 0
+ 4581 1300 34359FE5 		ldr	r3, .L191+144
+ 4582 1304 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4583 1308 000053E3 		cmp	r3, #0
+ 4584 130c 0300001A 		bne	.L99
+ 338:../proyecto.c **** 							if(op1 == 0) op1 = 1;
+ 4585              		.loc 1 338 0 is_stmt 0 discriminator 1
+ 4586 1310 24359FE5 		ldr	r3, .L191+144
+ 4587 1314 0120A0E3 		mov	r2, #1
+ 4588 1318 0020C3E5 		strb	r2, [r3, #0]
+ 4589 131c 0C0000EA 		b	.L100
+ 4590              	.L99:
+ 339:../proyecto.c **** 							else op1 = op1 * 10 + 1;
+ 4591              		.loc 1 339 0 is_stmt 1
+ 4592 1320 14359FE5 		ldr	r3, .L191+144
+ 4593 1324 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4594 1328 FF3003E2 		and	r3, r3, #255
+ 4595 132c 0320A0E1 		mov	r2, r3
+ 4596 1330 0221A0E1 		mov	r2, r2, asl #2
+ 4597 1334 033082E0 		add	r3, r2, r3
+ 4598 1338 8330A0E1 		mov	r3, r3, asl #1
+ 4599 133c FF3003E2 		and	r3, r3, #255
+ 4600 1340 013083E2 		add	r3, r3, #1
+ 4601 1344 FF3003E2 		and	r3, r3, #255
+ 4602 1348 FF2003E2 		and	r2, r3, #255
+ 4603 134c E8349FE5 		ldr	r3, .L191+144
+ 4604 1350 0020C3E5 		strb	r2, [r3, #0]
+ 4605              	.L100:
+ 340:../proyecto.c **** 							contOp1++;
+ 4606              		.loc 1 340 0
+ 4607 1354 C0349FE5 		ldr	r3, .L191+112
+ 4608 1358 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4609 135c 013083E2 		add	r3, r3, #1
+ 4610 1360 FF2003E2 		and	r2, r3, #255
+ 4611 1364 B0349FE5 		ldr	r3, .L191+112
+ 4612 1368 0020C3E5 		strb	r2, [r3, #0]
+ 342:../proyecto.c **** 							iis_textToSpeech( "1" );
+ 4613              		.loc 1 342 0
+ 4614 136c 70049FE5 		ldr	r0, .L191+56
+ 4615 1370 FEFFFFEB 		bl	iis_textToSpeech
+ 343:../proyecto.c **** 							cOp1=intToStrC(op1);
+ 4616              		.loc 1 343 0
+ 4617 1374 C0349FE5 		ldr	r3, .L191+144
+ 4618 1378 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4619 137c 033CA0E1 		mov	r3, r3, asl #24
+ 4620 1380 433CA0E1 		mov	r3, r3, asr #24
+ 4621 1384 0300A0E1 		mov	r0, r3
+ 4622 1388 FEFFFFEB 		bl	intToStrC
+ 4623 138c 30000BE5 		str	r0, [fp, #-48]
+ 344:../proyecto.c **** 							lcd_puts_xTam( 44, 72, BLACK, cOp1, 4);
+ 4624              		.loc 1 344 0
+ 4625 1390 0430A0E3 		mov	r3, #4
+ 4626 1394 00308DE5 		str	r3, [sp, #0]
+ 4627 1398 2C00A0E3 		mov	r0, #44
+ 4628 139c 4810A0E3 		mov	r1, #72
+ 4629 13a0 0F20A0E3 		mov	r2, #15
+ 4630 13a4 30301BE5 		ldr	r3, [fp, #-48]
+ 4631 13a8 FEFFFFEB 		bl	lcd_puts_xTam
+ 4632              		.loc 1 374 0
+ 4633 13ac BA0400EA 		b	.L57
+ 4634              	.L98:
+ 346:../proyecto.c **** 						else if(op == 1){
+ 4635              		.loc 1 346 0
+ 4636 13b0 70349FE5 		ldr	r3, .L191+124
+ 4637 13b4 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4638 13b8 033CA0E1 		mov	r3, r3, asl #24
+ 4639 13bc 433CA0E1 		mov	r3, r3, asr #24
+ 4640 13c0 010053E3 		cmp	r3, #1
+ 4641 13c4 8D04001A 		bne	.L171
+ 347:../proyecto.c **** 							if(op2 == 0) op2 = 1;
+ 4642              		.loc 1 347 0
+ 4643 13c8 70349FE5 		ldr	r3, .L191+148
+ 4644 13cc 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4645 13d0 000053E3 		cmp	r3, #0
+ 4646 13d4 0300001A 		bne	.L101
+ 347:../proyecto.c **** 							if(op2 == 0) op2 = 1;
+ 4647              		.loc 1 347 0 is_stmt 0 discriminator 1
+ 4648 13d8 60349FE5 		ldr	r3, .L191+148
+ 4649 13dc 0120A0E3 		mov	r2, #1
+ 4650 13e0 0020C3E5 		strb	r2, [r3, #0]
+ 4651 13e4 0C0000EA 		b	.L102
+ 4652              	.L101:
+ 348:../proyecto.c **** 							else op2 = op2 * 10 + 1;
+ 4653              		.loc 1 348 0 is_stmt 1
+ 4654 13e8 50349FE5 		ldr	r3, .L191+148
+ 4655 13ec 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4656 13f0 FF3003E2 		and	r3, r3, #255
+ 4657 13f4 0320A0E1 		mov	r2, r3
+ 4658 13f8 0221A0E1 		mov	r2, r2, asl #2
+ 4659 13fc 033082E0 		add	r3, r2, r3
+ 4660 1400 8330A0E1 		mov	r3, r3, asl #1
+ 4661 1404 FF3003E2 		and	r3, r3, #255
+ 4662 1408 013083E2 		add	r3, r3, #1
+ 4663 140c FF3003E2 		and	r3, r3, #255
+ 4664 1410 FF2003E2 		and	r2, r3, #255
+ 4665 1414 24349FE5 		ldr	r3, .L191+148
+ 4666 1418 0020C3E5 		strb	r2, [r3, #0]
+ 4667              	.L102:
+ 349:../proyecto.c **** 							contOp2++;
+ 4668              		.loc 1 349 0
+ 4669 141c 08349FE5 		ldr	r3, .L191+128
+ 4670 1420 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4671 1424 013083E2 		add	r3, r3, #1
+ 4672 1428 FF2003E2 		and	r2, r3, #255
+ 4673 142c F8339FE5 		ldr	r3, .L191+128
+ 4674 1430 0020C3E5 		strb	r2, [r3, #0]
+ 351:../proyecto.c **** 							iis_textToSpeech( "1" );
+ 4675              		.loc 1 351 0
+ 4676 1434 A8039FE5 		ldr	r0, .L191+56
+ 4677 1438 FEFFFFEB 		bl	iis_textToSpeech
+ 352:../proyecto.c **** 							cOp2=intToStrC(op2);
+ 4678              		.loc 1 352 0
+ 4679 143c FC339FE5 		ldr	r3, .L191+148
+ 4680 1440 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4681 1444 033CA0E1 		mov	r3, r3, asl #24
+ 4682 1448 433CA0E1 		mov	r3, r3, asr #24
+ 4683 144c 0300A0E1 		mov	r0, r3
+ 4684 1450 FEFFFFEB 		bl	intToStrC
+ 4685 1454 34000BE5 		str	r0, [fp, #-52]
+ 353:../proyecto.c **** 							lcd_puts_xTam( 171, 72, BLACK, cOp2, 4);
+ 4686              		.loc 1 353 0
+ 4687 1458 0430A0E3 		mov	r3, #4
+ 4688 145c 00308DE5 		str	r3, [sp, #0]
+ 4689 1460 AB00A0E3 		mov	r0, #171
+ 4690 1464 4810A0E3 		mov	r1, #72
+ 4691 1468 0F20A0E3 		mov	r2, #15
+ 4692 146c 34301BE5 		ldr	r3, [fp, #-52]
+ 4693 1470 FEFFFFEB 		bl	lcd_puts_xTam
+ 4694              		.loc 1 374 0
+ 4695 1474 880400EA 		b	.L57
+ 4696              	.L97:
+ 356:../proyecto.c **** 					else if(ponerHora){
+ 4697              		.loc 1 356 0
+ 4698 1478 70339FE5 		ldr	r3, .L191+68
+ 4699 147c 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4700 1480 000053E3 		cmp	r3, #0
+ 4701 1484 2400000A 		beq	.L103
+ 357:../proyecto.c **** 						contM++;
+ 4702              		.loc 1 357 0
+ 4703 1488 78339FE5 		ldr	r3, .L191+92
+ 4704 148c 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4705 1490 013083E2 		add	r3, r3, #1
+ 4706 1494 FF2003E2 		and	r2, r3, #255
+ 4707 1498 68339FE5 		ldr	r3, .L191+92
+ 4708 149c 0020C3E5 		strb	r2, [r3, #0]
+ 358:../proyecto.c **** 						if(contM == 59) contM = 0;
+ 4709              		.loc 1 358 0
+ 4710 14a0 60339FE5 		ldr	r3, .L191+92
+ 4711 14a4 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4712 14a8 3B0053E3 		cmp	r3, #59
+ 4713 14ac 0200001A 		bne	.L104
+ 358:../proyecto.c **** 						if(contM == 59) contM = 0;
+ 4714              		.loc 1 358 0 is_stmt 0 discriminator 1
+ 4715 14b0 50339FE5 		ldr	r3, .L191+92
+ 4716 14b4 0020A0E3 		mov	r2, #0
+ 4717 14b8 0020C3E5 		strb	r2, [r3, #0]
+ 4718              	.L104:
+ 360:../proyecto.c **** 						hmpp=intToStr(contM, 'm');
+ 4719              		.loc 1 360 0 is_stmt 1
+ 4720 14bc 44339FE5 		ldr	r3, .L191+92
+ 4721 14c0 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4722 14c4 0300A0E1 		mov	r0, r3
+ 4723 14c8 6D10A0E3 		mov	r1, #109
+ 4724 14cc FEFFFFEB 		bl	intToStr
+ 4725 14d0 24000BE5 		str	r0, [fp, #-36]
+ 361:../proyecto.c **** 						if(contM < 10) {*hmpp--; *hmpp = '0'+(uint8)0;}
+ 4726              		.loc 1 361 0
+ 4727 14d4 2C339FE5 		ldr	r3, .L191+92
+ 4728 14d8 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4729 14dc 090053E3 		cmp	r3, #9
+ 4730 14e0 0500008A 		bhi	.L105
+ 361:../proyecto.c **** 						if(contM < 10) {*hmpp--; *hmpp = '0'+(uint8)0;}
+ 4731              		.loc 1 361 0 is_stmt 0 discriminator 1
+ 4732 14e4 24301BE5 		ldr	r3, [fp, #-36]
+ 4733 14e8 013043E2 		sub	r3, r3, #1
+ 4734 14ec 24300BE5 		str	r3, [fp, #-36]
+ 4735 14f0 24301BE5 		ldr	r3, [fp, #-36]
+ 4736 14f4 3020A0E3 		mov	r2, #48
+ 4737 14f8 0020C3E5 		strb	r2, [r3, #0]
+ 4738              	.L105:
+ 362:../proyecto.c **** 						lcd_puts_xTam( 161, 60, BLACK, hmpp, 6);
+ 4739              		.loc 1 362 0 is_stmt 1
+ 4740 14fc 0630A0E3 		mov	r3, #6
+ 4741 1500 00308DE5 		str	r3, [sp, #0]
+ 4742 1504 A100A0E3 		mov	r0, #161
+ 4743 1508 3C10A0E3 		mov	r1, #60
+ 4744 150c 0F20A0E3 		mov	r2, #15
+ 4745 1510 24301BE5 		ldr	r3, [fp, #-36]
+ 4746 1514 FEFFFFEB 		bl	lcd_puts_xTam
+ 4747              		.loc 1 374 0
+ 4748 1518 5F0400EA 		b	.L57
+ 4749              	.L103:
+ 365:../proyecto.c **** 						contH = contM = h = m = 0;
+ 4750              		.loc 1 365 0
+ 4751 151c E8329FE5 		ldr	r3, .L191+96
+ 4752 1520 0020A0E3 		mov	r2, #0
+ 4753 1524 0020C3E5 		strb	r2, [r3, #0]
+ 4754 1528 DC329FE5 		ldr	r3, .L191+96
+ 4755 152c 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 4756 1530 C8329FE5 		ldr	r3, .L191+84
+ 4757 1534 0020C3E5 		strb	r2, [r3, #0]
+ 4758 1538 C0329FE5 		ldr	r3, .L191+84
+ 4759 153c 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 4760 1540 C0329FE5 		ldr	r3, .L191+92
+ 4761 1544 0020C3E5 		strb	r2, [r3, #0]
+ 4762 1548 B8329FE5 		ldr	r3, .L191+92
+ 4763 154c 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 4764 1550 AC329FE5 		ldr	r3, .L191+88
+ 4765 1554 0020C3E5 		strb	r2, [r3, #0]
+ 366:../proyecto.c **** 						alarma = 1;
+ 4766              		.loc 1 366 0
+ 4767 1558 9C329FE5 		ldr	r3, .L191+80
+ 4768 155c 0120A0E3 		mov	r2, #1
+ 4769 1560 0020C3E5 		strb	r2, [r3, #0]
+ 367:../proyecto.c **** 						lcd_clear();
+ 4770              		.loc 1 367 0
+ 4771 1564 FEFFFFEB 		bl	lcd_clear
+ 368:../proyecto.c **** 						str = "Introduzca alarma";
+ 4772              		.loc 1 368 0
+ 4773 1568 78329FE5 		ldr	r3, .L191+60
+ 4774 156c 2C300BE5 		str	r3, [fp, #-44]
+ 369:../proyecto.c **** 						lcd_puts_xTam( 10, 20, BLACK, str, 2);
+ 4775              		.loc 1 369 0
+ 4776 1570 0230A0E3 		mov	r3, #2
+ 4777 1574 00308DE5 		str	r3, [sp, #0]
+ 4778 1578 0A00A0E3 		mov	r0, #10
+ 4779 157c 1410A0E3 		mov	r1, #20
+ 4780 1580 0F20A0E3 		mov	r2, #15
+ 4781 1584 2C301BE5 		ldr	r3, [fp, #-44]
+ 4782 1588 FEFFFFEB 		bl	lcd_puts_xTam
+ 370:../proyecto.c **** 						iis_textToSpeech( str );
+ 4783              		.loc 1 370 0
+ 4784 158c 2C001BE5 		ldr	r0, [fp, #-44]
+ 4785 1590 FEFFFFEB 		bl	iis_textToSpeech
+ 371:../proyecto.c **** 						lcd_puts_xTam( 126, 72,BLACK, ":", 5);
+ 4786              		.loc 1 371 0
+ 4787 1594 0530A0E3 		mov	r3, #5
+ 4788 1598 00308DE5 		str	r3, [sp, #0]
+ 4789 159c 7E00A0E3 		mov	r0, #126
+ 4790 15a0 4810A0E3 		mov	r1, #72
+ 4791 15a4 0F20A0E3 		mov	r2, #15
+ 4792 15a8 44329FE5 		ldr	r3, .L191+72
+ 4793 15ac FEFFFFEB 		bl	lcd_puts_xTam
+ 4794              		.loc 1 374 0
+ 4795 15b0 390400EA 		b	.L57
+ 4796              	.L60:
+ 375:../proyecto.c **** 			case 0x2:
+ 376:../proyecto.c **** 				if(alarma){
+ 4797              		.loc 1 376 0
+ 4798 15b4 40329FE5 		ldr	r3, .L191+80
+ 4799 15b8 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4800 15bc 000053E3 		cmp	r3, #0
+ 4801 15c0 6700000A 		beq	.L106
+ 377:../proyecto.c **** 					if(contH < 2) {
+ 4802              		.loc 1 377 0
+ 4803 15c4 38329FE5 		ldr	r3, .L191+88
+ 4804 15c8 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4805 15cc 010053E3 		cmp	r3, #1
+ 4806 15d0 2D00008A 		bhi	.L107
+ 378:../proyecto.c **** 						if(contH == 0) h = 20;
+ 4807              		.loc 1 378 0
+ 4808 15d4 28329FE5 		ldr	r3, .L191+88
+ 4809 15d8 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4810 15dc 000053E3 		cmp	r3, #0
+ 4811 15e0 0300001A 		bne	.L108
+ 4812              		.loc 1 378 0 is_stmt 0 discriminator 1
+ 4813 15e4 14329FE5 		ldr	r3, .L191+84
+ 4814 15e8 1420A0E3 		mov	r2, #20
+ 4815 15ec 0020C3E5 		strb	r2, [r3, #0]
+ 4816 15f0 050000EA 		b	.L109
+ 4817              	.L108:
+ 379:../proyecto.c **** 						else h += 2;
+ 4818              		.loc 1 379 0 is_stmt 1
+ 4819 15f4 04329FE5 		ldr	r3, .L191+84
+ 4820 15f8 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4821 15fc 023083E2 		add	r3, r3, #2
+ 4822 1600 FF2003E2 		and	r2, r3, #255
+ 4823 1604 F4319FE5 		ldr	r3, .L191+84
+ 4824 1608 0020C3E5 		strb	r2, [r3, #0]
+ 4825              	.L109:
+ 380:../proyecto.c **** 						iis_textToSpeech( "2" );
+ 4826              		.loc 1 380 0
+ 4827 160c D8019FE5 		ldr	r0, .L191+64
+ 4828 1610 FEFFFFEB 		bl	iis_textToSpeech
+ 381:../proyecto.c **** 						contH++;
+ 4829              		.loc 1 381 0
+ 4830 1614 E8319FE5 		ldr	r3, .L191+88
+ 4831 1618 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4832 161c 013083E2 		add	r3, r3, #1
+ 4833 1620 FF2003E2 		and	r2, r3, #255
+ 4834 1624 D8319FE5 		ldr	r3, .L191+88
+ 4835 1628 0020C3E5 		strb	r2, [r3, #0]
+ 382:../proyecto.c **** 						hmp=intToStr(h, 'h');
+ 4836              		.loc 1 382 0
+ 4837 162c CC319FE5 		ldr	r3, .L191+84
+ 4838 1630 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4839 1634 0300A0E1 		mov	r0, r3
+ 4840 1638 6810A0E3 		mov	r1, #104
+ 4841 163c FEFFFFEB 		bl	intToStr
+ 4842 1640 20000BE5 		str	r0, [fp, #-32]
+ 383:../proyecto.c **** 						if(h < 10) {*hmp--; *hmp = '0'+(uint8)0;}
+ 4843              		.loc 1 383 0
+ 4844 1644 B4319FE5 		ldr	r3, .L191+84
+ 4845 1648 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4846 164c 090053E3 		cmp	r3, #9
+ 4847 1650 0500008A 		bhi	.L110
+ 4848              		.loc 1 383 0 is_stmt 0 discriminator 1
+ 4849 1654 20301BE5 		ldr	r3, [fp, #-32]
+ 4850 1658 013043E2 		sub	r3, r3, #1
+ 4851 165c 20300BE5 		str	r3, [fp, #-32]
+ 4852 1660 20301BE5 		ldr	r3, [fp, #-32]
+ 4853 1664 3020A0E3 		mov	r2, #48
+ 4854 1668 0020C3E5 		strb	r2, [r3, #0]
+ 4855              	.L110:
+ 384:../proyecto.c **** 						lcd_puts_xTam( 44, 60, BLACK, hmp, 6);
+ 4856              		.loc 1 384 0 is_stmt 1
+ 4857 166c 0630A0E3 		mov	r3, #6
+ 4858 1670 00308DE5 		str	r3, [sp, #0]
+ 4859 1674 2C00A0E3 		mov	r0, #44
+ 4860 1678 3C10A0E3 		mov	r1, #60
+ 4861 167c 0F20A0E3 		mov	r2, #15
+ 4862 1680 20301BE5 		ldr	r3, [fp, #-32]
+ 4863 1684 FEFFFFEB 		bl	lcd_puts_xTam
+ 385:../proyecto.c **** 					}
+ 386:../proyecto.c **** 					else if(contH == 2 && contM < 2) {
+ 387:../proyecto.c **** 						if(contM == 0) m = 20;
+ 388:../proyecto.c **** 						else m += 2;
+ 389:../proyecto.c **** 						iis_textToSpeech( "2" );
+ 390:../proyecto.c **** 						contM++;
+ 391:../proyecto.c **** 						hmpp=intToStr(m, 'm');
+ 392:../proyecto.c **** 						if(m < 10) {*hmpp--; *hmpp = '0'+(uint8)0;}
+ 393:../proyecto.c **** 						lcd_puts_xTam( 161, 60, BLACK, hmpp, 6);
+ 394:../proyecto.c **** 					}
+ 395:../proyecto.c **** 				}
+ 396:../proyecto.c **** 				else if(calculadora){
+ 397:../proyecto.c **** 					if(contOp1 < 2){
+ 398:../proyecto.c **** 						if(op1 == 0) op1 = 2;
+ 399:../proyecto.c **** 						else op1 = op1 * 10 + 2;
+ 400:../proyecto.c **** 						contOp1++;
+ 401:../proyecto.c **** 
+ 402:../proyecto.c **** 						iis_textToSpeech( "2" );
+ 403:../proyecto.c **** 						cOp1=intToStrC(op1);
+ 404:../proyecto.c **** 						lcd_puts_xTam( 44, 72, BLACK, cOp1, 4);
+ 405:../proyecto.c **** 					}
+ 406:../proyecto.c **** 					else if(op == 1){
+ 407:../proyecto.c **** 						if(op2 == 0) op2 = 2;
+ 408:../proyecto.c **** 						else op2 = op2 * 10 + 2;
+ 409:../proyecto.c **** 						contOp2++;
+ 410:../proyecto.c **** 
+ 411:../proyecto.c **** 						iis_textToSpeech( "2" );
+ 412:../proyecto.c **** 						cOp2=intToStrC(op2);
+ 413:../proyecto.c **** 						lcd_puts_xTam( 171, 72, BLACK, cOp2, 4);
+ 414:../proyecto.c **** 					}
+ 415:../proyecto.c **** 				}
+ 416:../proyecto.c **** 				else {
+ 417:../proyecto.c **** 					contH = contM = 0;
+ 418:../proyecto.c **** 					ponerHora = 1;
+ 419:../proyecto.c **** 					lcd_clear();
+ 420:../proyecto.c **** 					lcd_puts_xTam( 126, 72,BLACK, ":", 5);
+ 421:../proyecto.c **** 					str = "Fija hora:";
+ 422:../proyecto.c **** 					lcd_puts_xTam( 10, 20, BLACK, str, 2);
+ 423:../proyecto.c **** 					iis_textToSpeech( str );
+ 424:../proyecto.c **** 				}
+ 425:../proyecto.c **** 				break;
+ 4864              		.loc 1 425 0
+ 4865 1688 030400EA 		b	.L57
+ 4866              	.L107:
+ 386:../proyecto.c **** 					else if(contH == 2 && contM < 2) {
+ 4867              		.loc 1 386 0
+ 4868 168c 70319FE5 		ldr	r3, .L191+88
+ 4869 1690 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4870 1694 020053E3 		cmp	r3, #2
+ 4871 1698 DA03001A 		bne	.L172
+ 386:../proyecto.c **** 					else if(contH == 2 && contM < 2) {
+ 4872              		.loc 1 386 0 is_stmt 0 discriminator 1
+ 4873 169c 64319FE5 		ldr	r3, .L191+92
+ 4874 16a0 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4875 16a4 010053E3 		cmp	r3, #1
+ 4876 16a8 D803008A 		bhi	.L173
+ 387:../proyecto.c **** 						if(contM == 0) m = 20;
+ 4877              		.loc 1 387 0 is_stmt 1
+ 4878 16ac 54319FE5 		ldr	r3, .L191+92
+ 4879 16b0 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4880 16b4 000053E3 		cmp	r3, #0
+ 4881 16b8 0300001A 		bne	.L112
+ 387:../proyecto.c **** 						if(contM == 0) m = 20;
+ 4882              		.loc 1 387 0 is_stmt 0 discriminator 1
+ 4883 16bc 48319FE5 		ldr	r3, .L191+96
+ 4884 16c0 1420A0E3 		mov	r2, #20
+ 4885 16c4 0020C3E5 		strb	r2, [r3, #0]
+ 4886 16c8 050000EA 		b	.L113
+ 4887              	.L112:
+ 388:../proyecto.c **** 						else m += 2;
+ 4888              		.loc 1 388 0 is_stmt 1
+ 4889 16cc 38319FE5 		ldr	r3, .L191+96
+ 4890 16d0 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4891 16d4 023083E2 		add	r3, r3, #2
+ 4892 16d8 FF2003E2 		and	r2, r3, #255
+ 4893 16dc 28319FE5 		ldr	r3, .L191+96
+ 4894 16e0 0020C3E5 		strb	r2, [r3, #0]
+ 4895              	.L113:
+ 389:../proyecto.c **** 						iis_textToSpeech( "2" );
+ 4896              		.loc 1 389 0
+ 4897 16e4 00019FE5 		ldr	r0, .L191+64
+ 4898 16e8 FEFFFFEB 		bl	iis_textToSpeech
+ 390:../proyecto.c **** 						contM++;
+ 4899              		.loc 1 390 0
+ 4900 16ec 14319FE5 		ldr	r3, .L191+92
+ 4901 16f0 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4902 16f4 013083E2 		add	r3, r3, #1
+ 4903 16f8 FF2003E2 		and	r2, r3, #255
+ 4904 16fc 04319FE5 		ldr	r3, .L191+92
+ 4905 1700 0020C3E5 		strb	r2, [r3, #0]
+ 391:../proyecto.c **** 						hmpp=intToStr(m, 'm');
+ 4906              		.loc 1 391 0
+ 4907 1704 00319FE5 		ldr	r3, .L191+96
+ 4908 1708 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4909 170c 0300A0E1 		mov	r0, r3
+ 4910 1710 6D10A0E3 		mov	r1, #109
+ 4911 1714 FEFFFFEB 		bl	intToStr
+ 4912 1718 24000BE5 		str	r0, [fp, #-36]
+ 392:../proyecto.c **** 						if(m < 10) {*hmpp--; *hmpp = '0'+(uint8)0;}
+ 4913              		.loc 1 392 0
+ 4914 171c E8309FE5 		ldr	r3, .L191+96
+ 4915 1720 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4916 1724 090053E3 		cmp	r3, #9
+ 4917 1728 0500008A 		bhi	.L114
+ 392:../proyecto.c **** 						if(m < 10) {*hmpp--; *hmpp = '0'+(uint8)0;}
+ 4918              		.loc 1 392 0 is_stmt 0 discriminator 1
+ 4919 172c 24301BE5 		ldr	r3, [fp, #-36]
+ 4920 1730 013043E2 		sub	r3, r3, #1
+ 4921 1734 24300BE5 		str	r3, [fp, #-36]
+ 4922 1738 24301BE5 		ldr	r3, [fp, #-36]
+ 4923 173c 3020A0E3 		mov	r2, #48
+ 4924 1740 0020C3E5 		strb	r2, [r3, #0]
+ 4925              	.L114:
+ 393:../proyecto.c **** 						lcd_puts_xTam( 161, 60, BLACK, hmpp, 6);
+ 4926              		.loc 1 393 0 is_stmt 1
+ 4927 1744 0630A0E3 		mov	r3, #6
+ 4928 1748 00308DE5 		str	r3, [sp, #0]
+ 4929 174c A100A0E3 		mov	r0, #161
+ 4930 1750 3C10A0E3 		mov	r1, #60
+ 4931 1754 0F20A0E3 		mov	r2, #15
+ 4932 1758 24301BE5 		ldr	r3, [fp, #-36]
+ 4933 175c FEFFFFEB 		bl	lcd_puts_xTam
+ 4934              		.loc 1 425 0
+ 4935 1760 CD0300EA 		b	.L57
+ 4936              	.L106:
+ 396:../proyecto.c **** 				else if(calculadora){
+ 4937              		.loc 1 396 0
+ 4938 1764 E4309FE5 		ldr	r3, .L191+164
+ 4939 1768 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4940 176c 000053E3 		cmp	r3, #0
+ 4941 1770 8D00000A 		beq	.L115
+ 397:../proyecto.c **** 					if(contOp1 < 2){
+ 4942              		.loc 1 397 0
+ 4943 1774 A0309FE5 		ldr	r3, .L191+112
+ 4944 1778 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4945 177c 033CA0E1 		mov	r3, r3, asl #24
+ 4946 1780 433CA0E1 		mov	r3, r3, asr #24
+ 4947 1784 010053E3 		cmp	r3, #1
+ 4948 1788 550000CA 		bgt	.L116
+ 398:../proyecto.c **** 						if(op1 == 0) op1 = 2;
+ 4949              		.loc 1 398 0
+ 4950 178c A8309FE5 		ldr	r3, .L191+144
+ 4951 1790 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 4952 1794 000053E3 		cmp	r3, #0
+ 4953 1798 2D00001A 		bne	.L117
+ 398:../proyecto.c **** 						if(op1 == 0) op1 = 2;
+ 4954              		.loc 1 398 0 is_stmt 0 discriminator 1
+ 4955 179c 98309FE5 		ldr	r3, .L191+144
+ 4956 17a0 0220A0E3 		mov	r2, #2
+ 4957 17a4 0020C3E5 		strb	r2, [r3, #0]
+ 4958 17a8 360000EA 		b	.L118
+ 4959              	.L192:
+ 4960              		.align	2
+ 4961              	.L191:
+ 4962 17ac 00000000 		.word	flag
+ 4963 17b0 00000000 		.word	menu
+ 4964 17b4 10000000 		.word	.LC2
+ 4965 17b8 24000000 		.word	.LC3
+ 4966 17bc 34000000 		.word	.LC4
+ 4967 17c0 40000000 		.word	.LC5
+ 4968 17c4 50000000 		.word	.LC6
+ 4969 17c8 00000000 		.word	horaFijada
+ 4970 17cc 00000000 		.word	activarAlarma
+ 4971 17d0 5C000000 		.word	.LC7
+ 4972 17d4 6C000000 		.word	.LC8
+ 4973 17d8 84000000 		.word	.LC10
+ 4974 17dc 88000000 		.word	.LC11
+ 4975 17e0 98000000 		.word	.LC12
+ 4976 17e4 B0000000 		.word	.LC13
+ 4977 17e8 B4000000 		.word	.LC14
+ 4978 17ec C8000000 		.word	.LC15
+ 4979 17f0 00000000 		.word	ponerHora
+ 4980 17f4 80000000 		.word	.LC9
+ 4981 17f8 CC000000 		.word	.LC16
+ 4982 17fc 00000000 		.word	alarma
+ 4983 1800 00000000 		.word	h
+ 4984 1804 00000000 		.word	contH
+ 4985 1808 00000000 		.word	contM
+ 4986 180c 00000000 		.word	m
+ 4987 1810 D8000000 		.word	.LC17
+ 4988 1814 DC000000 		.word	.LC18
+ 4989 1818 E8000000 		.word	.LC20
+ 4990 181c 00000000 		.word	contOp1
+ 4991 1820 EC000000 		.word	.LC21
+ 4992 1824 F0000000 		.word	.LC22
+ 4993 1828 00000000 		.word	op
+ 4994 182c 00000000 		.word	contOp2
+ 4995 1830 F4000000 		.word	.LC23
+ 4996 1834 FC000000 		.word	.LC24
+ 4997 1838 00000000 		.word	opChar
+ 4998 183c 00000000 		.word	op1
+ 4999 1840 00000000 		.word	op2
+ 5000 1844 E0000000 		.word	.LC19
+ 5001 1848 00000000 		.word	resul
+ 5002 184c 00010000 		.word	.LC25
+ 5003 1850 00000000 		.word	calculadora
+ 5004              	.L117:
+ 399:../proyecto.c **** 						else op1 = op1 * 10 + 2;
+ 5005              		.loc 1 399 0 is_stmt 1
+ 5006 1854 20301FE5 		ldr	r3, .L191+144
+ 5007 1858 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5008 185c FF3003E2 		and	r3, r3, #255
+ 5009 1860 0320A0E1 		mov	r2, r3
+ 5010 1864 0221A0E1 		mov	r2, r2, asl #2
+ 5011 1868 033082E0 		add	r3, r2, r3
+ 5012 186c 8330A0E1 		mov	r3, r3, asl #1
+ 5013 1870 FF3003E2 		and	r3, r3, #255
+ 5014 1874 023083E2 		add	r3, r3, #2
+ 5015 1878 FF3003E2 		and	r3, r3, #255
+ 5016 187c FF2003E2 		and	r2, r3, #255
+ 5017 1880 4C301FE5 		ldr	r3, .L191+144
+ 5018 1884 0020C3E5 		strb	r2, [r3, #0]
+ 5019              	.L118:
+ 400:../proyecto.c **** 						contOp1++;
+ 5020              		.loc 1 400 0
+ 5021 1888 74301FE5 		ldr	r3, .L191+112
+ 5022 188c 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5023 1890 013083E2 		add	r3, r3, #1
+ 5024 1894 FF2003E2 		and	r2, r3, #255
+ 5025 1898 84301FE5 		ldr	r3, .L191+112
+ 5026 189c 0020C3E5 		strb	r2, [r3, #0]
+ 402:../proyecto.c **** 						iis_textToSpeech( "2" );
+ 5027              		.loc 1 402 0
+ 5028 18a0 BC001FE5 		ldr	r0, .L191+64
+ 5029 18a4 FEFFFFEB 		bl	iis_textToSpeech
+ 403:../proyecto.c **** 						cOp1=intToStrC(op1);
+ 5030              		.loc 1 403 0
+ 5031 18a8 74301FE5 		ldr	r3, .L191+144
+ 5032 18ac 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5033 18b0 033CA0E1 		mov	r3, r3, asl #24
+ 5034 18b4 433CA0E1 		mov	r3, r3, asr #24
+ 5035 18b8 0300A0E1 		mov	r0, r3
+ 5036 18bc FEFFFFEB 		bl	intToStrC
+ 5037 18c0 30000BE5 		str	r0, [fp, #-48]
+ 404:../proyecto.c **** 						lcd_puts_xTam( 44, 72, BLACK, cOp1, 4);
+ 5038              		.loc 1 404 0
+ 5039 18c4 0430A0E3 		mov	r3, #4
+ 5040 18c8 00308DE5 		str	r3, [sp, #0]
+ 5041 18cc 2C00A0E3 		mov	r0, #44
+ 5042 18d0 4810A0E3 		mov	r1, #72
+ 5043 18d4 0F20A0E3 		mov	r2, #15
+ 5044 18d8 30301BE5 		ldr	r3, [fp, #-48]
+ 5045 18dc FEFFFFEB 		bl	lcd_puts_xTam
+ 5046              		.loc 1 425 0
+ 5047 18e0 6D0300EA 		b	.L57
+ 5048              	.L116:
+ 406:../proyecto.c **** 					else if(op == 1){
+ 5049              		.loc 1 406 0
+ 5050 18e4 C4301FE5 		ldr	r3, .L191+124
+ 5051 18e8 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5052 18ec 033CA0E1 		mov	r3, r3, asl #24
+ 5053 18f0 433CA0E1 		mov	r3, r3, asr #24
+ 5054 18f4 010053E3 		cmp	r3, #1
+ 5055 18f8 4603001A 		bne	.L174
+ 407:../proyecto.c **** 						if(op2 == 0) op2 = 2;
+ 5056              		.loc 1 407 0
+ 5057 18fc C4301FE5 		ldr	r3, .L191+148
+ 5058 1900 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5059 1904 000053E3 		cmp	r3, #0
+ 5060 1908 0300001A 		bne	.L119
+ 407:../proyecto.c **** 						if(op2 == 0) op2 = 2;
+ 5061              		.loc 1 407 0 is_stmt 0 discriminator 1
+ 5062 190c D4301FE5 		ldr	r3, .L191+148
+ 5063 1910 0220A0E3 		mov	r2, #2
+ 5064 1914 0020C3E5 		strb	r2, [r3, #0]
+ 5065 1918 0C0000EA 		b	.L120
+ 5066              	.L119:
+ 408:../proyecto.c **** 						else op2 = op2 * 10 + 2;
+ 5067              		.loc 1 408 0 is_stmt 1
+ 5068 191c E4301FE5 		ldr	r3, .L191+148
+ 5069 1920 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5070 1924 FF3003E2 		and	r3, r3, #255
+ 5071 1928 0320A0E1 		mov	r2, r3
+ 5072 192c 0221A0E1 		mov	r2, r2, asl #2
+ 5073 1930 033082E0 		add	r3, r2, r3
+ 5074 1934 8330A0E1 		mov	r3, r3, asl #1
+ 5075 1938 FF3003E2 		and	r3, r3, #255
+ 5076 193c 023083E2 		add	r3, r3, #2
+ 5077 1940 FF3003E2 		and	r3, r3, #255
+ 5078 1944 FF2003E2 		and	r2, r3, #255
+ 5079 1948 10311FE5 		ldr	r3, .L191+148
+ 5080 194c 0020C3E5 		strb	r2, [r3, #0]
+ 5081              	.L120:
+ 409:../proyecto.c **** 						contOp2++;
+ 5082              		.loc 1 409 0
+ 5083 1950 2C311FE5 		ldr	r3, .L191+128
+ 5084 1954 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5085 1958 013083E2 		add	r3, r3, #1
+ 5086 195c FF2003E2 		and	r2, r3, #255
+ 5087 1960 3C311FE5 		ldr	r3, .L191+128
+ 5088 1964 0020C3E5 		strb	r2, [r3, #0]
+ 411:../proyecto.c **** 						iis_textToSpeech( "2" );
+ 5089              		.loc 1 411 0
+ 5090 1968 84011FE5 		ldr	r0, .L191+64
+ 5091 196c FEFFFFEB 		bl	iis_textToSpeech
+ 412:../proyecto.c **** 						cOp2=intToStrC(op2);
+ 5092              		.loc 1 412 0
+ 5093 1970 38311FE5 		ldr	r3, .L191+148
+ 5094 1974 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5095 1978 033CA0E1 		mov	r3, r3, asl #24
+ 5096 197c 433CA0E1 		mov	r3, r3, asr #24
+ 5097 1980 0300A0E1 		mov	r0, r3
+ 5098 1984 FEFFFFEB 		bl	intToStrC
+ 5099 1988 34000BE5 		str	r0, [fp, #-52]
+ 413:../proyecto.c **** 						lcd_puts_xTam( 171, 72, BLACK, cOp2, 4);
+ 5100              		.loc 1 413 0
+ 5101 198c 0430A0E3 		mov	r3, #4
+ 5102 1990 00308DE5 		str	r3, [sp, #0]
+ 5103 1994 AB00A0E3 		mov	r0, #171
+ 5104 1998 4810A0E3 		mov	r1, #72
+ 5105 199c 0F20A0E3 		mov	r2, #15
+ 5106 19a0 34301BE5 		ldr	r3, [fp, #-52]
+ 5107 19a4 FEFFFFEB 		bl	lcd_puts_xTam
+ 5108              		.loc 1 425 0
+ 5109 19a8 3B0300EA 		b	.L57
+ 5110              	.L115:
+ 417:../proyecto.c **** 					contH = contM = 0;
+ 5111              		.loc 1 417 0
+ 5112 19ac AC311FE5 		ldr	r3, .L191+92
+ 5113 19b0 0020A0E3 		mov	r2, #0
+ 5114 19b4 0020C3E5 		strb	r2, [r3, #0]
+ 5115 19b8 B8311FE5 		ldr	r3, .L191+92
+ 5116 19bc 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 5117 19c0 C4311FE5 		ldr	r3, .L191+88
+ 5118 19c4 0020C3E5 		strb	r2, [r3, #0]
+ 418:../proyecto.c **** 					ponerHora = 1;
+ 5119              		.loc 1 418 0
+ 5120 19c8 E0311FE5 		ldr	r3, .L191+68
+ 5121 19cc 0120A0E3 		mov	r2, #1
+ 5122 19d0 0020C3E5 		strb	r2, [r3, #0]
+ 419:../proyecto.c **** 					lcd_clear();
+ 5123              		.loc 1 419 0
+ 5124 19d4 FEFFFFEB 		bl	lcd_clear
+ 420:../proyecto.c **** 					lcd_puts_xTam( 126, 72,BLACK, ":", 5);
+ 5125              		.loc 1 420 0
+ 5126 19d8 0530A0E3 		mov	r3, #5
+ 5127 19dc 00308DE5 		str	r3, [sp, #0]
+ 5128 19e0 7E00A0E3 		mov	r0, #126
+ 5129 19e4 4810A0E3 		mov	r1, #72
+ 5130 19e8 0F20A0E3 		mov	r2, #15
+ 5131 19ec 00321FE5 		ldr	r3, .L191+72
+ 5132 19f0 FEFFFFEB 		bl	lcd_puts_xTam
+ 421:../proyecto.c **** 					str = "Fija hora:";
+ 5133              		.loc 1 421 0
+ 5134 19f4 04321FE5 		ldr	r3, .L191+76
+ 5135 19f8 2C300BE5 		str	r3, [fp, #-44]
+ 422:../proyecto.c **** 					lcd_puts_xTam( 10, 20, BLACK, str, 2);
+ 5136              		.loc 1 422 0
+ 5137 19fc 0230A0E3 		mov	r3, #2
+ 5138 1a00 00308DE5 		str	r3, [sp, #0]
+ 5139 1a04 0A00A0E3 		mov	r0, #10
+ 5140 1a08 1410A0E3 		mov	r1, #20
+ 5141 1a0c 0F20A0E3 		mov	r2, #15
+ 5142 1a10 2C301BE5 		ldr	r3, [fp, #-44]
+ 5143 1a14 FEFFFFEB 		bl	lcd_puts_xTam
+ 423:../proyecto.c **** 					iis_textToSpeech( str );
+ 5144              		.loc 1 423 0
+ 5145 1a18 2C001BE5 		ldr	r0, [fp, #-44]
+ 5146 1a1c FEFFFFEB 		bl	iis_textToSpeech
+ 5147              		.loc 1 425 0
+ 5148 1a20 1D0300EA 		b	.L57
+ 5149              	.L61:
+ 426:../proyecto.c **** 			case 0x3:
+ 427:../proyecto.c **** 			case 0x4:
+ 428:../proyecto.c **** 			case 0x5:
+ 429:../proyecto.c **** 				if(alarma){
+ 5150              		.loc 1 429 0
+ 5151 1a24 30321FE5 		ldr	r3, .L191+80
+ 5152 1a28 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5153 1a2c 000053E3 		cmp	r3, #0
+ 5154 1a30 8B00000A 		beq	.L121
+ 430:../proyecto.c **** 					if((contH == 1 && h == 20 && scancode == 0x3)
+ 5155              		.loc 1 430 0
+ 5156 1a34 38321FE5 		ldr	r3, .L191+88
+ 5157 1a38 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5158 1a3c 010053E3 		cmp	r3, #1
+ 5159 1a40 0600001A 		bne	.L122
+ 5160              		.loc 1 430 0 is_stmt 0 discriminator 1
+ 5161 1a44 4C321FE5 		ldr	r3, .L191+84
+ 5162 1a48 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5163 1a4c 140053E3 		cmp	r3, #20
+ 5164 1a50 0200001A 		bne	.L122
+ 5165 1a54 25305BE5 		ldrb	r3, [fp, #-37]	@ zero_extendqisi2
+ 5166 1a58 030053E3 		cmp	r3, #3
+ 5167 1a5c 0D00000A 		beq	.L123
+ 5168              	.L122:
+ 431:../proyecto.c **** 						|| (contH == 1 && h != 20 && (scancode == 0x4 || scancode == 0x5))) {
+ 5169              		.loc 1 431 0 is_stmt 1
+ 5170 1a60 64321FE5 		ldr	r3, .L191+88
+ 5171 1a64 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5172 1a68 010053E3 		cmp	r3, #1
+ 5173 1a6c 3800001A 		bne	.L124
+ 5174              		.loc 1 431 0 is_stmt 0 discriminator 1
+ 5175 1a70 78321FE5 		ldr	r3, .L191+84
+ 5176 1a74 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5177 1a78 140053E3 		cmp	r3, #20
+ 5178 1a7c 3400000A 		beq	.L124
+ 5179 1a80 25305BE5 		ldrb	r3, [fp, #-37]	@ zero_extendqisi2
+ 5180 1a84 040053E3 		cmp	r3, #4
+ 5181 1a88 0200000A 		beq	.L123
+ 5182 1a8c 25305BE5 		ldrb	r3, [fp, #-37]	@ zero_extendqisi2
+ 5183 1a90 050053E3 		cmp	r3, #5
+ 5184 1a94 2E00001A 		bne	.L124
+ 5185              	.L123:
+ 432:../proyecto.c **** 						s = buf + 2;
+ 5186              		.loc 1 432 0 is_stmt 1
+ 5187 1a98 44304BE2 		sub	r3, fp, #68
+ 5188 1a9c 023083E2 		add	r3, r3, #2
+ 5189 1aa0 38300BE5 		str	r3, [fp, #-56]
+ 433:../proyecto.c **** 						h += scancode;
+ 5190              		.loc 1 433 0
+ 5191 1aa4 AC321FE5 		ldr	r3, .L191+84
+ 5192 1aa8 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 5193 1aac 25305BE5 		ldrb	r3, [fp, #-37]
+ 5194 1ab0 033082E0 		add	r3, r2, r3
+ 5195 1ab4 FF2003E2 		and	r2, r3, #255
+ 5196 1ab8 C0321FE5 		ldr	r3, .L191+84
+ 5197 1abc 0020C3E5 		strb	r2, [r3, #0]
+ 434:../proyecto.c **** 						*s = (uint8)scancode + '0';
+ 5198              		.loc 1 434 0
+ 5199 1ac0 25305BE5 		ldrb	r3, [fp, #-37]
+ 5200 1ac4 303083E2 		add	r3, r3, #48
+ 5201 1ac8 FF2003E2 		and	r2, r3, #255
+ 5202 1acc 38301BE5 		ldr	r3, [fp, #-56]
+ 5203 1ad0 0020C3E5 		strb	r2, [r3, #0]
+ 435:../proyecto.c **** 
+ 436:../proyecto.c **** 						iis_textToSpeech( s );
+ 5204              		.loc 1 436 0
+ 5205 1ad4 38001BE5 		ldr	r0, [fp, #-56]
+ 5206 1ad8 FEFFFFEB 		bl	iis_textToSpeech
+ 437:../proyecto.c **** 						contH++;
+ 5207              		.loc 1 437 0
+ 5208 1adc E0321FE5 		ldr	r3, .L191+88
+ 5209 1ae0 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5210 1ae4 013083E2 		add	r3, r3, #1
+ 5211 1ae8 FF2003E2 		and	r2, r3, #255
+ 5212 1aec F0321FE5 		ldr	r3, .L191+88
+ 5213 1af0 0020C3E5 		strb	r2, [r3, #0]
+ 438:../proyecto.c **** 						hmp=intToStr(h, 'h');
+ 5214              		.loc 1 438 0
+ 5215 1af4 FC321FE5 		ldr	r3, .L191+84
+ 5216 1af8 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5217 1afc 0300A0E1 		mov	r0, r3
+ 5218 1b00 6810A0E3 		mov	r1, #104
+ 5219 1b04 FEFFFFEB 		bl	intToStr
+ 5220 1b08 20000BE5 		str	r0, [fp, #-32]
+ 439:../proyecto.c **** 						if(h < 10) {*hmp--; *hmp = '0'+(uint8)0;}
+ 5221              		.loc 1 439 0
+ 5222 1b0c 14331FE5 		ldr	r3, .L191+84
+ 5223 1b10 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5224 1b14 090053E3 		cmp	r3, #9
+ 5225 1b18 0500008A 		bhi	.L125
+ 5226              		.loc 1 439 0 is_stmt 0 discriminator 1
+ 5227 1b1c 20301BE5 		ldr	r3, [fp, #-32]
+ 5228 1b20 013043E2 		sub	r3, r3, #1
+ 5229 1b24 20300BE5 		str	r3, [fp, #-32]
+ 5230 1b28 20301BE5 		ldr	r3, [fp, #-32]
+ 5231 1b2c 3020A0E3 		mov	r2, #48
+ 5232 1b30 0020C3E5 		strb	r2, [r3, #0]
+ 5233              	.L125:
+ 440:../proyecto.c **** 						lcd_puts_xTam( 44, 60, BLACK, hmp, 6);
+ 5234              		.loc 1 440 0 is_stmt 1
+ 5235 1b34 0630A0E3 		mov	r3, #6
+ 5236 1b38 00308DE5 		str	r3, [sp, #0]
+ 5237 1b3c 2C00A0E3 		mov	r0, #44
+ 5238 1b40 3C10A0E3 		mov	r1, #60
+ 5239 1b44 0F20A0E3 		mov	r2, #15
+ 5240 1b48 20301BE5 		ldr	r3, [fp, #-32]
+ 5241 1b4c FEFFFFEB 		bl	lcd_puts_xTam
+ 441:../proyecto.c **** 					}
+ 442:../proyecto.c **** 					else if(contH == 2 && contM < 2) {
+ 443:../proyecto.c **** 						s = buf + 2;
+ 444:../proyecto.c **** 						if(contM == 0) m = scancode * 10;
+ 445:../proyecto.c **** 						else m += scancode;
+ 446:../proyecto.c **** 						*s = (uint8)scancode + '0';
+ 447:../proyecto.c **** 
+ 448:../proyecto.c **** 						iis_textToSpeech( s );
+ 449:../proyecto.c **** 						contM++;
+ 450:../proyecto.c **** 						hmpp=intToStr(m, 'm');
+ 451:../proyecto.c **** 						if(m < 10) {*hmpp--; *hmpp = '0'+(uint8)0;}
+ 452:../proyecto.c **** 						lcd_puts_xTam( 161, 60, BLACK, hmpp, 6);
+ 453:../proyecto.c **** 					}
+ 454:../proyecto.c **** 				}
+ 455:../proyecto.c **** 				else if(calculadora){
+ 456:../proyecto.c **** 					if(contOp1 < 2){
+ 457:../proyecto.c **** 						s2 = buf2 + 2;
+ 458:../proyecto.c **** 						if(op1 == 0) op1 = scancode;
+ 459:../proyecto.c **** 						else op1 = op1 * 10 + scancode;
+ 460:../proyecto.c **** 						*s2 = (uint8)scancode + '0';
+ 461:../proyecto.c **** 						contOp1++;
+ 462:../proyecto.c **** 
+ 463:../proyecto.c **** 						iis_textToSpeech( s2 );
+ 464:../proyecto.c **** 						cOp1=intToStrC(op1);
+ 465:../proyecto.c **** 						lcd_puts_xTam( 44, 72, BLACK, cOp1, 4);
+ 466:../proyecto.c **** 					}
+ 467:../proyecto.c **** 					else if(op == 1){
+ 468:../proyecto.c **** 						s2 = buf2 + 2;
+ 469:../proyecto.c **** 						if(op2 == 0) op2 = scancode;
+ 470:../proyecto.c **** 						else op2 = op2 * 10 + scancode;
+ 471:../proyecto.c **** 						*s2 = (uint8)scancode + '0';
+ 472:../proyecto.c **** 						contOp2++;
+ 473:../proyecto.c **** 
+ 474:../proyecto.c **** 						iis_textToSpeech( s2 );
+ 475:../proyecto.c **** 						cOp2=intToStrC(op2);
+ 476:../proyecto.c **** 						lcd_puts_xTam( 171, 72, BLACK, cOp2, 4);
+ 477:../proyecto.c **** 					}
+ 478:../proyecto.c **** 				}
+ 479:../proyecto.c **** 				break;
+ 5242              		.loc 1 479 0
+ 5243 1b50 D10200EA 		b	.L57
+ 5244              	.L124:
+ 442:../proyecto.c **** 					else if(contH == 2 && contM < 2) {
+ 5245              		.loc 1 442 0
+ 5246 1b54 58331FE5 		ldr	r3, .L191+88
+ 5247 1b58 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5248 1b5c 020053E3 		cmp	r3, #2
+ 5249 1b60 AE02001A 		bne	.L175
+ 442:../proyecto.c **** 					else if(contH == 2 && contM < 2) {
+ 5250              		.loc 1 442 0 is_stmt 0 discriminator 1
+ 5251 1b64 64331FE5 		ldr	r3, .L191+92
+ 5252 1b68 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5253 1b6c 010053E3 		cmp	r3, #1
+ 5254 1b70 AC02008A 		bhi	.L176
+ 443:../proyecto.c **** 						s = buf + 2;
+ 5255              		.loc 1 443 0 is_stmt 1
+ 5256 1b74 44304BE2 		sub	r3, fp, #68
+ 5257 1b78 023083E2 		add	r3, r3, #2
+ 5258 1b7c 38300BE5 		str	r3, [fp, #-56]
+ 444:../proyecto.c **** 						if(contM == 0) m = scancode * 10;
+ 5259              		.loc 1 444 0
+ 5260 1b80 80331FE5 		ldr	r3, .L191+92
+ 5261 1b84 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5262 1b88 000053E3 		cmp	r3, #0
+ 5263 1b8c 0800001A 		bne	.L127
+ 444:../proyecto.c **** 						if(contM == 0) m = scancode * 10;
+ 5264              		.loc 1 444 0 is_stmt 0 discriminator 1
+ 5265 1b90 25305BE5 		ldrb	r3, [fp, #-37]
+ 5266 1b94 0320A0E1 		mov	r2, r3
+ 5267 1b98 0221A0E1 		mov	r2, r2, asl #2
+ 5268 1b9c 033082E0 		add	r3, r2, r3
+ 5269 1ba0 8330A0E1 		mov	r3, r3, asl #1
+ 5270 1ba4 FF2003E2 		and	r2, r3, #255
+ 5271 1ba8 A4331FE5 		ldr	r3, .L191+96
+ 5272 1bac 0020C3E5 		strb	r2, [r3, #0]
+ 5273 1bb0 060000EA 		b	.L128
+ 5274              	.L127:
+ 445:../proyecto.c **** 						else m += scancode;
+ 5275              		.loc 1 445 0 is_stmt 1
+ 5276 1bb4 B0331FE5 		ldr	r3, .L191+96
+ 5277 1bb8 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 5278 1bbc 25305BE5 		ldrb	r3, [fp, #-37]
+ 5279 1bc0 033082E0 		add	r3, r2, r3
+ 5280 1bc4 FF2003E2 		and	r2, r3, #255
+ 5281 1bc8 C4331FE5 		ldr	r3, .L191+96
+ 5282 1bcc 0020C3E5 		strb	r2, [r3, #0]
+ 5283              	.L128:
+ 446:../proyecto.c **** 						*s = (uint8)scancode + '0';
+ 5284              		.loc 1 446 0
+ 5285 1bd0 25305BE5 		ldrb	r3, [fp, #-37]
+ 5286 1bd4 303083E2 		add	r3, r3, #48
+ 5287 1bd8 FF2003E2 		and	r2, r3, #255
+ 5288 1bdc 38301BE5 		ldr	r3, [fp, #-56]
+ 5289 1be0 0020C3E5 		strb	r2, [r3, #0]
+ 448:../proyecto.c **** 						iis_textToSpeech( s );
+ 5290              		.loc 1 448 0
+ 5291 1be4 38001BE5 		ldr	r0, [fp, #-56]
+ 5292 1be8 FEFFFFEB 		bl	iis_textToSpeech
+ 449:../proyecto.c **** 						contM++;
+ 5293              		.loc 1 449 0
+ 5294 1bec EC331FE5 		ldr	r3, .L191+92
+ 5295 1bf0 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5296 1bf4 013083E2 		add	r3, r3, #1
+ 5297 1bf8 FF2003E2 		and	r2, r3, #255
+ 5298 1bfc FC331FE5 		ldr	r3, .L191+92
+ 5299 1c00 0020C3E5 		strb	r2, [r3, #0]
+ 450:../proyecto.c **** 						hmpp=intToStr(m, 'm');
+ 5300              		.loc 1 450 0
+ 5301 1c04 00341FE5 		ldr	r3, .L191+96
+ 5302 1c08 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5303 1c0c 0300A0E1 		mov	r0, r3
+ 5304 1c10 6D10A0E3 		mov	r1, #109
+ 5305 1c14 FEFFFFEB 		bl	intToStr
+ 5306 1c18 24000BE5 		str	r0, [fp, #-36]
+ 451:../proyecto.c **** 						if(m < 10) {*hmpp--; *hmpp = '0'+(uint8)0;}
+ 5307              		.loc 1 451 0
+ 5308 1c1c 18341FE5 		ldr	r3, .L191+96
+ 5309 1c20 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5310 1c24 090053E3 		cmp	r3, #9
+ 5311 1c28 0500008A 		bhi	.L129
+ 451:../proyecto.c **** 						if(m < 10) {*hmpp--; *hmpp = '0'+(uint8)0;}
+ 5312              		.loc 1 451 0 is_stmt 0 discriminator 1
+ 5313 1c2c 24301BE5 		ldr	r3, [fp, #-36]
+ 5314 1c30 013043E2 		sub	r3, r3, #1
+ 5315 1c34 24300BE5 		str	r3, [fp, #-36]
+ 5316 1c38 24301BE5 		ldr	r3, [fp, #-36]
+ 5317 1c3c 3020A0E3 		mov	r2, #48
+ 5318 1c40 0020C3E5 		strb	r2, [r3, #0]
+ 5319              	.L129:
+ 452:../proyecto.c **** 						lcd_puts_xTam( 161, 60, BLACK, hmpp, 6);
+ 5320              		.loc 1 452 0 is_stmt 1
+ 5321 1c44 0630A0E3 		mov	r3, #6
+ 5322 1c48 00308DE5 		str	r3, [sp, #0]
+ 5323 1c4c A100A0E3 		mov	r0, #161
+ 5324 1c50 3C10A0E3 		mov	r1, #60
+ 5325 1c54 0F20A0E3 		mov	r2, #15
+ 5326 1c58 24301BE5 		ldr	r3, [fp, #-36]
+ 5327 1c5c FEFFFFEB 		bl	lcd_puts_xTam
+ 5328              		.loc 1 479 0
+ 5329 1c60 8D0200EA 		b	.L57
+ 5330              	.L121:
+ 455:../proyecto.c **** 				else if(calculadora){
+ 5331              		.loc 1 455 0
+ 5332 1c64 1C341FE5 		ldr	r3, .L191+164
+ 5333 1c68 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5334 1c6c 000053E3 		cmp	r3, #0
+ 5335 1c70 6E02000A 		beq	.L177
+ 456:../proyecto.c **** 					if(contOp1 < 2){
+ 5336              		.loc 1 456 0
+ 5337 1c74 60341FE5 		ldr	r3, .L191+112
+ 5338 1c78 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5339 1c7c 033CA0E1 		mov	r3, r3, asl #24
+ 5340 1c80 433CA0E1 		mov	r3, r3, asr #24
+ 5341 1c84 010053E3 		cmp	r3, #1
+ 5342 1c88 340000CA 		bgt	.L131
+ 457:../proyecto.c **** 						s2 = buf2 + 2;
+ 5343              		.loc 1 457 0
+ 5344 1c8c 48304BE2 		sub	r3, fp, #72
+ 5345 1c90 023083E2 		add	r3, r3, #2
+ 5346 1c94 3C300BE5 		str	r3, [fp, #-60]
+ 458:../proyecto.c **** 						if(op1 == 0) op1 = scancode;
+ 5347              		.loc 1 458 0
+ 5348 1c98 64341FE5 		ldr	r3, .L191+144
+ 5349 1c9c 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5350 1ca0 000053E3 		cmp	r3, #0
+ 5351 1ca4 0300001A 		bne	.L132
+ 458:../proyecto.c **** 						if(op1 == 0) op1 = scancode;
+ 5352              		.loc 1 458 0 is_stmt 0 discriminator 1
+ 5353 1ca8 25205BE5 		ldrb	r2, [fp, #-37]	@ zero_extendqisi2
+ 5354 1cac 78341FE5 		ldr	r3, .L191+144
+ 5355 1cb0 0020C3E5 		strb	r2, [r3, #0]
+ 5356 1cb4 0D0000EA 		b	.L133
+ 5357              	.L132:
+ 459:../proyecto.c **** 						else op1 = op1 * 10 + scancode;
+ 5358              		.loc 1 459 0 is_stmt 1
+ 5359 1cb8 84341FE5 		ldr	r3, .L191+144
+ 5360 1cbc 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5361 1cc0 FF3003E2 		and	r3, r3, #255
+ 5362 1cc4 0320A0E1 		mov	r2, r3
+ 5363 1cc8 0221A0E1 		mov	r2, r2, asl #2
+ 5364 1ccc 033082E0 		add	r3, r2, r3
+ 5365 1cd0 8330A0E1 		mov	r3, r3, asl #1
+ 5366 1cd4 FF2003E2 		and	r2, r3, #255
+ 5367 1cd8 25305BE5 		ldrb	r3, [fp, #-37]
+ 5368 1cdc 033082E0 		add	r3, r2, r3
+ 5369 1ce0 FF3003E2 		and	r3, r3, #255
+ 5370 1ce4 FF2003E2 		and	r2, r3, #255
+ 5371 1ce8 B4341FE5 		ldr	r3, .L191+144
+ 5372 1cec 0020C3E5 		strb	r2, [r3, #0]
+ 5373              	.L133:
+ 460:../proyecto.c **** 						*s2 = (uint8)scancode + '0';
+ 5374              		.loc 1 460 0
+ 5375 1cf0 25305BE5 		ldrb	r3, [fp, #-37]
+ 5376 1cf4 303083E2 		add	r3, r3, #48
+ 5377 1cf8 FF2003E2 		and	r2, r3, #255
+ 5378 1cfc 3C301BE5 		ldr	r3, [fp, #-60]
+ 5379 1d00 0020C3E5 		strb	r2, [r3, #0]
+ 461:../proyecto.c **** 						contOp1++;
+ 5380              		.loc 1 461 0
+ 5381 1d04 F0341FE5 		ldr	r3, .L191+112
+ 5382 1d08 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5383 1d0c 013083E2 		add	r3, r3, #1
+ 5384 1d10 FF2003E2 		and	r2, r3, #255
+ 5385 1d14 00351FE5 		ldr	r3, .L191+112
+ 5386 1d18 0020C3E5 		strb	r2, [r3, #0]
+ 463:../proyecto.c **** 						iis_textToSpeech( s2 );
+ 5387              		.loc 1 463 0
+ 5388 1d1c 3C001BE5 		ldr	r0, [fp, #-60]
+ 5389 1d20 FEFFFFEB 		bl	iis_textToSpeech
+ 464:../proyecto.c **** 						cOp1=intToStrC(op1);
+ 5390              		.loc 1 464 0
+ 5391 1d24 F0341FE5 		ldr	r3, .L191+144
+ 5392 1d28 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5393 1d2c 033CA0E1 		mov	r3, r3, asl #24
+ 5394 1d30 433CA0E1 		mov	r3, r3, asr #24
+ 5395 1d34 0300A0E1 		mov	r0, r3
+ 5396 1d38 FEFFFFEB 		bl	intToStrC
+ 5397 1d3c 30000BE5 		str	r0, [fp, #-48]
+ 465:../proyecto.c **** 						lcd_puts_xTam( 44, 72, BLACK, cOp1, 4);
+ 5398              		.loc 1 465 0
+ 5399 1d40 0430A0E3 		mov	r3, #4
+ 5400 1d44 00308DE5 		str	r3, [sp, #0]
+ 5401 1d48 2C00A0E3 		mov	r0, #44
+ 5402 1d4c 4810A0E3 		mov	r1, #72
+ 5403 1d50 0F20A0E3 		mov	r2, #15
+ 5404 1d54 30301BE5 		ldr	r3, [fp, #-48]
+ 5405 1d58 FEFFFFEB 		bl	lcd_puts_xTam
+ 5406              		.loc 1 479 0
+ 5407 1d5c 4E0200EA 		b	.L57
+ 5408              	.L131:
+ 467:../proyecto.c **** 					else if(op == 1){
+ 5409              		.loc 1 467 0
+ 5410 1d60 40351FE5 		ldr	r3, .L191+124
+ 5411 1d64 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5412 1d68 033CA0E1 		mov	r3, r3, asl #24
+ 5413 1d6c 433CA0E1 		mov	r3, r3, asr #24
+ 5414 1d70 010053E3 		cmp	r3, #1
+ 5415 1d74 2F02001A 		bne	.L178
+ 468:../proyecto.c **** 						s2 = buf2 + 2;
+ 5416              		.loc 1 468 0
+ 5417 1d78 48304BE2 		sub	r3, fp, #72
+ 5418 1d7c 023083E2 		add	r3, r3, #2
+ 5419 1d80 3C300BE5 		str	r3, [fp, #-60]
+ 469:../proyecto.c **** 						if(op2 == 0) op2 = scancode;
+ 5420              		.loc 1 469 0
+ 5421 1d84 4C351FE5 		ldr	r3, .L191+148
+ 5422 1d88 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5423 1d8c 000053E3 		cmp	r3, #0
+ 5424 1d90 0300001A 		bne	.L134
+ 469:../proyecto.c **** 						if(op2 == 0) op2 = scancode;
+ 5425              		.loc 1 469 0 is_stmt 0 discriminator 1
+ 5426 1d94 25205BE5 		ldrb	r2, [fp, #-37]	@ zero_extendqisi2
+ 5427 1d98 60351FE5 		ldr	r3, .L191+148
+ 5428 1d9c 0020C3E5 		strb	r2, [r3, #0]
+ 5429 1da0 0D0000EA 		b	.L135
+ 5430              	.L134:
+ 470:../proyecto.c **** 						else op2 = op2 * 10 + scancode;
+ 5431              		.loc 1 470 0 is_stmt 1
+ 5432 1da4 6C351FE5 		ldr	r3, .L191+148
+ 5433 1da8 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5434 1dac FF3003E2 		and	r3, r3, #255
+ 5435 1db0 0320A0E1 		mov	r2, r3
+ 5436 1db4 0221A0E1 		mov	r2, r2, asl #2
+ 5437 1db8 033082E0 		add	r3, r2, r3
+ 5438 1dbc 8330A0E1 		mov	r3, r3, asl #1
+ 5439 1dc0 FF2003E2 		and	r2, r3, #255
+ 5440 1dc4 25305BE5 		ldrb	r3, [fp, #-37]
+ 5441 1dc8 033082E0 		add	r3, r2, r3
+ 5442 1dcc FF3003E2 		and	r3, r3, #255
+ 5443 1dd0 FF2003E2 		and	r2, r3, #255
+ 5444 1dd4 9C351FE5 		ldr	r3, .L191+148
+ 5445 1dd8 0020C3E5 		strb	r2, [r3, #0]
+ 5446              	.L135:
+ 471:../proyecto.c **** 						*s2 = (uint8)scancode + '0';
+ 5447              		.loc 1 471 0
+ 5448 1ddc 25305BE5 		ldrb	r3, [fp, #-37]
+ 5449 1de0 303083E2 		add	r3, r3, #48
+ 5450 1de4 FF2003E2 		and	r2, r3, #255
+ 5451 1de8 3C301BE5 		ldr	r3, [fp, #-60]
+ 5452 1dec 0020C3E5 		strb	r2, [r3, #0]
+ 472:../proyecto.c **** 						contOp2++;
+ 5453              		.loc 1 472 0
+ 5454 1df0 CC351FE5 		ldr	r3, .L191+128
+ 5455 1df4 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5456 1df8 013083E2 		add	r3, r3, #1
+ 5457 1dfc FF2003E2 		and	r2, r3, #255
+ 5458 1e00 DC351FE5 		ldr	r3, .L191+128
+ 5459 1e04 0020C3E5 		strb	r2, [r3, #0]
+ 474:../proyecto.c **** 						iis_textToSpeech( s2 );
+ 5460              		.loc 1 474 0
+ 5461 1e08 3C001BE5 		ldr	r0, [fp, #-60]
+ 5462 1e0c FEFFFFEB 		bl	iis_textToSpeech
+ 475:../proyecto.c **** 						cOp2=intToStrC(op2);
+ 5463              		.loc 1 475 0
+ 5464 1e10 D8351FE5 		ldr	r3, .L191+148
+ 5465 1e14 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5466 1e18 033CA0E1 		mov	r3, r3, asl #24
+ 5467 1e1c 433CA0E1 		mov	r3, r3, asr #24
+ 5468 1e20 0300A0E1 		mov	r0, r3
+ 5469 1e24 FEFFFFEB 		bl	intToStrC
+ 5470 1e28 34000BE5 		str	r0, [fp, #-52]
+ 476:../proyecto.c **** 						lcd_puts_xTam( 171, 72, BLACK, cOp2, 4);
+ 5471              		.loc 1 476 0
+ 5472 1e2c 0430A0E3 		mov	r3, #4
+ 5473 1e30 00308DE5 		str	r3, [sp, #0]
+ 5474 1e34 AB00A0E3 		mov	r0, #171
+ 5475 1e38 4810A0E3 		mov	r1, #72
+ 5476 1e3c 0F20A0E3 		mov	r2, #15
+ 5477 1e40 34301BE5 		ldr	r3, [fp, #-52]
+ 5478 1e44 FEFFFFEB 		bl	lcd_puts_xTam
+ 5479              		.loc 1 479 0
+ 5480 1e48 130200EA 		b	.L57
+ 5481              	.L62:
+ 480:../proyecto.c **** 			case 0x6:
+ 481:../proyecto.c **** 			case 0x7:
+ 482:../proyecto.c **** 			case 0x8:
+ 483:../proyecto.c **** 			case 0x9:
+ 484:../proyecto.c **** 				if(alarma){
+ 5482              		.loc 1 484 0
+ 5483 1e4c 58361FE5 		ldr	r3, .L191+80
+ 5484 1e50 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5485 1e54 000053E3 		cmp	r3, #0
+ 5486 1e58 7A00000A 		beq	.L136
+ 485:../proyecto.c **** 					if(contH == 1 && h != 20) {
+ 5487              		.loc 1 485 0
+ 5488 1e5c 60361FE5 		ldr	r3, .L191+88
+ 5489 1e60 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5490 1e64 010053E3 		cmp	r3, #1
+ 5491 1e68 3200001A 		bne	.L137
+ 5492              		.loc 1 485 0 is_stmt 0 discriminator 1
+ 5493 1e6c 74361FE5 		ldr	r3, .L191+84
+ 5494 1e70 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5495 1e74 140053E3 		cmp	r3, #20
+ 5496 1e78 2E00000A 		beq	.L137
+ 486:../proyecto.c **** 						s = buf + 2;
+ 5497              		.loc 1 486 0 is_stmt 1
+ 5498 1e7c 44304BE2 		sub	r3, fp, #68
+ 5499 1e80 023083E2 		add	r3, r3, #2
+ 5500 1e84 38300BE5 		str	r3, [fp, #-56]
+ 487:../proyecto.c **** 						h += scancode;
+ 5501              		.loc 1 487 0
+ 5502 1e88 90361FE5 		ldr	r3, .L191+84
+ 5503 1e8c 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 5504 1e90 25305BE5 		ldrb	r3, [fp, #-37]
+ 5505 1e94 033082E0 		add	r3, r2, r3
+ 5506 1e98 FF2003E2 		and	r2, r3, #255
+ 5507 1e9c A4361FE5 		ldr	r3, .L191+84
+ 5508 1ea0 0020C3E5 		strb	r2, [r3, #0]
+ 488:../proyecto.c **** 						*s = (uint8)scancode + '0';
+ 5509              		.loc 1 488 0
+ 5510 1ea4 25305BE5 		ldrb	r3, [fp, #-37]
+ 5511 1ea8 303083E2 		add	r3, r3, #48
+ 5512 1eac FF2003E2 		and	r2, r3, #255
+ 5513 1eb0 38301BE5 		ldr	r3, [fp, #-56]
+ 5514 1eb4 0020C3E5 		strb	r2, [r3, #0]
+ 489:../proyecto.c **** 
+ 490:../proyecto.c **** 						iis_textToSpeech( s );
+ 5515              		.loc 1 490 0
+ 5516 1eb8 38001BE5 		ldr	r0, [fp, #-56]
+ 5517 1ebc FEFFFFEB 		bl	iis_textToSpeech
+ 491:../proyecto.c **** 						contH++;
+ 5518              		.loc 1 491 0
+ 5519 1ec0 C4361FE5 		ldr	r3, .L191+88
+ 5520 1ec4 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5521 1ec8 013083E2 		add	r3, r3, #1
+ 5522 1ecc FF2003E2 		and	r2, r3, #255
+ 5523 1ed0 D4361FE5 		ldr	r3, .L191+88
+ 5524 1ed4 0020C3E5 		strb	r2, [r3, #0]
+ 492:../proyecto.c **** 						hmp=intToStr(h, 'h');
+ 5525              		.loc 1 492 0
+ 5526 1ed8 E0361FE5 		ldr	r3, .L191+84
+ 5527 1edc 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5528 1ee0 0300A0E1 		mov	r0, r3
+ 5529 1ee4 6810A0E3 		mov	r1, #104
+ 5530 1ee8 FEFFFFEB 		bl	intToStr
+ 5531 1eec 20000BE5 		str	r0, [fp, #-32]
+ 493:../proyecto.c **** 						if(h < 10) {*hmp--; *hmp = '0'+(uint8)0;}
+ 5532              		.loc 1 493 0
+ 5533 1ef0 F8361FE5 		ldr	r3, .L191+84
+ 5534 1ef4 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5535 1ef8 090053E3 		cmp	r3, #9
+ 5536 1efc 0500008A 		bhi	.L138
+ 5537              		.loc 1 493 0 is_stmt 0 discriminator 1
+ 5538 1f00 20301BE5 		ldr	r3, [fp, #-32]
+ 5539 1f04 013043E2 		sub	r3, r3, #1
+ 5540 1f08 20300BE5 		str	r3, [fp, #-32]
+ 5541 1f0c 20301BE5 		ldr	r3, [fp, #-32]
+ 5542 1f10 3020A0E3 		mov	r2, #48
+ 5543 1f14 0020C3E5 		strb	r2, [r3, #0]
+ 5544              	.L138:
+ 494:../proyecto.c **** 						lcd_puts_xTam( 44, 60, BLACK, hmp, 6);
+ 5545              		.loc 1 494 0 is_stmt 1
+ 5546 1f18 0630A0E3 		mov	r3, #6
+ 5547 1f1c 00308DE5 		str	r3, [sp, #0]
+ 5548 1f20 2C00A0E3 		mov	r0, #44
+ 5549 1f24 3C10A0E3 		mov	r1, #60
+ 5550 1f28 0F20A0E3 		mov	r2, #15
+ 5551 1f2c 20301BE5 		ldr	r3, [fp, #-32]
+ 5552 1f30 FEFFFFEB 		bl	lcd_puts_xTam
+ 495:../proyecto.c **** 					}
+ 496:../proyecto.c **** 					else if(contH == 2 && contM == 1) {
+ 497:../proyecto.c **** 						s = buf + 2;
+ 498:../proyecto.c **** 						if(contM == 0) m = scancode * 10;
+ 499:../proyecto.c **** 						else m += scancode;
+ 500:../proyecto.c **** 						*s = (uint8)scancode + '0';
+ 501:../proyecto.c **** 
+ 502:../proyecto.c **** 						iis_textToSpeech( s );
+ 503:../proyecto.c **** 						contM++;
+ 504:../proyecto.c **** 						hmpp=intToStr(m, 'm');
+ 505:../proyecto.c **** 						if(m < 10) {*hmpp--; *hmpp = '0'+(uint8)0;}
+ 506:../proyecto.c **** 						lcd_puts_xTam( 161, 60, BLACK, hmpp, 6);
+ 507:../proyecto.c **** 					}
+ 508:../proyecto.c **** 				}
+ 509:../proyecto.c **** 				else if(calculadora == 1){
+ 510:../proyecto.c **** 					if(contOp1 < 2){
+ 511:../proyecto.c **** 						s2 = buf2 + 2;
+ 512:../proyecto.c **** 						if(op1 == 0) op1 = scancode;
+ 513:../proyecto.c **** 						else op1 = op1 * 10 + scancode;
+ 514:../proyecto.c **** 						*s2 = (uint8)scancode + '0';
+ 515:../proyecto.c **** 						contOp1++;
+ 516:../proyecto.c **** 
+ 517:../proyecto.c **** 						iis_textToSpeech( s2 );
+ 518:../proyecto.c **** 						cOp1=intToStrC(op1);
+ 519:../proyecto.c **** 						lcd_puts_xTam( 44, 72, BLACK, cOp1, 4);
+ 520:../proyecto.c **** 					}
+ 521:../proyecto.c **** 					else if(op == 1){
+ 522:../proyecto.c **** 						s2 = buf2 + 2;
+ 523:../proyecto.c **** 						if(op2 == 0) op2 = scancode;
+ 524:../proyecto.c **** 						else op2 = op2 * 10 + scancode;
+ 525:../proyecto.c **** 						*s2 = (uint8)scancode + '0';
+ 526:../proyecto.c **** 						contOp2++;
+ 527:../proyecto.c **** 
+ 528:../proyecto.c **** 						iis_textToSpeech( s2 );
+ 529:../proyecto.c **** 						cOp2=intToStrC(op2);
+ 530:../proyecto.c **** 						lcd_puts_xTam( 171, 72, BLACK, cOp2, 4);
+ 531:../proyecto.c **** 					}
+ 532:../proyecto.c **** 				}
+ 533:../proyecto.c **** 				break;
+ 5553              		.loc 1 533 0
+ 5554 1f34 D80100EA 		b	.L57
+ 5555              	.L137:
+ 496:../proyecto.c **** 					else if(contH == 2 && contM == 1) {
+ 5556              		.loc 1 496 0
+ 5557 1f38 3C371FE5 		ldr	r3, .L191+88
+ 5558 1f3c 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5559 1f40 020053E3 		cmp	r3, #2
+ 5560 1f44 BD01001A 		bne	.L179
+ 496:../proyecto.c **** 					else if(contH == 2 && contM == 1) {
+ 5561              		.loc 1 496 0 is_stmt 0 discriminator 1
+ 5562 1f48 48371FE5 		ldr	r3, .L191+92
+ 5563 1f4c 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5564 1f50 010053E3 		cmp	r3, #1
+ 5565 1f54 BB01001A 		bne	.L180
+ 497:../proyecto.c **** 						s = buf + 2;
+ 5566              		.loc 1 497 0 is_stmt 1
+ 5567 1f58 44304BE2 		sub	r3, fp, #68
+ 5568 1f5c 023083E2 		add	r3, r3, #2
+ 5569 1f60 38300BE5 		str	r3, [fp, #-56]
+ 498:../proyecto.c **** 						if(contM == 0) m = scancode * 10;
+ 5570              		.loc 1 498 0
+ 5571 1f64 64371FE5 		ldr	r3, .L191+92
+ 5572 1f68 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5573 1f6c 000053E3 		cmp	r3, #0
+ 5574 1f70 0800001A 		bne	.L140
+ 498:../proyecto.c **** 						if(contM == 0) m = scancode * 10;
+ 5575              		.loc 1 498 0 is_stmt 0 discriminator 1
+ 5576 1f74 25305BE5 		ldrb	r3, [fp, #-37]
+ 5577 1f78 0320A0E1 		mov	r2, r3
+ 5578 1f7c 0221A0E1 		mov	r2, r2, asl #2
+ 5579 1f80 033082E0 		add	r3, r2, r3
+ 5580 1f84 8330A0E1 		mov	r3, r3, asl #1
+ 5581 1f88 FF2003E2 		and	r2, r3, #255
+ 5582 1f8c 88371FE5 		ldr	r3, .L191+96
+ 5583 1f90 0020C3E5 		strb	r2, [r3, #0]
+ 5584 1f94 060000EA 		b	.L141
+ 5585              	.L140:
+ 499:../proyecto.c **** 						else m += scancode;
+ 5586              		.loc 1 499 0 is_stmt 1
+ 5587 1f98 94371FE5 		ldr	r3, .L191+96
+ 5588 1f9c 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 5589 1fa0 25305BE5 		ldrb	r3, [fp, #-37]
+ 5590 1fa4 033082E0 		add	r3, r2, r3
+ 5591 1fa8 FF2003E2 		and	r2, r3, #255
+ 5592 1fac A8371FE5 		ldr	r3, .L191+96
+ 5593 1fb0 0020C3E5 		strb	r2, [r3, #0]
+ 5594              	.L141:
+ 500:../proyecto.c **** 						*s = (uint8)scancode + '0';
+ 5595              		.loc 1 500 0
+ 5596 1fb4 25305BE5 		ldrb	r3, [fp, #-37]
+ 5597 1fb8 303083E2 		add	r3, r3, #48
+ 5598 1fbc FF2003E2 		and	r2, r3, #255
+ 5599 1fc0 38301BE5 		ldr	r3, [fp, #-56]
+ 5600 1fc4 0020C3E5 		strb	r2, [r3, #0]
+ 502:../proyecto.c **** 						iis_textToSpeech( s );
+ 5601              		.loc 1 502 0
+ 5602 1fc8 38001BE5 		ldr	r0, [fp, #-56]
+ 5603 1fcc FEFFFFEB 		bl	iis_textToSpeech
+ 503:../proyecto.c **** 						contM++;
+ 5604              		.loc 1 503 0
+ 5605 1fd0 D0371FE5 		ldr	r3, .L191+92
+ 5606 1fd4 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5607 1fd8 013083E2 		add	r3, r3, #1
+ 5608 1fdc FF2003E2 		and	r2, r3, #255
+ 5609 1fe0 E0371FE5 		ldr	r3, .L191+92
+ 5610 1fe4 0020C3E5 		strb	r2, [r3, #0]
+ 504:../proyecto.c **** 						hmpp=intToStr(m, 'm');
+ 5611              		.loc 1 504 0
+ 5612 1fe8 E4371FE5 		ldr	r3, .L191+96
+ 5613 1fec 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5614 1ff0 0300A0E1 		mov	r0, r3
+ 5615 1ff4 6D10A0E3 		mov	r1, #109
+ 5616 1ff8 FEFFFFEB 		bl	intToStr
+ 5617 1ffc 24000BE5 		str	r0, [fp, #-36]
+ 505:../proyecto.c **** 						if(m < 10) {*hmpp--; *hmpp = '0'+(uint8)0;}
+ 5618              		.loc 1 505 0
+ 5619 2000 FC371FE5 		ldr	r3, .L191+96
+ 5620 2004 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5621 2008 090053E3 		cmp	r3, #9
+ 5622 200c 0500008A 		bhi	.L142
+ 505:../proyecto.c **** 						if(m < 10) {*hmpp--; *hmpp = '0'+(uint8)0;}
+ 5623              		.loc 1 505 0 is_stmt 0 discriminator 1
+ 5624 2010 24301BE5 		ldr	r3, [fp, #-36]
+ 5625 2014 013043E2 		sub	r3, r3, #1
+ 5626 2018 24300BE5 		str	r3, [fp, #-36]
+ 5627 201c 24301BE5 		ldr	r3, [fp, #-36]
+ 5628 2020 3020A0E3 		mov	r2, #48
+ 5629 2024 0020C3E5 		strb	r2, [r3, #0]
+ 5630              	.L142:
+ 506:../proyecto.c **** 						lcd_puts_xTam( 161, 60, BLACK, hmpp, 6);
+ 5631              		.loc 1 506 0 is_stmt 1
+ 5632 2028 0630A0E3 		mov	r3, #6
+ 5633 202c 00308DE5 		str	r3, [sp, #0]
+ 5634 2030 A100A0E3 		mov	r0, #161
+ 5635 2034 3C10A0E3 		mov	r1, #60
+ 5636 2038 0F20A0E3 		mov	r2, #15
+ 5637 203c 24301BE5 		ldr	r3, [fp, #-36]
+ 5638 2040 FEFFFFEB 		bl	lcd_puts_xTam
+ 5639              		.loc 1 533 0
+ 5640 2044 940100EA 		b	.L57
+ 5641              	.L136:
+ 509:../proyecto.c **** 				else if(calculadora == 1){
+ 5642              		.loc 1 509 0
+ 5643 2048 00381FE5 		ldr	r3, .L191+164
+ 5644 204c 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5645 2050 010053E3 		cmp	r3, #1
+ 5646 2054 7D01001A 		bne	.L181
+ 510:../proyecto.c **** 					if(contOp1 < 2){
+ 5647              		.loc 1 510 0
+ 5648 2058 44381FE5 		ldr	r3, .L191+112
+ 5649 205c 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5650 2060 033CA0E1 		mov	r3, r3, asl #24
+ 5651 2064 433CA0E1 		mov	r3, r3, asr #24
+ 5652 2068 010053E3 		cmp	r3, #1
+ 5653 206c 340000CA 		bgt	.L144
+ 511:../proyecto.c **** 						s2 = buf2 + 2;
+ 5654              		.loc 1 511 0
+ 5655 2070 48304BE2 		sub	r3, fp, #72
+ 5656 2074 023083E2 		add	r3, r3, #2
+ 5657 2078 3C300BE5 		str	r3, [fp, #-60]
+ 512:../proyecto.c **** 						if(op1 == 0) op1 = scancode;
+ 5658              		.loc 1 512 0
+ 5659 207c 48381FE5 		ldr	r3, .L191+144
+ 5660 2080 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5661 2084 000053E3 		cmp	r3, #0
+ 5662 2088 0300001A 		bne	.L145
+ 512:../proyecto.c **** 						if(op1 == 0) op1 = scancode;
+ 5663              		.loc 1 512 0 is_stmt 0 discriminator 1
+ 5664 208c 25205BE5 		ldrb	r2, [fp, #-37]	@ zero_extendqisi2
+ 5665 2090 5C381FE5 		ldr	r3, .L191+144
+ 5666 2094 0020C3E5 		strb	r2, [r3, #0]
+ 5667 2098 0D0000EA 		b	.L146
+ 5668              	.L145:
+ 513:../proyecto.c **** 						else op1 = op1 * 10 + scancode;
+ 5669              		.loc 1 513 0 is_stmt 1
+ 5670 209c 68381FE5 		ldr	r3, .L191+144
+ 5671 20a0 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5672 20a4 FF3003E2 		and	r3, r3, #255
+ 5673 20a8 0320A0E1 		mov	r2, r3
+ 5674 20ac 0221A0E1 		mov	r2, r2, asl #2
+ 5675 20b0 033082E0 		add	r3, r2, r3
+ 5676 20b4 8330A0E1 		mov	r3, r3, asl #1
+ 5677 20b8 FF2003E2 		and	r2, r3, #255
+ 5678 20bc 25305BE5 		ldrb	r3, [fp, #-37]
+ 5679 20c0 033082E0 		add	r3, r2, r3
+ 5680 20c4 FF3003E2 		and	r3, r3, #255
+ 5681 20c8 FF2003E2 		and	r2, r3, #255
+ 5682 20cc 98381FE5 		ldr	r3, .L191+144
+ 5683 20d0 0020C3E5 		strb	r2, [r3, #0]
+ 5684              	.L146:
+ 514:../proyecto.c **** 						*s2 = (uint8)scancode + '0';
+ 5685              		.loc 1 514 0
+ 5686 20d4 25305BE5 		ldrb	r3, [fp, #-37]
+ 5687 20d8 303083E2 		add	r3, r3, #48
+ 5688 20dc FF2003E2 		and	r2, r3, #255
+ 5689 20e0 3C301BE5 		ldr	r3, [fp, #-60]
+ 5690 20e4 0020C3E5 		strb	r2, [r3, #0]
+ 515:../proyecto.c **** 						contOp1++;
+ 5691              		.loc 1 515 0
+ 5692 20e8 D4381FE5 		ldr	r3, .L191+112
+ 5693 20ec 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5694 20f0 013083E2 		add	r3, r3, #1
+ 5695 20f4 FF2003E2 		and	r2, r3, #255
+ 5696 20f8 E4381FE5 		ldr	r3, .L191+112
+ 5697 20fc 0020C3E5 		strb	r2, [r3, #0]
+ 517:../proyecto.c **** 						iis_textToSpeech( s2 );
+ 5698              		.loc 1 517 0
+ 5699 2100 3C001BE5 		ldr	r0, [fp, #-60]
+ 5700 2104 FEFFFFEB 		bl	iis_textToSpeech
+ 518:../proyecto.c **** 						cOp1=intToStrC(op1);
+ 5701              		.loc 1 518 0
+ 5702 2108 D4381FE5 		ldr	r3, .L191+144
+ 5703 210c 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5704 2110 033CA0E1 		mov	r3, r3, asl #24
+ 5705 2114 433CA0E1 		mov	r3, r3, asr #24
+ 5706 2118 0300A0E1 		mov	r0, r3
+ 5707 211c FEFFFFEB 		bl	intToStrC
+ 5708 2120 30000BE5 		str	r0, [fp, #-48]
+ 519:../proyecto.c **** 						lcd_puts_xTam( 44, 72, BLACK, cOp1, 4);
+ 5709              		.loc 1 519 0
+ 5710 2124 0430A0E3 		mov	r3, #4
+ 5711 2128 00308DE5 		str	r3, [sp, #0]
+ 5712 212c 2C00A0E3 		mov	r0, #44
+ 5713 2130 4810A0E3 		mov	r1, #72
+ 5714 2134 0F20A0E3 		mov	r2, #15
+ 5715 2138 30301BE5 		ldr	r3, [fp, #-48]
+ 5716 213c FEFFFFEB 		bl	lcd_puts_xTam
+ 5717              		.loc 1 533 0
+ 5718 2140 550100EA 		b	.L57
+ 5719              	.L144:
+ 521:../proyecto.c **** 					else if(op == 1){
+ 5720              		.loc 1 521 0
+ 5721 2144 24391FE5 		ldr	r3, .L191+124
+ 5722 2148 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5723 214c 033CA0E1 		mov	r3, r3, asl #24
+ 5724 2150 433CA0E1 		mov	r3, r3, asr #24
+ 5725 2154 010053E3 		cmp	r3, #1
+ 5726 2158 3E01001A 		bne	.L182
+ 522:../proyecto.c **** 						s2 = buf2 + 2;
+ 5727              		.loc 1 522 0
+ 5728 215c 48304BE2 		sub	r3, fp, #72
+ 5729 2160 023083E2 		add	r3, r3, #2
+ 5730 2164 3C300BE5 		str	r3, [fp, #-60]
+ 523:../proyecto.c **** 						if(op2 == 0) op2 = scancode;
+ 5731              		.loc 1 523 0
+ 5732 2168 30391FE5 		ldr	r3, .L191+148
+ 5733 216c 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5734 2170 000053E3 		cmp	r3, #0
+ 5735 2174 0300001A 		bne	.L147
+ 523:../proyecto.c **** 						if(op2 == 0) op2 = scancode;
+ 5736              		.loc 1 523 0 is_stmt 0 discriminator 1
+ 5737 2178 25205BE5 		ldrb	r2, [fp, #-37]	@ zero_extendqisi2
+ 5738 217c 44391FE5 		ldr	r3, .L191+148
+ 5739 2180 0020C3E5 		strb	r2, [r3, #0]
+ 5740 2184 0D0000EA 		b	.L148
+ 5741              	.L147:
+ 524:../proyecto.c **** 						else op2 = op2 * 10 + scancode;
+ 5742              		.loc 1 524 0 is_stmt 1
+ 5743 2188 50391FE5 		ldr	r3, .L191+148
+ 5744 218c 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5745 2190 FF3003E2 		and	r3, r3, #255
+ 5746 2194 0320A0E1 		mov	r2, r3
+ 5747 2198 0221A0E1 		mov	r2, r2, asl #2
+ 5748 219c 033082E0 		add	r3, r2, r3
+ 5749 21a0 8330A0E1 		mov	r3, r3, asl #1
+ 5750 21a4 FF2003E2 		and	r2, r3, #255
+ 5751 21a8 25305BE5 		ldrb	r3, [fp, #-37]
+ 5752 21ac 033082E0 		add	r3, r2, r3
+ 5753 21b0 FF3003E2 		and	r3, r3, #255
+ 5754 21b4 FF2003E2 		and	r2, r3, #255
+ 5755 21b8 80391FE5 		ldr	r3, .L191+148
+ 5756 21bc 0020C3E5 		strb	r2, [r3, #0]
+ 5757              	.L148:
+ 525:../proyecto.c **** 						*s2 = (uint8)scancode + '0';
+ 5758              		.loc 1 525 0
+ 5759 21c0 25305BE5 		ldrb	r3, [fp, #-37]
+ 5760 21c4 303083E2 		add	r3, r3, #48
+ 5761 21c8 FF2003E2 		and	r2, r3, #255
+ 5762 21cc 3C301BE5 		ldr	r3, [fp, #-60]
+ 5763 21d0 0020C3E5 		strb	r2, [r3, #0]
+ 526:../proyecto.c **** 						contOp2++;
+ 5764              		.loc 1 526 0
+ 5765 21d4 B0391FE5 		ldr	r3, .L191+128
+ 5766 21d8 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5767 21dc 013083E2 		add	r3, r3, #1
+ 5768 21e0 FF2003E2 		and	r2, r3, #255
+ 5769 21e4 C0391FE5 		ldr	r3, .L191+128
+ 5770 21e8 0020C3E5 		strb	r2, [r3, #0]
+ 528:../proyecto.c **** 						iis_textToSpeech( s2 );
+ 5771              		.loc 1 528 0
+ 5772 21ec 3C001BE5 		ldr	r0, [fp, #-60]
+ 5773 21f0 FEFFFFEB 		bl	iis_textToSpeech
+ 529:../proyecto.c **** 						cOp2=intToStrC(op2);
+ 5774              		.loc 1 529 0
+ 5775 21f4 BC391FE5 		ldr	r3, .L191+148
+ 5776 21f8 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5777 21fc 033CA0E1 		mov	r3, r3, asl #24
+ 5778 2200 433CA0E1 		mov	r3, r3, asr #24
+ 5779 2204 0300A0E1 		mov	r0, r3
+ 5780 2208 FEFFFFEB 		bl	intToStrC
+ 5781 220c 34000BE5 		str	r0, [fp, #-52]
+ 530:../proyecto.c **** 						lcd_puts_xTam( 171, 72, BLACK, cOp2, 4);
+ 5782              		.loc 1 530 0
+ 5783 2210 0430A0E3 		mov	r3, #4
+ 5784 2214 00308DE5 		str	r3, [sp, #0]
+ 5785 2218 AB00A0E3 		mov	r0, #171
+ 5786 221c 4810A0E3 		mov	r1, #72
+ 5787 2220 0F20A0E3 		mov	r2, #15
+ 5788 2224 34301BE5 		ldr	r3, [fp, #-52]
+ 5789 2228 FEFFFFEB 		bl	lcd_puts_xTam
+ 5790              		.loc 1 533 0
+ 5791 222c 1A0100EA 		b	.L57
+ 5792              	.L63:
+ 534:../proyecto.c **** 			case 0xa:
+ 535:../proyecto.c **** 				if(calculadora && contOp1 > 0){
+ 5793              		.loc 1 535 0
+ 5794 2230 E8391FE5 		ldr	r3, .L191+164
+ 5795 2234 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5796 2238 000053E3 		cmp	r3, #0
+ 5797 223c 0701000A 		beq	.L183
+ 5798              		.loc 1 535 0 is_stmt 0 discriminator 1
+ 5799 2240 2C3A1FE5 		ldr	r3, .L191+112
+ 5800 2244 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5801 2248 033CA0E1 		mov	r3, r3, asl #24
+ 5802 224c 433CA0E1 		mov	r3, r3, asr #24
+ 5803 2250 000053E3 		cmp	r3, #0
+ 5804 2254 030100DA 		ble	.L184
+ 536:../proyecto.c **** 					if(contOp1 < 2) contOp1 = 2;
+ 5805              		.loc 1 536 0 is_stmt 1
+ 5806 2258 443A1FE5 		ldr	r3, .L191+112
+ 5807 225c 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5808 2260 033CA0E1 		mov	r3, r3, asl #24
+ 5809 2264 433CA0E1 		mov	r3, r3, asr #24
+ 5810 2268 010053E3 		cmp	r3, #1
+ 5811 226c 020000CA 		bgt	.L150
+ 5812              		.loc 1 536 0 is_stmt 0 discriminator 1
+ 5813 2270 5C3A1FE5 		ldr	r3, .L191+112
+ 5814 2274 0220A0E3 		mov	r2, #2
+ 5815 2278 0020C3E5 		strb	r2, [r3, #0]
+ 5816              	.L150:
+ 537:../proyecto.c **** 					opChar = '+';
+ 5817              		.loc 1 537 0 is_stmt 1
+ 5818 227c 4C3A1FE5 		ldr	r3, .L191+140
+ 5819 2280 2B20A0E3 		mov	r2, #43
+ 5820 2284 0020C3E5 		strb	r2, [r3, #0]
+ 538:../proyecto.c **** 					iis_textToSpeech( "mas" );
+ 5821              		.loc 1 538 0
+ 5822 2288 800A1FE5 		ldr	r0, .L191+100
+ 5823 228c FEFFFFEB 		bl	iis_textToSpeech
+ 539:../proyecto.c **** 					lcd_puts_xTam( 126, 72,BLACK, "+", 4);
+ 5824              		.loc 1 539 0
+ 5825 2290 0430A0E3 		mov	r3, #4
+ 5826 2294 00308DE5 		str	r3, [sp, #0]
+ 5827 2298 7E00A0E3 		mov	r0, #126
+ 5828 229c 4810A0E3 		mov	r1, #72
+ 5829 22a0 0F20A0E3 		mov	r2, #15
+ 5830 22a4 983A1FE5 		ldr	r3, .L191+104
+ 5831 22a8 FEFFFFEB 		bl	lcd_puts_xTam
+ 540:../proyecto.c **** 					op = 1;
+ 5832              		.loc 1 540 0
+ 5833 22ac 8C3A1FE5 		ldr	r3, .L191+124
+ 5834 22b0 0120A0E3 		mov	r2, #1
+ 5835 22b4 0020C3E5 		strb	r2, [r3, #0]
+ 541:../proyecto.c **** 				}
+ 542:../proyecto.c **** 				break;
+ 5836              		.loc 1 542 0
+ 5837 22b8 F70000EA 		b	.L57
+ 5838              	.L64:
+ 543:../proyecto.c **** 			case 0xb:
+ 544:../proyecto.c **** 				if(calculadora && contOp1 > 0){
+ 5839              		.loc 1 544 0
+ 5840 22bc 743A1FE5 		ldr	r3, .L191+164
+ 5841 22c0 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5842 22c4 000053E3 		cmp	r3, #0
+ 5843 22c8 E800000A 		beq	.L185
+ 5844              		.loc 1 544 0 is_stmt 0 discriminator 1
+ 5845 22cc B83A1FE5 		ldr	r3, .L191+112
+ 5846 22d0 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5847 22d4 033CA0E1 		mov	r3, r3, asl #24
+ 5848 22d8 433CA0E1 		mov	r3, r3, asr #24
+ 5849 22dc 000053E3 		cmp	r3, #0
+ 5850 22e0 E40000DA 		ble	.L186
+ 545:../proyecto.c **** 					if(contOp1 < 2) contOp1 = 2;
+ 5851              		.loc 1 545 0 is_stmt 1
+ 5852 22e4 D03A1FE5 		ldr	r3, .L191+112
+ 5853 22e8 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5854 22ec 033CA0E1 		mov	r3, r3, asl #24
+ 5855 22f0 433CA0E1 		mov	r3, r3, asr #24
+ 5856 22f4 010053E3 		cmp	r3, #1
+ 5857 22f8 020000CA 		bgt	.L152
+ 5858              		.loc 1 545 0 is_stmt 0 discriminator 1
+ 5859 22fc E83A1FE5 		ldr	r3, .L191+112
+ 5860 2300 0220A0E3 		mov	r2, #2
+ 5861 2304 0020C3E5 		strb	r2, [r3, #0]
+ 5862              	.L152:
+ 546:../proyecto.c **** 					opChar = '-';
+ 5863              		.loc 1 546 0 is_stmt 1
+ 5864 2308 D83A1FE5 		ldr	r3, .L191+140
+ 5865 230c 2D20A0E3 		mov	r2, #45
+ 5866 2310 0020C3E5 		strb	r2, [r3, #0]
+ 547:../proyecto.c **** 					iis_textToSpeech( "menos" );
+ 5867              		.loc 1 547 0
+ 5868 2314 D80A1FE5 		ldr	r0, .L191+152
+ 5869 2318 FEFFFFEB 		bl	iis_textToSpeech
+ 548:../proyecto.c **** 					lcd_puts_xTam( 126, 72,BLACK, "-", 4);
+ 5870              		.loc 1 548 0
+ 5871 231c 0430A0E3 		mov	r3, #4
+ 5872 2320 00308DE5 		str	r3, [sp, #0]
+ 5873 2324 7E00A0E3 		mov	r0, #126
+ 5874 2328 4810A0E3 		mov	r1, #72
+ 5875 232c 0F20A0E3 		mov	r2, #15
+ 5876 2330 203B1FE5 		ldr	r3, .L191+108
+ 5877 2334 FEFFFFEB 		bl	lcd_puts_xTam
+ 549:../proyecto.c **** 					op = 1;
+ 5878              		.loc 1 549 0
+ 5879 2338 183B1FE5 		ldr	r3, .L191+124
+ 5880 233c 0120A0E3 		mov	r2, #1
+ 5881 2340 0020C3E5 		strb	r2, [r3, #0]
+ 550:../proyecto.c **** 				}
+ 551:../proyecto.c **** 				break;
+ 5882              		.loc 1 551 0
+ 5883 2344 D40000EA 		b	.L57
+ 5884              	.L66:
+ 552:../proyecto.c **** 			case 0xd:
+ 553:../proyecto.c **** 				if(calculadora && contOp1 > 0){
+ 5885              		.loc 1 553 0
+ 5886 2348 003B1FE5 		ldr	r3, .L191+164
+ 5887 234c 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5888 2350 000053E3 		cmp	r3, #0
+ 5889 2354 C900000A 		beq	.L187
+ 5890              		.loc 1 553 0 is_stmt 0 discriminator 1
+ 5891 2358 443B1FE5 		ldr	r3, .L191+112
+ 5892 235c 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5893 2360 033CA0E1 		mov	r3, r3, asl #24
+ 5894 2364 433CA0E1 		mov	r3, r3, asr #24
+ 5895 2368 000053E3 		cmp	r3, #0
+ 5896 236c C50000DA 		ble	.L188
+ 554:../proyecto.c **** 					if(contOp1 < 2) contOp1 = 2;
+ 5897              		.loc 1 554 0 is_stmt 1
+ 5898 2370 5C3B1FE5 		ldr	r3, .L191+112
+ 5899 2374 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5900 2378 033CA0E1 		mov	r3, r3, asl #24
+ 5901 237c 433CA0E1 		mov	r3, r3, asr #24
+ 5902 2380 010053E3 		cmp	r3, #1
+ 5903 2384 020000CA 		bgt	.L154
+ 5904              		.loc 1 554 0 is_stmt 0 discriminator 1
+ 5905 2388 743B1FE5 		ldr	r3, .L191+112
+ 5906 238c 0220A0E3 		mov	r2, #2
+ 5907 2390 0020C3E5 		strb	r2, [r3, #0]
+ 5908              	.L154:
+ 555:../proyecto.c **** 					opChar = 'X';
+ 5909              		.loc 1 555 0 is_stmt 1
+ 5910 2394 643B1FE5 		ldr	r3, .L191+140
+ 5911 2398 5820A0E3 		mov	r2, #88
+ 5912 239c 0020C3E5 		strb	r2, [r3, #0]
+ 556:../proyecto.c **** 					iis_textToSpeech( "por" );
+ 5913              		.loc 1 556 0
+ 5914 23a0 880B1FE5 		ldr	r0, .L191+116
+ 5915 23a4 FEFFFFEB 		bl	iis_textToSpeech
+ 557:../proyecto.c **** 					lcd_puts_xTam( 126, 72,BLACK, "x", 4);
+ 5916              		.loc 1 557 0
+ 5917 23a8 0430A0E3 		mov	r3, #4
+ 5918 23ac 00308DE5 		str	r3, [sp, #0]
+ 5919 23b0 7E00A0E3 		mov	r0, #126
+ 5920 23b4 4810A0E3 		mov	r1, #72
+ 5921 23b8 0F20A0E3 		mov	r2, #15
+ 5922 23bc A03B1FE5 		ldr	r3, .L191+120
+ 5923 23c0 FEFFFFEB 		bl	lcd_puts_xTam
+ 558:../proyecto.c **** 					op = 1;
+ 5924              		.loc 1 558 0
+ 5925 23c4 A43B1FE5 		ldr	r3, .L191+124
+ 5926 23c8 0120A0E3 		mov	r2, #1
+ 5927 23cc 0020C3E5 		strb	r2, [r3, #0]
+ 559:../proyecto.c **** 				}
+ 560:../proyecto.c **** 				break;
+ 5928              		.loc 1 560 0
+ 5929 23d0 B10000EA 		b	.L57
+ 5930              	.L67:
+ 561:../proyecto.c **** 			case 0xe:
+ 562:../proyecto.c **** 				if(calculadora && op == 1){
+ 5931              		.loc 1 562 0
+ 5932 23d4 8C3B1FE5 		ldr	r3, .L191+164
+ 5933 23d8 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5934 23dc 000053E3 		cmp	r3, #0
+ 5935 23e0 AA00000A 		beq	.L189
+ 5936              		.loc 1 562 0 is_stmt 0 discriminator 1
+ 5937 23e4 C43B1FE5 		ldr	r3, .L191+124
+ 5938 23e8 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5939 23ec 033CA0E1 		mov	r3, r3, asl #24
+ 5940 23f0 433CA0E1 		mov	r3, r3, asr #24
+ 5941 23f4 010053E3 		cmp	r3, #1
+ 5942 23f8 A600001A 		bne	.L190
+ 563:../proyecto.c **** 					s2 = buf2 + 2;
+ 5943              		.loc 1 563 0 is_stmt 1
+ 5944 23fc 48304BE2 		sub	r3, fp, #72
+ 5945 2400 023083E2 		add	r3, r3, #2
+ 5946 2404 3C300BE5 		str	r3, [fp, #-60]
+ 564:../proyecto.c **** 					if(contOp2 < 2) contOp2 = 2;
+ 5947              		.loc 1 564 0
+ 5948 2408 E43B1FE5 		ldr	r3, .L191+128
+ 5949 240c 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5950 2410 033CA0E1 		mov	r3, r3, asl #24
+ 5951 2414 433CA0E1 		mov	r3, r3, asr #24
+ 5952 2418 010053E3 		cmp	r3, #1
+ 5953 241c 020000CA 		bgt	.L156
+ 5954              		.loc 1 564 0 is_stmt 0 discriminator 1
+ 5955 2420 FC3B1FE5 		ldr	r3, .L191+128
+ 5956 2424 0220A0E3 		mov	r2, #2
+ 5957 2428 0020C3E5 		strb	r2, [r3, #0]
+ 5958              	.L156:
+ 565:../proyecto.c **** 					iis_textToSpeech( "Igual a" );
+ 5959              		.loc 1 565 0 is_stmt 1
+ 5960 242c 040C1FE5 		ldr	r0, .L191+132
+ 5961 2430 FEFFFFEB 		bl	iis_textToSpeech
+ 566:../proyecto.c **** 					lcd_puts_xTam( 126, 122,BLACK, "=", 4);
+ 5962              		.loc 1 566 0
+ 5963 2434 0430A0E3 		mov	r3, #4
+ 5964 2438 00308DE5 		str	r3, [sp, #0]
+ 5965 243c 7E00A0E3 		mov	r0, #126
+ 5966 2440 7A10A0E3 		mov	r1, #122
+ 5967 2444 0F20A0E3 		mov	r2, #15
+ 5968 2448 1C3C1FE5 		ldr	r3, .L191+136
+ 5969 244c FEFFFFEB 		bl	lcd_puts_xTam
+ 567:../proyecto.c **** 
+ 568:../proyecto.c **** 					if(opChar == '+') resul = op1 + op2;
+ 5970              		.loc 1 568 0
+ 5971 2450 203C1FE5 		ldr	r3, .L191+140
+ 5972 2454 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5973 2458 2B0053E3 		cmp	r3, #43
+ 5974 245c 0B00001A 		bne	.L157
+ 5975              		.loc 1 568 0 is_stmt 0 discriminator 1
+ 5976 2460 2C3C1FE5 		ldr	r3, .L191+144
+ 5977 2464 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5978 2468 FF2003E2 		and	r2, r3, #255
+ 5979 246c 343C1FE5 		ldr	r3, .L191+148
+ 5980 2470 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5981 2474 FF3003E2 		and	r3, r3, #255
+ 5982 2478 033082E0 		add	r3, r2, r3
+ 5983 247c FF3003E2 		and	r3, r3, #255
+ 5984 2480 FF2003E2 		and	r2, r3, #255
+ 5985 2484 443C1FE5 		ldr	r3, .L191+156
+ 5986 2488 0020C3E5 		strb	r2, [r3, #0]
+ 5987 248c 1E0000EA 		b	.L158
+ 5988              	.L157:
+ 569:../proyecto.c **** 					else if(opChar == '-') resul = op1 - op2;
+ 5989              		.loc 1 569 0 is_stmt 1
+ 5990 2490 603C1FE5 		ldr	r3, .L191+140
+ 5991 2494 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5992 2498 2D0053E3 		cmp	r3, #45
+ 5993 249c 0B00001A 		bne	.L159
+ 5994              		.loc 1 569 0 is_stmt 0 discriminator 1
+ 5995 24a0 6C3C1FE5 		ldr	r3, .L191+144
+ 5996 24a4 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 5997 24a8 FF2003E2 		and	r2, r3, #255
+ 5998 24ac 743C1FE5 		ldr	r3, .L191+148
+ 5999 24b0 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 6000 24b4 FF3003E2 		and	r3, r3, #255
+ 6001 24b8 023063E0 		rsb	r3, r3, r2
+ 6002 24bc FF3003E2 		and	r3, r3, #255
+ 6003 24c0 FF2003E2 		and	r2, r3, #255
+ 6004 24c4 843C1FE5 		ldr	r3, .L191+156
+ 6005 24c8 0020C3E5 		strb	r2, [r3, #0]
+ 6006 24cc 0E0000EA 		b	.L158
+ 6007              	.L159:
+ 570:../proyecto.c **** 					else if(opChar == 'X') resul = op1 * op2;
+ 6008              		.loc 1 570 0 is_stmt 1
+ 6009 24d0 A03C1FE5 		ldr	r3, .L191+140
+ 6010 24d4 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 6011 24d8 580053E3 		cmp	r3, #88
+ 6012 24dc 0A00001A 		bne	.L158
+ 6013              		.loc 1 570 0 is_stmt 0 discriminator 1
+ 6014 24e0 AC3C1FE5 		ldr	r3, .L191+144
+ 6015 24e4 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 6016 24e8 FF3003E2 		and	r3, r3, #255
+ 6017 24ec B42C1FE5 		ldr	r2, .L191+148
+ 6018 24f0 0020D2E5 		ldrb	r2, [r2, #0]	@ zero_extendqisi2
+ 6019 24f4 FF2002E2 		and	r2, r2, #255
+ 6020 24f8 920303E0 		mul	r3, r2, r3
+ 6021 24fc FF3003E2 		and	r3, r3, #255
+ 6022 2500 FF2003E2 		and	r2, r3, #255
+ 6023 2504 C43C1FE5 		ldr	r3, .L191+156
+ 6024 2508 0020C3E5 		strb	r2, [r3, #0]
+ 6025              	.L158:
+ 571:../proyecto.c **** 
+ 572:../proyecto.c **** 					if(resul < 0) {
+ 6026              		.loc 1 572 0 is_stmt 1
+ 6027 250c CC3C1FE5 		ldr	r3, .L191+156
+ 6028 2510 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 6029 2514 033CA0E1 		mov	r3, r3, asl #24
+ 6030 2518 433CA0E1 		mov	r3, r3, asr #24
+ 6031 251c 000053E3 		cmp	r3, #0
+ 6032 2520 090000AA 		bge	.L160
+ 573:../proyecto.c **** 						resul *= -1;
+ 6033              		.loc 1 573 0
+ 6034 2524 E43C1FE5 		ldr	r3, .L191+156
+ 6035 2528 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 6036 252c FF3003E2 		and	r3, r3, #255
+ 6037 2530 003063E2 		rsb	r3, r3, #0
+ 6038 2534 FF3003E2 		and	r3, r3, #255
+ 6039 2538 FF2003E2 		and	r2, r3, #255
+ 6040 253c FC3C1FE5 		ldr	r3, .L191+156
+ 6041 2540 0020C3E5 		strb	r2, [r3, #0]
+ 574:../proyecto.c **** 						iis_textToSpeech("menos");
+ 6042              		.loc 1 574 0
+ 6043 2544 080D1FE5 		ldr	r0, .L191+152
+ 6044 2548 FEFFFFEB 		bl	iis_textToSpeech
+ 6045              	.L160:
+ 575:../proyecto.c **** 					}
+ 576:../proyecto.c **** 					s2=intToStrC(resul);
+ 6046              		.loc 1 576 0
+ 6047 254c 0C3D1FE5 		ldr	r3, .L191+156
+ 6048 2550 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 6049 2554 033CA0E1 		mov	r3, r3, asl #24
+ 6050 2558 433CA0E1 		mov	r3, r3, asr #24
+ 6051 255c 0300A0E1 		mov	r0, r3
+ 6052 2560 FEFFFFEB 		bl	intToStrC
+ 6053 2564 3C000BE5 		str	r0, [fp, #-60]
+ 577:../proyecto.c **** 					if(resul < 60) iis_textToSpeech( s2 );
+ 6054              		.loc 1 577 0
+ 6055 2568 283D1FE5 		ldr	r3, .L191+156
+ 6056 256c 0030D3E5 		ldrb	r3, [r3, #0]	@ zero_extendqisi2
+ 6057 2570 033CA0E1 		mov	r3, r3, asl #24
+ 6058 2574 433CA0E1 		mov	r3, r3, asr #24
+ 6059 2578 3B0053E3 		cmp	r3, #59
+ 6060 257c 020000CA 		bgt	.L161
+ 6061              		.loc 1 577 0 is_stmt 0 discriminator 1
+ 6062 2580 3C001BE5 		ldr	r0, [fp, #-60]
+ 6063 2584 FEFFFFEB 		bl	iis_textToSpeech
+ 6064 2588 010000EA 		b	.L162
+ 6065              	.L161:
+ 578:../proyecto.c **** 					else iis_textToSpeech( "numero mayor que 59" );
+ 6066              		.loc 1 578 0 is_stmt 1
+ 6067 258c 480D1FE5 		ldr	r0, .L191+160
+ 6068 2590 FEFFFFEB 		bl	iis_textToSpeech
+ 6069              	.L162:
+ 579:../proyecto.c **** 					lcd_puts_xTam( 116, 172,BLACK, s2, 4);
+ 6070              		.loc 1 579 0
+ 6071 2594 0430A0E3 		mov	r3, #4
+ 6072 2598 00308DE5 		str	r3, [sp, #0]
+ 6073 259c 7400A0E3 		mov	r0, #116
+ 6074 25a0 AC10A0E3 		mov	r1, #172
+ 6075 25a4 0F20A0E3 		mov	r2, #15
+ 6076 25a8 3C301BE5 		ldr	r3, [fp, #-60]
+ 6077 25ac FEFFFFEB 		bl	lcd_puts_xTam
+ 580:../proyecto.c **** 					calculadora = 0;
+ 6078              		.loc 1 580 0
+ 6079 25b0 683D1FE5 		ldr	r3, .L191+164
+ 6080 25b4 0020A0E3 		mov	r2, #0
+ 6081 25b8 0020C3E5 		strb	r2, [r3, #0]
+ 581:../proyecto.c **** 				}
+ 582:../proyecto.c **** 				break;
+ 6082              		.loc 1 582 0
+ 6083 25bc 360000EA 		b	.L57
+ 6084              	.L163:
+ 313:../proyecto.c **** 				break;
+ 6085              		.loc 1 313 0
+ 6086 25c0 0000A0E1 		mov	r0, r0	@ nop
+ 6087 25c4 340000EA 		b	.L57
+ 6088              	.L164:
+ 6089 25c8 0000A0E1 		mov	r0, r0	@ nop
+ 6090 25cc 320000EA 		b	.L57
+ 6091              	.L165:
+ 6092 25d0 0000A0E1 		mov	r0, r0	@ nop
+ 6093 25d4 300000EA 		b	.L57
+ 6094              	.L166:
+ 6095 25d8 0000A0E1 		mov	r0, r0	@ nop
+ 6096 25dc 2E0000EA 		b	.L57
+ 6097              	.L167:
+ 6098 25e0 0000A0E1 		mov	r0, r0	@ nop
+ 6099 25e4 2C0000EA 		b	.L57
+ 6100              	.L168:
+ 374:../proyecto.c **** 				break;
+ 6101              		.loc 1 374 0
+ 6102 25e8 0000A0E1 		mov	r0, r0	@ nop
+ 6103 25ec 2A0000EA 		b	.L57
+ 6104              	.L169:
+ 6105 25f0 0000A0E1 		mov	r0, r0	@ nop
+ 6106 25f4 280000EA 		b	.L57
+ 6107              	.L170:
+ 6108 25f8 0000A0E1 		mov	r0, r0	@ nop
+ 6109 25fc 260000EA 		b	.L57
+ 6110              	.L171:
+ 6111 2600 0000A0E1 		mov	r0, r0	@ nop
+ 6112 2604 240000EA 		b	.L57
+ 6113              	.L172:
+ 425:../proyecto.c **** 				break;
+ 6114              		.loc 1 425 0
+ 6115 2608 0000A0E1 		mov	r0, r0	@ nop
+ 6116 260c 220000EA 		b	.L57
+ 6117              	.L173:
+ 6118 2610 0000A0E1 		mov	r0, r0	@ nop
+ 6119 2614 200000EA 		b	.L57
+ 6120              	.L174:
+ 6121 2618 0000A0E1 		mov	r0, r0	@ nop
+ 6122 261c 1E0000EA 		b	.L57
+ 6123              	.L175:
+ 479:../proyecto.c **** 				break;
+ 6124              		.loc 1 479 0
+ 6125 2620 0000A0E1 		mov	r0, r0	@ nop
+ 6126 2624 1C0000EA 		b	.L57
+ 6127              	.L176:
+ 6128 2628 0000A0E1 		mov	r0, r0	@ nop
+ 6129 262c 1A0000EA 		b	.L57
+ 6130              	.L177:
+ 6131 2630 0000A0E1 		mov	r0, r0	@ nop
+ 6132 2634 180000EA 		b	.L57
+ 6133              	.L178:
+ 6134 2638 0000A0E1 		mov	r0, r0	@ nop
+ 6135 263c 160000EA 		b	.L57
+ 6136              	.L179:
+ 533:../proyecto.c **** 				break;
+ 6137              		.loc 1 533 0
+ 6138 2640 0000A0E1 		mov	r0, r0	@ nop
+ 6139 2644 140000EA 		b	.L57
+ 6140              	.L180:
+ 6141 2648 0000A0E1 		mov	r0, r0	@ nop
+ 6142 264c 120000EA 		b	.L57
+ 6143              	.L181:
+ 6144 2650 0000A0E1 		mov	r0, r0	@ nop
+ 6145 2654 100000EA 		b	.L57
+ 6146              	.L182:
+ 6147 2658 0000A0E1 		mov	r0, r0	@ nop
+ 6148 265c 0E0000EA 		b	.L57
+ 6149              	.L183:
+ 542:../proyecto.c **** 				break;
+ 6150              		.loc 1 542 0
+ 6151 2660 0000A0E1 		mov	r0, r0	@ nop
+ 6152 2664 0C0000EA 		b	.L57
+ 6153              	.L184:
+ 6154 2668 0000A0E1 		mov	r0, r0	@ nop
+ 6155 266c 0A0000EA 		b	.L57
+ 6156              	.L185:
+ 551:../proyecto.c **** 				break;
+ 6157              		.loc 1 551 0
+ 6158 2670 0000A0E1 		mov	r0, r0	@ nop
+ 6159 2674 080000EA 		b	.L57
+ 6160              	.L186:
+ 6161 2678 0000A0E1 		mov	r0, r0	@ nop
+ 6162 267c 060000EA 		b	.L57
+ 6163              	.L187:
+ 560:../proyecto.c **** 				break;
+ 6164              		.loc 1 560 0
+ 6165 2680 0000A0E1 		mov	r0, r0	@ nop
+ 6166 2684 040000EA 		b	.L57
+ 6167              	.L188:
+ 6168 2688 0000A0E1 		mov	r0, r0	@ nop
+ 6169 268c 020000EA 		b	.L57
+ 6170              	.L189:
+ 6171              		.loc 1 582 0
+ 6172 2690 0000A0E1 		mov	r0, r0	@ nop
+ 6173 2694 000000EA 		b	.L57
+ 6174              	.L190:
+ 6175 2698 0000A0E1 		mov	r0, r0	@ nop
+ 6176              	.L57:
+ 583:../proyecto.c **** 
+ 584:../proyecto.c **** 		}
+ 585:../proyecto.c **** 		flag = TRUE;
+ 6177              		.loc 1 585 0
+ 6178 269c 20309FE5 		ldr	r3, .L193
+ 6179 26a0 0120A0E3 		mov	r2, #1
+ 6180 26a4 0020C3E5 		strb	r2, [r3, #0]
+ 6181              	.L56:
+ 586:../proyecto.c ****     }
+ 587:../proyecto.c ****     I_ISPC = BIT_KEYPAD;
+ 6182              		.loc 1 587 0
+ 6183 26a8 18309FE5 		ldr	r3, .L193+4
+ 6184 26ac 0124A0E3 		mov	r2, #16777216
+ 6185 26b0 002083E5 		str	r2, [r3, #0]
+ 588:../proyecto.c **** }
+ 6186              		.loc 1 588 0
+ 6187 26b4 1CD04BE2 		sub	sp, fp, #28
+ 6188 26b8 0F689DE8 		ldmfd	sp, {r0, r1, r2, r3, fp, sp, lr}
+ 6189 26bc 04C09DE4 		ldmfd	sp!, {ip}
+ 6190 26c0 04F05EE2 		subs	pc, lr, #4
+ 6191              	.L194:
+ 6192              		.align	2
+ 6193              	.L193:
+ 6194 26c4 00000000 		.word	flag
+ 6195 26c8 2400E001 		.word	31457316
+ 6196              		.cfi_endproc
+ 6197              	.LFE7:
+ 6199              		.section	.rodata
+ 6200              		.align	2
+ 6201              	.LC26:
+ 6202 0114 536F6E20 		.ascii	"Son las\000"
+ 6202      6C617300 
+ 6203              		.align	2
+ 6204              	.LC27:
+ 6205 011c 6900     		.ascii	"i\000"
+ 6206 011e 0000     		.text
+ 6207              		.align	2
+ 6208              		.global	Task1
+ 6210              	Task1:
+ 6211              	.LFB8:
+ 589:../proyecto.c **** 
+ 590:../proyecto.c **** void Task1( void *id)
+ 591:../proyecto.c **** {
+ 6212              		.loc 1 591 0
+ 6213              		.cfi_startproc
+ 6214              		@ Function supports interworking.
+ 6215              		@ args = 0, pretend = 0, frame = 8
+ 6216              		@ frame_needed = 1, uses_anonymous_args = 0
+ 6217 26cc 0DC0A0E1 		mov	ip, sp
+ 6218              	.LCFI16:
+ 6219              		.cfi_def_cfa_register 12
+ 6220 26d0 00D82DE9 		stmfd	sp!, {fp, ip, lr, pc}
+ 6221 26d4 04B04CE2 		sub	fp, ip, #4
+ 6222              		.cfi_offset 14, -8
+ 6223              		.cfi_offset 13, -12
+ 6224              		.cfi_offset 11, -16
+ 6225              	.LCFI17:
+ 6226              		.cfi_def_cfa 11, 4
+ 6227 26d8 10D04DE2 		sub	sp, sp, #16
+ 6228 26dc 10000BE5 		str	r0, [fp, #-16]
+ 592:../proyecto.c **** 	uint16 x, y, ms;
+ 593:../proyecto.c **** 	lcd_puts_xTam( 126, 72,BLACK, ":", 5);
+ 6229              		.loc 1 593 0
+ 6230 26e0 0530A0E3 		mov	r3, #5
+ 6231 26e4 00308DE5 		str	r3, [sp, #0]
+ 6232 26e8 7E00A0E3 		mov	r0, #126
+ 6233 26ec 4810A0E3 		mov	r1, #72
+ 6234 26f0 0F20A0E3 		mov	r2, #15
+ 6235 26f4 B8309FE5 		ldr	r3, .L201
+ 6236 26f8 FEFFFFEB 		bl	lcd_puts_xTam
+ 594:../proyecto.c **** 	rtc_open( isr_tick, 127 );
+ 6237              		.loc 1 594 0
+ 6238 26fc B4009FE5 		ldr	r0, .L201+4
+ 6239 2700 7F10A0E3 		mov	r1, #127
+ 6240 2704 FEFFFFEB 		bl	rtc_open
+ 6241 2708 000000EA 		b	.L199
+ 6242              	.L200:
+ 595:../proyecto.c **** 
+ 596:../proyecto.c **** 	while( 1 ){
+ 597:../proyecto.c **** 		OSTimeDly( 10 );
+ 598:../proyecto.c **** 
+ 599:../proyecto.c **** 		while ((PDATG & (1 << 2)));
+ 600:../proyecto.c **** 		timer3_start();
+ 601:../proyecto.c **** 		sw_delay_ms(TS_DOWN_DELAY);
+ 602:../proyecto.c **** 
+ 603:../proyecto.c **** 		while (!(PDATG & (1 << 2)));
+ 604:../proyecto.c **** 
+ 605:../proyecto.c **** 		if(flag){
+ 606:../proyecto.c **** 			flag = FALSE;
+ 607:../proyecto.c **** 			iis_textToSpeech( "Son las" );
+ 608:../proyecto.c **** 			iis_textToSpeech( hpC);
+ 609:../proyecto.c **** 			iis_textToSpeech( "i" );
+ 610:../proyecto.c **** 			iis_textToSpeech( mpC );
+ 611:../proyecto.c **** 			flag = TRUE;
+ 612:../proyecto.c **** 		}
+ 613:../proyecto.c **** 	}
+ 6243              		.loc 1 613 0
+ 6244 270c 0000A0E1 		mov	r0, r0	@ nop
+ 6245              	.L199:
+ 597:../proyecto.c **** 		OSTimeDly( 10 );
+ 6246              		.loc 1 597 0
+ 6247 2710 0A00A0E3 		mov	r0, #10
+ 6248 2714 FEFFFFEB 		bl	OSTimeDly
+ 599:../proyecto.c **** 		while ((PDATG & (1 << 2)));
+ 6249              		.loc 1 599 0
+ 6250 2718 0000A0E1 		mov	r0, r0	@ nop
+ 6251              	.L196:
+ 599:../proyecto.c **** 		while ((PDATG & (1 << 2)));
+ 6252              		.loc 1 599 0 is_stmt 0 discriminator 1
+ 6253 271c 98309FE5 		ldr	r3, .L201+8
+ 6254 2720 003093E5 		ldr	r3, [r3, #0]
+ 6255 2724 043003E2 		and	r3, r3, #4
+ 6256 2728 000053E3 		cmp	r3, #0
+ 6257 272c FAFFFF1A 		bne	.L196
+ 600:../proyecto.c **** 		timer3_start();
+ 6258              		.loc 1 600 0 is_stmt 1
+ 6259 2730 FEFFFFEB 		bl	timer3_start
+ 601:../proyecto.c **** 		sw_delay_ms(TS_DOWN_DELAY);
+ 6260              		.loc 1 601 0
+ 6261 2734 1E00A0E3 		mov	r0, #30
+ 6262 2738 FEFFFFEB 		bl	sw_delay_ms
+ 603:../proyecto.c **** 		while (!(PDATG & (1 << 2)));
+ 6263              		.loc 1 603 0
+ 6264 273c 0000A0E1 		mov	r0, r0	@ nop
+ 6265              	.L197:
+ 603:../proyecto.c **** 		while (!(PDATG & (1 << 2)));
+ 6266              		.loc 1 603 0 is_stmt 0 discriminator 1
+ 6267 2740 74309FE5 		ldr	r3, .L201+8
+ 6268 2744 003093E5 		ldr	r3, [r3, #0]
+ 6269 2748 043003E2 		and	r3, r3, #4
+ 6270 274c 000053E3 		cmp	r3, #0
+ 6271 2750 FAFFFF0A 		beq	.L197
+ 605:../proyecto.c **** 		if(flag){
+ 6272              		.loc 1 605 0 is_stmt 1
+ 6273 2754 64309FE5 		ldr	r3, .L201+12
+ 6274 2758 0030D3E5 		ldrb	r3, [r3, #0]
+ 6275 275c FF3003E2 		and	r3, r3, #255
+ 6276 2760 000053E3 		cmp	r3, #0
+ 6277 2764 E8FFFF0A 		beq	.L200
+ 606:../proyecto.c **** 			flag = FALSE;
+ 6278              		.loc 1 606 0
+ 6279 2768 50309FE5 		ldr	r3, .L201+12
+ 6280 276c 0020A0E3 		mov	r2, #0
+ 6281 2770 0020C3E5 		strb	r2, [r3, #0]
+ 607:../proyecto.c **** 			iis_textToSpeech( "Son las" );
+ 6282              		.loc 1 607 0
+ 6283 2774 48009FE5 		ldr	r0, .L201+16
+ 6284 2778 FEFFFFEB 		bl	iis_textToSpeech
+ 608:../proyecto.c **** 			iis_textToSpeech( hpC);
+ 6285              		.loc 1 608 0
+ 6286 277c 44309FE5 		ldr	r3, .L201+20
+ 6287 2780 003093E5 		ldr	r3, [r3, #0]
+ 6288 2784 0300A0E1 		mov	r0, r3
+ 6289 2788 FEFFFFEB 		bl	iis_textToSpeech
+ 609:../proyecto.c **** 			iis_textToSpeech( "i" );
+ 6290              		.loc 1 609 0
+ 6291 278c 38009FE5 		ldr	r0, .L201+24
+ 6292 2790 FEFFFFEB 		bl	iis_textToSpeech
+ 610:../proyecto.c **** 			iis_textToSpeech( mpC );
+ 6293              		.loc 1 610 0
+ 6294 2794 34309FE5 		ldr	r3, .L201+28
+ 6295 2798 003093E5 		ldr	r3, [r3, #0]
+ 6296 279c 0300A0E1 		mov	r0, r3
+ 6297 27a0 FEFFFFEB 		bl	iis_textToSpeech
+ 611:../proyecto.c **** 			flag = TRUE;
+ 6298              		.loc 1 611 0
+ 6299 27a4 14309FE5 		ldr	r3, .L201+12
+ 6300 27a8 0120A0E3 		mov	r2, #1
+ 6301 27ac 0020C3E5 		strb	r2, [r3, #0]
+ 6302              		.loc 1 613 0
+ 6303 27b0 D6FFFFEA 		b	.L199
+ 6304              	.L202:
+ 6305              		.align	2
+ 6306              	.L201:
+ 6307 27b4 80000000 		.word	.LC9
+ 6308 27b8 00000000 		.word	isr_tick
+ 6309 27bc 4400D201 		.word	30539844
+ 6310 27c0 00000000 		.word	flag
+ 6311 27c4 14010000 		.word	.LC26
+ 6312 27c8 00000000 		.word	hpC
+ 6313 27cc 1C010000 		.word	.LC27
+ 6314 27d0 00000000 		.word	mpC
+ 6315              		.cfi_endproc
+ 6316              	.LFE8:
+ 6318              		.align	2
+ 6319              		.global	Task2
+ 6321              	Task2:
+ 6322              	.LFB9:
+ 614:../proyecto.c **** }
+ 615:../proyecto.c **** 
+ 616:../proyecto.c **** void Task2( void *id)
+ 617:../proyecto.c **** {
+ 6323              		.loc 1 617 0
+ 6324              		.cfi_startproc
+ 6325              		@ Function supports interworking.
+ 6326              		@ args = 0, pretend = 0, frame = 8
+ 6327              		@ frame_needed = 1, uses_anonymous_args = 0
+ 6328 27d4 0DC0A0E1 		mov	ip, sp
+ 6329              	.LCFI18:
+ 6330              		.cfi_def_cfa_register 12
+ 6331 27d8 00D82DE9 		stmfd	sp!, {fp, ip, lr, pc}
+ 6332 27dc 04B04CE2 		sub	fp, ip, #4
+ 6333              		.cfi_offset 14, -8
+ 6334              		.cfi_offset 13, -12
+ 6335              		.cfi_offset 11, -16
+ 6336              	.LCFI19:
+ 6337              		.cfi_def_cfa 11, 4
+ 6338 27e0 08D04DE2 		sub	sp, sp, #8
+ 6339 27e4 10000BE5 		str	r0, [fp, #-16]
+ 6340              	.L204:
+ 618:../proyecto.c ****     while( 1 )
+ 619:../proyecto.c ****     {
+ 620:../proyecto.c ****     	keypad_open( isr_keypad );
+ 6341              		.loc 1 620 0 discriminator 1
+ 6342 27e8 0C009FE5 		ldr	r0, .L205
+ 6343 27ec FEFFFFEB 		bl	keypad_open
+ 621:../proyecto.c ****         OSTimeDly( 15 );
+ 6344              		.loc 1 621 0 discriminator 1
+ 6345 27f0 0F00A0E3 		mov	r0, #15
+ 6346 27f4 FEFFFFEB 		bl	OSTimeDly
+ 622:../proyecto.c ****     }
+ 6347              		.loc 1 622 0 discriminator 1
+ 6348 27f8 FAFFFFEA 		b	.L204
+ 6349              	.L206:
+ 6350              		.align	2
+ 6351              	.L205:
+ 6352 27fc 00000000 		.word	isr_keypad
+ 6353              		.cfi_endproc
+ 6354              	.LFE9:
+ 6356              		.align	2
+ 6357              		.global	main
+ 6359              	main:
+ 6360              	.LFB10:
+ 623:../proyecto.c **** }
+ 624:../proyecto.c **** 
+ 625:../proyecto.c **** void main( void )
+ 626:../proyecto.c **** {
+ 6361              		.loc 1 626 0
+ 6362              		.cfi_startproc
+ 6363              		@ Function supports interworking.
+ 6364              		@ args = 0, pretend = 0, frame = 0
+ 6365              		@ frame_needed = 1, uses_anonymous_args = 0
+ 6366 2800 0DC0A0E1 		mov	ip, sp
+ 6367              	.LCFI20:
+ 6368              		.cfi_def_cfa_register 12
+ 6369 2804 00D82DE9 		stmfd	sp!, {fp, ip, lr, pc}
+ 6370 2808 04B04CE2 		sub	fp, ip, #4
+ 6371              		.cfi_offset 14, -8
+ 6372              		.cfi_offset 13, -12
+ 6373              		.cfi_offset 11, -16
+ 6374              	.LCFI21:
+ 6375              		.cfi_def_cfa 11, 4
+ 627:../proyecto.c **** 	menu = alarma = calculadora = ponerHora = contH = contM = h = m = activarAlarma = 0;
+ 6376              		.loc 1 627 0
+ 6377 280c 98319FE5 		ldr	r3, .L208
+ 6378 2810 0020A0E3 		mov	r2, #0
+ 6379 2814 0020C3E5 		strb	r2, [r3, #0]
+ 6380 2818 8C319FE5 		ldr	r3, .L208
+ 6381 281c 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 6382 2820 88319FE5 		ldr	r3, .L208+4
+ 6383 2824 0020C3E5 		strb	r2, [r3, #0]
+ 6384 2828 80319FE5 		ldr	r3, .L208+4
+ 6385 282c 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 6386 2830 7C319FE5 		ldr	r3, .L208+8
+ 6387 2834 0020C3E5 		strb	r2, [r3, #0]
+ 6388 2838 74319FE5 		ldr	r3, .L208+8
+ 6389 283c 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 6390 2840 70319FE5 		ldr	r3, .L208+12
+ 6391 2844 0020C3E5 		strb	r2, [r3, #0]
+ 6392 2848 68319FE5 		ldr	r3, .L208+12
+ 6393 284c 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 6394 2850 64319FE5 		ldr	r3, .L208+16
+ 6395 2854 0020C3E5 		strb	r2, [r3, #0]
+ 6396 2858 5C319FE5 		ldr	r3, .L208+16
+ 6397 285c 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 6398 2860 58319FE5 		ldr	r3, .L208+20
+ 6399 2864 0020C3E5 		strb	r2, [r3, #0]
+ 6400 2868 50319FE5 		ldr	r3, .L208+20
+ 6401 286c 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 6402 2870 4C319FE5 		ldr	r3, .L208+24
+ 6403 2874 0020C3E5 		strb	r2, [r3, #0]
+ 6404 2878 44319FE5 		ldr	r3, .L208+24
+ 6405 287c 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 6406 2880 40319FE5 		ldr	r3, .L208+28
+ 6407 2884 0020C3E5 		strb	r2, [r3, #0]
+ 6408 2888 38319FE5 		ldr	r3, .L208+28
+ 6409 288c 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 6410 2890 34319FE5 		ldr	r3, .L208+32
+ 6411 2894 0020C3E5 		strb	r2, [r3, #0]
+ 628:../proyecto.c **** 	op1 = op2 = contOp1 = contOp2 = resul = op = horaFijada = 0;
+ 6412              		.loc 1 628 0
+ 6413 2898 30319FE5 		ldr	r3, .L208+36
+ 6414 289c 0020A0E3 		mov	r2, #0
+ 6415 28a0 0020C3E5 		strb	r2, [r3, #0]
+ 6416 28a4 24319FE5 		ldr	r3, .L208+36
+ 6417 28a8 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 6418 28ac 20319FE5 		ldr	r3, .L208+40
+ 6419 28b0 0020C3E5 		strb	r2, [r3, #0]
+ 6420 28b4 18319FE5 		ldr	r3, .L208+40
+ 6421 28b8 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 6422 28bc 14319FE5 		ldr	r3, .L208+44
+ 6423 28c0 0020C3E5 		strb	r2, [r3, #0]
+ 6424 28c4 0C319FE5 		ldr	r3, .L208+44
+ 6425 28c8 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 6426 28cc 08319FE5 		ldr	r3, .L208+48
+ 6427 28d0 0020C3E5 		strb	r2, [r3, #0]
+ 6428 28d4 00319FE5 		ldr	r3, .L208+48
+ 6429 28d8 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 6430 28dc FC309FE5 		ldr	r3, .L208+52
+ 6431 28e0 0020C3E5 		strb	r2, [r3, #0]
+ 6432 28e4 F4309FE5 		ldr	r3, .L208+52
+ 6433 28e8 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 6434 28ec F0309FE5 		ldr	r3, .L208+56
+ 6435 28f0 0020C3E5 		strb	r2, [r3, #0]
+ 6436 28f4 E8309FE5 		ldr	r3, .L208+56
+ 6437 28f8 0020D3E5 		ldrb	r2, [r3, #0]	@ zero_extendqisi2
+ 6438 28fc E4309FE5 		ldr	r3, .L208+60
+ 6439 2900 0020C3E5 		strb	r2, [r3, #0]
+ 629:../proyecto.c **** 	flag = TRUE;
+ 6440              		.loc 1 629 0
+ 6441 2904 E0309FE5 		ldr	r3, .L208+64
+ 6442 2908 0120A0E3 		mov	r2, #1
+ 6443 290c 0020C3E5 		strb	r2, [r3, #0]
+ 630:../proyecto.c **** 	sys_init();
+ 6444              		.loc 1 630 0
+ 6445 2910 FEFFFFEB 		bl	sys_init
+ 631:../proyecto.c **** 	timers_init();
+ 6446              		.loc 1 631 0
+ 6447 2914 FEFFFFEB 		bl	timers_init
+ 632:../proyecto.c **** 	rtc_init();
+ 6448              		.loc 1 632 0
+ 6449 2918 FEFFFFEB 		bl	rtc_init
+ 633:../proyecto.c **** 	lcd_init();
+ 6450              		.loc 1 633 0
+ 6451 291c FEFFFFEB 		bl	lcd_init
+ 634:../proyecto.c ****     adc_init();
+ 6452              		.loc 1 634 0
+ 6453 2920 FEFFFFEB 		bl	adc_init
+ 635:../proyecto.c ****     PDATE = (0xB << 4);
+ 6454              		.loc 1 635 0
+ 6455 2924 C4309FE5 		ldr	r3, .L208+68
+ 6456 2928 B020A0E3 		mov	r2, #176
+ 6457 292c 002083E5 		str	r2, [r3, #0]
+ 636:../proyecto.c ****     keypad_init();
+ 6458              		.loc 1 636 0
+ 6459 2930 FEFFFFEB 		bl	keypad_init
+ 637:../proyecto.c ****     uda1341ts_init();
+ 6460              		.loc 1 637 0
+ 6461 2934 FEFFFFEB 		bl	uda1341ts_init
+ 638:../proyecto.c ****     iis_init( IIS_POLLING );
+ 6462              		.loc 1 638 0
+ 6463 2938 0200A0E3 		mov	r0, #2
+ 6464 293c FEFFFFEB 		bl	iis_init
+ 639:../proyecto.c **** 
+ 640:../proyecto.c ****     lcd_clear();
+ 6465              		.loc 1 640 0
+ 6466 2940 FEFFFFEB 		bl	lcd_clear
+ 641:../proyecto.c ****     lcd_on();
+ 6467              		.loc 1 641 0
+ 6468 2944 FEFFFFEB 		bl	lcd_on
+ 642:../proyecto.c ****     ts_on();
+ 6469              		.loc 1 642 0
+ 6470 2948 FEFFFFEB 		bl	ts_on
+ 643:../proyecto.c ****     ts_off();
+ 6471              		.loc 1 643 0
+ 6472 294c FEFFFFEB 		bl	ts_off
+ 644:../proyecto.c ****     uda1341ts_setvol( VOL_MAX );
+ 6473              		.loc 1 644 0
+ 6474 2950 3F00A0E3 		mov	r0, #63
+ 6475 2954 FEFFFFEB 		bl	uda1341ts_setvol
+ 645:../proyecto.c **** 
+ 646:../proyecto.c ****     OSInit();                                                              /* Inicializa el kernel 
+ 6476              		.loc 1 646 0
+ 6477 2958 FEFFFFEB 		bl	OSInit
+ 647:../proyecto.c ****     uart0Sem = OSSemCreate( 1 );                                           /* Crea recursos        
+ 6478              		.loc 1 647 0
+ 6479 295c 0100A0E3 		mov	r0, #1
+ 6480 2960 FEFFFFEB 		bl	OSSemCreate
+ 6481 2964 0020A0E1 		mov	r2, r0
+ 6482 2968 84309FE5 		ldr	r3, .L208+72
+ 6483 296c 002083E5 		str	r2, [r3, #0]
+ 648:../proyecto.c ****     keypadQueue = OSQCreate( &keypadQueueTable[0], KEYPAD_QUEUE_SIZE );
+ 6484              		.loc 1 648 0
+ 6485 2970 80009FE5 		ldr	r0, .L208+76
+ 6486 2974 4010A0E3 		mov	r1, #64
+ 6487 2978 FEFFFFEB 		bl	OSQCreate
+ 6488 297c 0020A0E1 		mov	r2, r0
+ 6489 2980 74309FE5 		ldr	r3, .L208+80
+ 6490 2984 002083E5 		str	r2, [r3, #0]
+ 649:../proyecto.c ****     OSTaskCreate( TaskStart, NULL, &TaskStartStk[TASK_STK_SIZE - 1], 0 );  /* Crea la tarea inicial
+ 6491              		.loc 1 649 0
+ 6492 2988 70009FE5 		ldr	r0, .L208+84
+ 6493 298c 0010A0E3 		mov	r1, #0
+ 6494 2990 6C209FE5 		ldr	r2, .L208+88
+ 6495 2994 0030A0E3 		mov	r3, #0
+ 6496 2998 FEFFFFEB 		bl	OSTaskCreate
+ 650:../proyecto.c ****     OSStart();                                                             /* Inicia multitarea    
+ 6497              		.loc 1 650 0
+ 6498 299c FEFFFFEB 		bl	OSStart
+ 651:../proyecto.c **** 
+ 652:../proyecto.c **** }
+ 6499              		.loc 1 652 0
+ 6500 29a0 0CD04BE2 		sub	sp, fp, #12
+ 6501 29a4 00689DE8 		ldmfd	sp, {fp, sp, lr}
+ 6502 29a8 1EFF2FE1 		bx	lr
+ 6503              	.L209:
+ 6504              		.align	2
+ 6505              	.L208:
+ 6506 29ac 00000000 		.word	activarAlarma
+ 6507 29b0 00000000 		.word	m
+ 6508 29b4 00000000 		.word	h
+ 6509 29b8 00000000 		.word	contM
+ 6510 29bc 00000000 		.word	contH
+ 6511 29c0 00000000 		.word	ponerHora
+ 6512 29c4 00000000 		.word	calculadora
+ 6513 29c8 00000000 		.word	alarma
+ 6514 29cc 00000000 		.word	menu
+ 6515 29d0 00000000 		.word	horaFijada
+ 6516 29d4 00000000 		.word	op
+ 6517 29d8 00000000 		.word	resul
+ 6518 29dc 00000000 		.word	contOp2
+ 6519 29e0 00000000 		.word	contOp1
+ 6520 29e4 00000000 		.word	op2
+ 6521 29e8 00000000 		.word	op1
+ 6522 29ec 00000000 		.word	flag
+ 6523 29f0 2C00D201 		.word	30539820
+ 6524 29f4 00000000 		.word	uart0Sem
+ 6525 29f8 00000000 		.word	keypadQueueTable
+ 6526 29fc 00000000 		.word	keypadQueue
+ 6527 2a00 00000000 		.word	TaskStart
+ 6528 2a04 FC9F0000 		.word	TaskStartStk+40956
+ 6529              		.cfi_endproc
+ 6530              	.LFE10:
+ 6532              	.Letext0:
+DEFINED SYMBOLS
+                            *ABS*:00000000 proyecto.c
+                            *COM*:0000a000 Task1Stk
+                            *COM*:0000a000 Task2Stk
+                            *COM*:0000a000 TaskStartStk
+                            *COM*:00000004 uart0Sem
+                            *COM*:00000004 keypadQueue
+                            *COM*:00000100 keypadQueueTable
+                            *COM*:00000004 hpC
+                            *COM*:00000004 mpC
+                            *COM*:00000001 opChar
+                            *COM*:00000005 bufAH
+                            *COM*:00000005 bufAM
+                            *COM*:00000005 bufCal
+                            *COM*:00000001 menu
+                            *COM*:00000001 alarma
+                            *COM*:00000001 calculadora
+                            *COM*:00000001 ponerHora
+                            *COM*:00000001 h
+                            *COM*:00000001 m
+                            *COM*:00000001 contH
+                            *COM*:00000001 contM
+                            *COM*:00000001 activarAlarma
+                            *COM*:00000001 op1
+                            *COM*:00000001 op2
+                            *COM*:00000001 contOp1
+                            *COM*:00000001 contOp2
+                            *COM*:00000001 resul
+                            *COM*:00000001 op
+                            *COM*:00000001 horaFijada
+                            *COM*:00000001 flag
+C:\Users\baneg\AppData\Local\Temp\ccp1NWra.s:2774   .text:00000000 $a
+C:\Users\baneg\AppData\Local\Temp\ccp1NWra.s:2777   .text:00000000 intToStr
+C:\Users\baneg\AppData\Local\Temp\ccp1NWra.s:2899   .text:00000144 $d
+C:\Users\baneg\AppData\Local\Temp\ccp1NWra.s:2905   .text:00000150 $a
+C:\Users\baneg\AppData\Local\Temp\ccp1NWra.s:2908   .text:00000150 intToStrC
+C:\Users\baneg\AppData\Local\Temp\ccp1NWra.s:2976   .text:000001f8 $d
+C:\Users\baneg\AppData\Local\Temp\ccp1NWra.s:2981   .text:00000200 $a
+C:\Users\baneg\AppData\Local\Temp\ccp1NWra.s:2984   .text:00000200 lcd_putchar_xTam
+C:\Users\baneg\AppData\Local\Temp\ccp1NWra.s:3174   .text:0000040c $d
+C:\Users\baneg\AppData\Local\Temp\ccp1NWra.s:3178   .text:00000410 $a
+C:\Users\baneg\AppData\Local\Temp\ccp1NWra.s:3181   .text:00000410 lcd_puts_xTam
+C:\Users\baneg\AppData\Local\Temp\ccp1NWra.s:3267   .rodata:00000000 $d
+C:\Users\baneg\AppData\Local\Temp\ccp1NWra.s:3277   .text:000004e0 uart0_putTimeLCD
+C:\Users\baneg\AppData\Local\Temp\ccp1NWra.s:3593   .text:00000894 $d
+C:\Users\baneg\AppData\Local\Temp\ccp1NWra.s:3609   .text:000008c8 $a
+C:\Users\baneg\AppData\Local\Temp\ccp1NWra.s:3612   .text:000008c8 TaskStart
+C:\Users\baneg\AppData\Local\Temp\ccp1NWra.s:3685   .text:00000954 $d
+C:\Users\baneg\AppData\Local\Temp\ccp1NWra.s:6210   .text:000026cc Task1
+C:\Users\baneg\AppData\Local\Temp\ccp1NWra.s:6321   .text:000027d4 Task2
+C:\Users\baneg\AppData\Local\Temp\ccp1NWra.s:3693   .text:00000968 $a
+C:\Users\baneg\AppData\Local\Temp\ccp1NWra.s:3696   .text:00000968 isr_tick
+C:\Users\baneg\AppData\Local\Temp\ccp1NWra.s:3732   .text:00000998 $d
+C:\Users\baneg\AppData\Local\Temp\ccp1NWra.s:3810   .text:0000099c $a
+C:\Users\baneg\AppData\Local\Temp\ccp1NWra.s:3813   .text:0000099c isr_keypad
+C:\Users\baneg\AppData\Local\Temp\ccp1NWra.s:3858   .text:000009f4 $d
+C:\Users\baneg\AppData\Local\Temp\ccp1NWra.s:3876   .text:00000a34 $a
+C:\Users\baneg\AppData\Local\Temp\ccp1NWra.s:4962   .text:000017ac $d
+C:\Users\baneg\AppData\Local\Temp\ccp1NWra.s:5006   .text:00001854 $a
+C:\Users\baneg\AppData\Local\Temp\ccp1NWra.s:6194   .text:000026c4 $d
+C:\Users\baneg\AppData\Local\Temp\ccp1NWra.s:6207   .text:000026cc $a
+C:\Users\baneg\AppData\Local\Temp\ccp1NWra.s:6307   .text:000027b4 $d
+C:\Users\baneg\AppData\Local\Temp\ccp1NWra.s:6318   .text:000027d4 $a
+C:\Users\baneg\AppData\Local\Temp\ccp1NWra.s:6352   .text:000027fc $d
+C:\Users\baneg\AppData\Local\Temp\ccp1NWra.s:6356   .text:00002800 $a
+C:\Users\baneg\AppData\Local\Temp\ccp1NWra.s:6359   .text:00002800 main
+C:\Users\baneg\AppData\Local\Temp\ccp1NWra.s:6506   .text:000029ac $d
+                     .debug_frame:00000010 $d
+
+UNDEFINED SYMBOLS
+lcd_putpixel
+font
+rtc_puttime
+rtc_gettime
+iis_textToSpeech
+timer0_open_tick
+OSTaskCreate
+OSTaskDel
+OSTickISR
+keypad_getchartime
+lcd_clear
+rtc_open
+OSTimeDly
+timer3_start
+sw_delay_ms
+keypad_open
+sys_init
+timers_init
+rtc_init
+lcd_init
+adc_init
+keypad_init
+uda1341ts_init
+iis_init
+lcd_on
+ts_on
+ts_off
+uda1341ts_setvol
+OSInit
+OSSemCreate
+OSQCreate
+OSStart

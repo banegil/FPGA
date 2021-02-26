@@ -1,0 +1,242 @@
+#-------------------------------------------------------------------
+#
+#  Fichero:
+#    load_silabas.txt  25/11/2014
+#
+#    (c) J.M. Mendias
+#    Programación de Sistemas y Dispositivos
+#    Facultad de Informática. Universidad Complutense de Madrid
+#
+#  Propósito:
+#    Script del GDB que carga archivos WAV en la memoria de la placa 
+#    de prototipado S3CEV40 para su reproducción por el audio-codec  
+#
+#  Notas de diseño:
+#    - Los ficheros WAV y este script deben estar ubicados en el mismo 
+#      directorio
+#    - Previo a su ejecución desde una consola del GDB, debe cambiarse 
+#      al mencionado directorio con el comando: cd <ruta>
+#    - Para ejecutarlo debe usarse el comando: source load_silabas.txt
+#
+#-------------------------------------------------------------------
+
+echo Cargando ficheros WAV...\n
+
+restore a.wav       binary 0x0c200000
+restore e.wav       binary 0x0c208000
+restore i.wav       binary 0x0c210000
+restore o.wav       binary 0x0c218000
+restore u.wav       binary 0x0c220000
+
+restore b.wav       binary 0x0c228000
+restore d.wav       binary 0x0c230000
+restore f.wav       binary 0x0c238000
+restore g.wav       binary 0x0c240000
+restore j.wav       binary 0x0c248000
+restore k.wav       binary 0x0c250000
+restore l.wav       binary 0x0c258000
+restore m.wav       binary 0x0c260000
+restore n.wav       binary 0x0c268000
+restore gn.wav      binary 0x0c270000
+restore p.wav       binary 0x0c278000
+restore r.wav       binary 0x0c280000
+restore rr.wav      binary 0x0c288000
+restore s.wav       binary 0x0c290000
+restore t.wav       binary 0x0c298000
+restore x.wav       binary 0x0c2a0000
+restore y.wav       binary 0x0c2a8000
+restore z.wav       binary 0x0c2b0000
+restore ch.wav      binary 0x0c2b8000
+
+restore ba.wav      binary 0x0c2c0000
+restore be.wav      binary 0x0c2c8000
+restore bi.wav      binary 0x0c2d0000
+restore bo.wav      binary 0x0c2d8000
+restore bu.wav      binary 0x0c2e0000
+
+restore da.wav      binary 0x0c2e8000
+restore de.wav      binary 0x0c2f0000
+restore di.wav      binary 0x0c2f8000
+restore do.wav      binary 0x0c300000
+restore du.wav      binary 0x0c308000
+
+restore fa.wav      binary 0x0c310000
+restore fe.wav      binary 0x0c318000
+restore fi.wav      binary 0x0c320000
+restore fo.wav      binary 0x0c328000
+restore fu.wav      binary 0x0c330000
+
+restore ga.wav      binary 0x0c338000
+restore ge.wav      binary 0x0c340000
+restore gi.wav      binary 0x0c348000
+restore go.wav      binary 0x0c350000
+restore gu.wav      binary 0x0c358000
+
+restore ja.wav      binary 0x0c360000
+restore je.wav      binary 0x0c368000
+restore ji.wav      binary 0x0c370000
+restore jo.wav      binary 0x0c378000
+restore ju.wav      binary 0x0c380000
+
+restore ka.wav      binary 0x0c388000
+restore ke.wav      binary 0x0c390000
+restore ki.wav      binary 0x0c398000
+restore ko.wav      binary 0x0c3a0000
+restore ku.wav      binary 0x0c3a8000
+
+restore la.wav      binary 0x0c3b0000
+restore le.wav      binary 0x0c3b8000
+restore li.wav      binary 0x0c3c0000
+restore lo.wav      binary 0x0c3c8000
+restore lu.wav      binary 0x0c3d0000
+
+restore ma.wav      binary 0x0c3d8000
+restore me.wav      binary 0x0c3e0000
+restore mi.wav      binary 0x0c3e8000
+restore mo.wav      binary 0x0c3f0000
+restore mu.wav      binary 0x0c3f8000
+
+restore na.wav      binary 0x0c400000
+restore ne.wav      binary 0x0c408000
+restore ni.wav      binary 0x0c410000
+restore no.wav      binary 0x0c418000
+restore nu.wav      binary 0x0c420000
+
+restore gna.wav     binary 0x0c428000
+restore gne.wav     binary 0x0c430000
+restore gni.wav     binary 0x0c438000
+restore gno.wav     binary 0x0c440000
+restore gnu.wav     binary 0x0c448000
+
+restore pa.wav      binary 0x0c450000
+restore pe.wav      binary 0x0c458000
+restore pi.wav      binary 0x0c460000
+restore po.wav      binary 0x0c468000
+restore pu.wav      binary 0x0c470000
+
+restore ra.wav      binary 0x0c478000
+restore re.wav      binary 0x0c480000
+restore ri.wav      binary 0x0c488000
+restore ro.wav      binary 0x0c490000
+restore ru.wav      binary 0x0c498000
+
+restore rra.wav     binary 0x0c4a0000
+restore rre.wav     binary 0x0c4a8000
+restore rri.wav     binary 0x0c4b0000
+restore rro.wav     binary 0x0c4b8000
+restore rru.wav     binary 0x0c4c0000
+
+restore sa.wav      binary 0x0c4c8000
+restore se.wav      binary 0x0c4d0000
+restore si.wav      binary 0x0c4d8000
+restore so.wav      binary 0x0c4e0000
+restore su.wav      binary 0x0c4e8000
+
+restore ta.wav      binary 0x0c4f0000
+restore te.wav      binary 0x0c4f8000
+restore ti.wav      binary 0x0c500000
+restore to.wav      binary 0x0c508000
+restore tu.wav      binary 0x0c510000
+
+restore xa.wav      binary 0x0c518000
+restore xe.wav      binary 0x0c520000
+restore xi.wav      binary 0x0c528000
+restore xo.wav      binary 0x0c530000
+restore xu.wav      binary 0x0c538000
+
+restore ya.wav      binary 0x0c540000
+restore ye.wav      binary 0x0c548000
+restore yi.wav      binary 0x0c550000
+restore yo.wav      binary 0x0c558000
+restore yu.wav      binary 0x0c560000
+
+restore za.wav      binary 0x0c568000
+restore ze.wav      binary 0x0c570000
+restore zi.wav      binary 0x0c578000
+restore zo.wav      binary 0x0c580000
+restore zu.wav      binary 0x0c588000
+
+restore cha.wav     binary 0x0c590000
+restore che.wav     binary 0x0c598000
+restore chi.wav     binary 0x0c5a0000
+restore cho.wav     binary 0x0c5a8000
+restore chu.wav     binary 0x0c5b0000
+
+restore bla.wav     binary 0x0c5b8000
+restore ble.wav     binary 0x0c5c0000
+restore bli.wav     binary 0x0c5c8000
+restore blo.wav     binary 0x0c5d0000
+restore blu.wav     binary 0x0c5d8000
+
+restore bra.wav     binary 0x0c5e0000
+restore bre.wav     binary 0x0c5e8000
+restore bri.wav     binary 0x0c5f0000
+restore bro.wav     binary 0x0c5f8000
+restore bru.wav     binary 0x0c600000
+
+restore fla.wav     binary 0x0c608000
+restore fle.wav     binary 0x0c610000
+restore fli.wav     binary 0x0c618000
+restore flo.wav     binary 0x0c620000
+restore flu.wav     binary 0x0c628000
+
+restore fra.wav     binary 0x0c630000
+restore fre.wav     binary 0x0c638000
+restore fri.wav     binary 0x0c640000
+restore fro.wav     binary 0x0c648000
+restore fru.wav     binary 0x0c650000
+
+restore gla.wav     binary 0x0c658000
+restore gle.wav     binary 0x0c660000
+restore gli.wav     binary 0x0c668000
+restore glo.wav     binary 0x0c670000
+restore glu.wav     binary 0x0c678000
+
+restore gra.wav     binary 0x0c680000
+restore gre.wav     binary 0x0c688000
+restore gri.wav     binary 0x0c690000
+restore gro.wav     binary 0x0c698000
+restore gru.wav     binary 0x0c6a0000
+
+restore kla.wav     binary 0x0c6a8000
+restore kle.wav     binary 0x0c6b0000
+restore kli.wav     binary 0x0c6b8000
+restore klo.wav     binary 0x0c6c0000
+restore klu.wav     binary 0x0c6c8000
+
+restore kra.wav     binary 0x0c6d0000
+restore kre.wav     binary 0x0c6d8000
+restore kri.wav     binary 0x0c6e0000
+restore kro.wav     binary 0x0c6e8000
+restore kru.wav     binary 0x0c6f0000
+
+restore pla.wav     binary 0x0c6f8000
+restore ple.wav     binary 0x0c700000
+restore pli.wav     binary 0x0c708000
+restore plo.wav     binary 0x0c710000
+restore plu.wav     binary 0x0c718000
+
+restore pra.wav     binary 0x0c720000
+restore pre.wav     binary 0x0c728000
+restore pri.wav     binary 0x0c730000
+restore pro.wav     binary 0x0c738000
+restore pru.wav     binary 0x0c740000
+
+restore tra.wav     binary 0x0c748000
+restore tre.wav     binary 0x0c750000
+restore tri.wav     binary 0x0c758000
+restore tro.wav     binary 0x0c760000
+restore tru.wav     binary 0x0c768000
+
+restore dra.wav     binary 0x0c770000
+restore dre.wav     binary 0x0c778000
+restore dri.wav     binary 0x0c780000
+restore dro.wav     binary 0x0c788000
+restore dru.wav     binary 0x0c790000
+
+restore espacio.wav binary 0x0c798000
+restore coma.wav    binary 0x0c7a0000
+restore punto.wav   binary 0x0c7a8000
+
+
+echo ...carga finalizada

@@ -1,0 +1,2508 @@
+   1              		.cpu arm7tdmi
+   2              		.fpu softvfp
+   3              		.eabi_attribute 20, 1
+   4              		.eabi_attribute 21, 1
+   5              		.eabi_attribute 23, 3
+   6              		.eabi_attribute 24, 1
+   7              		.eabi_attribute 25, 1
+   8              		.eabi_attribute 26, 1
+   9              		.eabi_attribute 30, 6
+  10              		.eabi_attribute 18, 4
+  11              		.file	"system.c"
+  21              	.Ltext0:
+  22              		.file 1 "../src/system.c"
+ 1971              		.align	2
+ 1972              		.global	sys_init
+ 1974              	sys_init:
+ 1975              	.LFB0:
+   1:../src/system.c **** 
+   2:../src/system.c **** #include <s3c44b0x.h>
+   3:../src/system.c **** #include <s3cev40.h>
+   4:../src/system.c **** #include <system.h>
+   5:../src/system.c **** #include <uart.h>
+   6:../src/system.c **** 
+   7:../src/system.c **** static void port_init( void );
+   8:../src/system.c **** static void install_dummy_isr( void );
+   9:../src/system.c **** static void show_sys_info( void );
+  10:../src/system.c **** 
+  11:../src/system.c **** void isr_SWI_dummy( void)        __attribute__ ((interrupt ("SWI")));
+  12:../src/system.c **** void isr_UNDEF_dummy( void )     __attribute__ ((interrupt ("UNDEF")));
+  13:../src/system.c **** void isr_IRQ_dummy( void )       __attribute__ ((interrupt ("IRQ")));
+  14:../src/system.c **** void isr_FIQ_dummy( void )       __attribute__ ((interrupt ("FIQ")));
+  15:../src/system.c **** void isr_PABORT_dummy( void )    __attribute__ ((interrupt ("ABORT")));
+  16:../src/system.c **** void isr_DABORT_dummy( void )    __attribute__ ((interrupt ("ABORT")));
+  17:../src/system.c **** void isr_ADC_dummy( void )       __attribute__ ((interrupt ("IRQ")));
+  18:../src/system.c **** void isr_RTC_dummy( void )       __attribute__ ((interrupt ("IRQ")));
+  19:../src/system.c **** void isr_TICK_dummy ( void )	 __attribute__ ((interrupt ("IRQ")));
+  20:../src/system.c **** void isr_USB_dummy( void )       __attribute__ ((interrupt ("IRQ")));
+  21:../src/system.c **** void isr_UTXD1_dummy( void )     __attribute__ ((interrupt ("IRQ")));
+  22:../src/system.c **** void isr_UTXD0_dummy( void )	 __attribute__ ((interrupt ("IRQ")));
+  23:../src/system.c **** void isr_SIO_dummy( void )       __attribute__ ((interrupt ("IRQ")));
+  24:../src/system.c **** void isr_IIC_dummy( void )	     __attribute__ ((interrupt ("IRQ")));
+  25:../src/system.c **** void isr_URXD1_dummy( void )     __attribute__ ((interrupt ("IRQ")));
+  26:../src/system.c **** void isr_URXD0_dummy( void )     __attribute__ ((interrupt ("IRQ")));
+  27:../src/system.c **** void isr_TIMER5_dummy( void )    __attribute__ ((interrupt ("IRQ")));
+  28:../src/system.c **** void isr_TIMER4_dummy( void )    __attribute__ ((interrupt ("IRQ")));
+  29:../src/system.c **** void isr_TIMER3_dummy( void )    __attribute__ ((interrupt ("IRQ")));
+  30:../src/system.c **** void isr_TIMER2_dummy( void )    __attribute__ ((interrupt ("IRQ")));
+  31:../src/system.c **** void isr_TIMER1_dummy( void )    __attribute__ ((interrupt ("IRQ")));
+  32:../src/system.c **** void isr_TIMER0_dummy( void )    __attribute__ ((interrupt ("IRQ")));
+  33:../src/system.c **** void isr_UERR01_dummy( void )    __attribute__ ((interrupt ("IRQ")));
+  34:../src/system.c **** void isr_WDT_dummy( void )       __attribute__ ((interrupt ("IRQ")));
+  35:../src/system.c **** void isr_BDMA1_dummy( void )     __attribute__ ((interrupt ("IRQ")));
+  36:../src/system.c **** void isr_BDMA0_dummy( void )     __attribute__ ((interrupt ("IRQ")));
+  37:../src/system.c **** void isr_ZDMA1_dummy( void )     __attribute__ ((interrupt ("IRQ")));
+  38:../src/system.c **** void isr_ZDMA0_dummy( void )     __attribute__ ((interrupt ("IRQ")));
+  39:../src/system.c **** void isr_PB_dummy( void )        __attribute__ ((interrupt ("IRQ")));
+  40:../src/system.c **** void isr_ETHERNET_dummy( void )  __attribute__ ((interrupt ("IRQ")));
+  41:../src/system.c **** void isr_TS_dummy( void )        __attribute__ ((interrupt ("IRQ")));
+  42:../src/system.c **** void isr_KEYPAD_dummy( void )    __attribute__ ((interrupt ("IRQ")));
+  43:../src/system.c **** void isr_USB_dummy( void )       __attribute__ ((interrupt ("IRQ")));
+  44:../src/system.c **** 
+  45:../src/system.c **** void sys_init( void )
+  46:../src/system.c **** {
+ 1976              		.loc 1 46 0
+ 1977              		.cfi_startproc
+ 1978              		@ Function supports interworking.
+ 1979              		@ args = 0, pretend = 0, frame = 0
+ 1980              		@ frame_needed = 1, uses_anonymous_args = 0
+ 1981 0000 0DC0A0E1 		mov	ip, sp
+ 1982              	.LCFI0:
+ 1983              		.cfi_def_cfa_register 12
+ 1984 0004 00D82DE9 		stmfd	sp!, {fp, ip, lr, pc}
+ 1985 0008 04B04CE2 		sub	fp, ip, #4
+ 1986              		.cfi_offset 14, -8
+ 1987              		.cfi_offset 13, -12
+ 1988              		.cfi_offset 11, -16
+ 1989              	.LCFI1:
+ 1990              		.cfi_def_cfa 11, 4
+  47:../src/system.c ****     WTCON  = 0;    
+ 1991              		.loc 1 47 0
+ 1992 000c EC309FE5 		ldr	r3, .L2
+ 1993 0010 0020A0E3 		mov	r2, #0
+ 1994 0014 002083E5 		str	r2, [r3, #0]
+  48:../src/system.c ****     INTMSK = ~0;
+ 1995              		.loc 1 48 0
+ 1996 0018 E4309FE5 		ldr	r3, .L2+4
+ 1997 001c 0020E0E3 		mvn	r2, #0
+ 1998 0020 002083E5 		str	r2, [r3, #0]
+  49:../src/system.c **** 
+  50:../src/system.c ****     LOCKTIME = 0xFFF;
+ 1999              		.loc 1 50 0
+ 2000 0024 DC309FE5 		ldr	r3, .L2+8
+ 2001 0028 DC209FE5 		ldr	r2, .L2+12
+ 2002 002c 002083E5 		str	r2, [r3, #0]
+  51:../src/system.c ****     PLLCON   = 0x38021;
+ 2003              		.loc 1 51 0
+ 2004 0030 7637A0E3 		mov	r3, #30932992
+ 2005 0034 D4209FE5 		ldr	r2, .L2+16
+ 2006 0038 002083E5 		str	r2, [r3, #0]
+  52:../src/system.c ****     CLKSLOW  = 0x8;
+ 2007              		.loc 1 52 0
+ 2008 003c D0309FE5 		ldr	r3, .L2+20
+ 2009 0040 0820A0E3 		mov	r2, #8
+ 2010 0044 002083E5 		str	r2, [r3, #0]
+  53:../src/system.c ****     CLKCON   = 0x7FF8;
+ 2011              		.loc 1 53 0
+ 2012 0048 C8309FE5 		ldr	r3, .L2+24
+ 2013 004c C8209FE5 		ldr	r2, .L2+28
+ 2014 0050 002083E5 		str	r2, [r3, #0]
+  54:../src/system.c ****     
+  55:../src/system.c ****     SBUSCON = 0x8000001B;
+ 2015              		.loc 1 55 0
+ 2016 0054 7137A0E3 		mov	r3, #29622272
+ 2017 0058 6E21A0E3 		mov	r2, #-2147483621
+ 2018 005c 002083E5 		str	r2, [r3, #0]
+  56:../src/system.c ****     
+  57:../src/system.c ****     SYSCFG = 0xE;
+ 2019              		.loc 1 57 0
+ 2020 0060 0735A0E3 		mov	r3, #29360128
+ 2021 0064 0E20A0E3 		mov	r2, #14
+ 2022 0068 002083E5 		str	r2, [r3, #0]
+  58:../src/system.c ****     
+  59:../src/system.c ****     I_PMST = 0x1F1B;
+ 2023              		.loc 1 59 0
+ 2024 006c AC309FE5 		ldr	r3, .L2+32
+ 2025 0070 AC209FE5 		ldr	r2, .L2+36
+ 2026 0074 002083E5 		str	r2, [r3, #0]
+  60:../src/system.c ****     I_PSLV = 0x1B1B1B1B;
+ 2027              		.loc 1 60 0
+ 2028 0078 A8309FE5 		ldr	r3, .L2+40
+ 2029 007c A8209FE5 		ldr	r2, .L2+44
+ 2030 0080 002083E5 		str	r2, [r3, #0]
+  61:../src/system.c ****     INTMOD = 0x0;
+ 2031              		.loc 1 61 0
+ 2032 0084 A4309FE5 		ldr	r3, .L2+48
+ 2033 0088 0020A0E3 		mov	r2, #0
+ 2034 008c 002083E5 		str	r2, [r3, #0]
+  62:../src/system.c ****     install_dummy_isr();
+ 2035              		.loc 1 62 0
+ 2036 0090 8C0000EB 		bl	install_dummy_isr
+  63:../src/system.c ****     EXTINTPND = ~0x0;
+ 2037              		.loc 1 63 0
+ 2038 0094 98309FE5 		ldr	r3, .L2+52
+ 2039 0098 0020E0E3 		mvn	r2, #0
+ 2040 009c 002083E5 		str	r2, [r3, #0]
+  64:../src/system.c ****     I_ISPC = ~0x0;
+ 2041              		.loc 1 64 0
+ 2042 00a0 90309FE5 		ldr	r3, .L2+56
+ 2043 00a4 0020E0E3 		mvn	r2, #0
+ 2044 00a8 002083E5 		str	r2, [r3, #0]
+  65:../src/system.c ****     INTCON = 0x1;
+ 2045              		.loc 1 65 0
+ 2046 00ac 1E36A0E3 		mov	r3, #31457280
+ 2047 00b0 0120A0E3 		mov	r2, #1
+ 2048 00b4 002083E5 		str	r2, [r3, #0]
+  66:../src/system.c **** 
+  67:../src/system.c ****     SET_OPMODE( SVCMODE );
+ 2049              		.loc 1 67 0
+ 2050              	@ 67 "../src/system.c" 1
+ 2051 00b8 00000FE1 		mrs r0, cpsr
+ 2052              	@ 0 "" 2
+ 2053              	@ 67 "../src/system.c" 1
+ 2054 00bc 1F00C0E3 		bic r0, r0, #0x1f
+ 2055              	@ 0 "" 2
+ 2056              	@ 67 "../src/system.c" 1
+ 2057 00c0 130080E3 		orr r0, r0, #19
+ 2058              	@ 0 "" 2
+ 2059              	@ 67 "../src/system.c" 1
+ 2060 00c4 00F021E1 		msr cpsr_c, r0
+ 2061              	@ 0 "" 2
+  68:../src/system.c ****     SET_IRQFLAG( 0 );
+ 2062              		.loc 1 68 0
+ 2063              	@ 68 "../src/system.c" 1
+ 2064 00c8 00000FE1 		mrs r0, cpsr
+ 2065              	@ 0 "" 2
+ 2066              	@ 68 "../src/system.c" 1
+ 2067 00cc 8000C0E3 		bic r0, r0, #0x80
+ 2068              	@ 0 "" 2
+ 2069              	@ 68 "../src/system.c" 1
+ 2070 00d0 000080E3 		orr r0, r0, #0
+ 2071              	@ 0 "" 2
+ 2072              	@ 68 "../src/system.c" 1
+ 2073 00d4 00F021E1 		msr cpsr_c, r0
+ 2074              	@ 0 "" 2
+  69:../src/system.c ****     SET_FIQFLAG( 1 );
+ 2075              		.loc 1 69 0
+ 2076              	@ 69 "../src/system.c" 1
+ 2077 00d8 00000FE1 		mrs r0, cpsr
+ 2078              	@ 0 "" 2
+ 2079              	@ 69 "../src/system.c" 1
+ 2080 00dc 4000C0E3 		bic r0, r0, #0x40
+ 2081              	@ 0 "" 2
+ 2082              	@ 69 "../src/system.c" 1
+ 2083 00e0 400080E3 		orr r0, r0, #64
+ 2084              	@ 0 "" 2
+ 2085              	@ 69 "../src/system.c" 1
+ 2086 00e4 00F021E1 		msr cpsr_c, r0
+ 2087              	@ 0 "" 2
+  70:../src/system.c **** 
+  71:../src/system.c ****     port_init();
+ 2088              		.loc 1 71 0
+ 2089 00e8 130000EB 		bl	port_init
+  72:../src/system.c ****     uart0_init();
+ 2090              		.loc 1 72 0
+ 2091 00ec FEFFFFEB 		bl	uart0_init
+  73:../src/system.c **** 
+  74:../src/system.c ****     show_sys_info();
+ 2092              		.loc 1 74 0
+ 2093 00f0 0C0200EB 		bl	show_sys_info
+  75:../src/system.c **** }
+ 2094              		.loc 1 75 0
+ 2095 00f4 0CD04BE2 		sub	sp, fp, #12
+ 2096 00f8 00689DE8 		ldmfd	sp, {fp, sp, lr}
+ 2097 00fc 1EFF2FE1 		bx	lr
+ 2098              	.L3:
+ 2099              		.align	2
+ 2100              	.L2:
+ 2101 0100 0000D301 		.word	30605312
+ 2102 0104 0C00E001 		.word	31457292
+ 2103 0108 0C00D801 		.word	30933004
+ 2104 010c FF0F0000 		.word	4095
+ 2105 0110 21800300 		.word	229409
+ 2106 0114 0800D801 		.word	30933000
+ 2107 0118 0400D801 		.word	30932996
+ 2108 011c F87F0000 		.word	32760
+ 2109 0120 1400E001 		.word	31457300
+ 2110 0124 1B1F0000 		.word	7963
+ 2111 0128 1000E001 		.word	31457296
+ 2112 012c 1B1B1B1B 		.word	454761243
+ 2113 0130 0800E001 		.word	31457288
+ 2114 0134 5400D201 		.word	30539860
+ 2115 0138 2400E001 		.word	31457316
+ 2116              		.cfi_endproc
+ 2117              	.LFE0:
+ 2119              		.align	2
+ 2121              	port_init:
+ 2122              	.LFB1:
+  76:../src/system.c **** 
+  77:../src/system.c **** static void port_init( void )
+  78:../src/system.c **** {
+ 2123              		.loc 1 78 0
+ 2124              		.cfi_startproc
+ 2125              		@ Function supports interworking.
+ 2126              		@ args = 0, pretend = 0, frame = 0
+ 2127              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2128 013c 0DC0A0E1 		mov	ip, sp
+ 2129              	.LCFI2:
+ 2130              		.cfi_def_cfa_register 12
+ 2131 0140 00D82DE9 		stmfd	sp!, {fp, ip, lr, pc}
+ 2132 0144 04B04CE2 		sub	fp, ip, #4
+ 2133              		.cfi_offset 14, -8
+ 2134              		.cfi_offset 13, -12
+ 2135              		.cfi_offset 11, -16
+ 2136              	.LCFI3:
+ 2137              		.cfi_def_cfa 11, 4
+  79:../src/system.c ****     PDATA = ~0;
+ 2138              		.loc 1 79 0
+ 2139 0148 00319FE5 		ldr	r3, .L5
+ 2140 014c 0020E0E3 		mvn	r2, #0
+ 2141 0150 002083E5 		str	r2, [r3, #0]
+  80:../src/system.c ****     PCONA = 0xFE;
+ 2142              		.loc 1 80 0
+ 2143 0154 F8309FE5 		ldr	r3, .L5+4
+ 2144 0158 FE20A0E3 		mov	r2, #254
+ 2145 015c 002083E5 		str	r2, [r3, #0]
+  81:../src/system.c **** 
+  82:../src/system.c ****     PDATB = ~0;
+ 2146              		.loc 1 82 0
+ 2147 0160 F0309FE5 		ldr	r3, .L5+8
+ 2148 0164 0020E0E3 		mvn	r2, #0
+ 2149 0168 002083E5 		str	r2, [r3, #0]
+  83:../src/system.c **** 	PCONB = 0x14F;
+ 2150              		.loc 1 83 0
+ 2151 016c E8309FE5 		ldr	r3, .L5+12
+ 2152 0170 E8209FE5 		ldr	r2, .L5+16
+ 2153 0174 002083E5 		str	r2, [r3, #0]
+  84:../src/system.c **** 
+  85:../src/system.c ****     PDATC = ~0;
+ 2154              		.loc 1 85 0
+ 2155 0178 E4309FE5 		ldr	r3, .L5+20
+ 2156 017c 0020E0E3 		mvn	r2, #0
+ 2157 0180 002083E5 		str	r2, [r3, #0]
+  86:../src/system.c ****     PCONC = 0x5FF555FF;
+ 2158              		.loc 1 86 0
+ 2159 0184 DC309FE5 		ldr	r3, .L5+24
+ 2160 0188 DC209FE5 		ldr	r2, .L5+28
+ 2161 018c 002083E5 		str	r2, [r3, #0]
+  87:../src/system.c ****     PUPC  = 0x94FB;
+ 2162              		.loc 1 87 0
+ 2163 0190 D8309FE5 		ldr	r3, .L5+32
+ 2164 0194 D8209FE5 		ldr	r2, .L5+36
+ 2165 0198 002083E5 		str	r2, [r3, #0]
+  88:../src/system.c **** 
+  89:../src/system.c ****     PDATD = ~0;
+ 2166              		.loc 1 89 0
+ 2167 019c D4309FE5 		ldr	r3, .L5+40
+ 2168 01a0 0020E0E3 		mvn	r2, #0
+ 2169 01a4 002083E5 		str	r2, [r3, #0]
+  90:../src/system.c ****     PCOND = 0xAAAA;
+ 2170              		.loc 1 90 0
+ 2171 01a8 CC309FE5 		ldr	r3, .L5+44
+ 2172 01ac CC209FE5 		ldr	r2, .L5+48
+ 2173 01b0 002083E5 		str	r2, [r3, #0]
+  91:../src/system.c ****     PUPD  = 0xFF;
+ 2174              		.loc 1 91 0
+ 2175 01b4 C8309FE5 		ldr	r3, .L5+52
+ 2176 01b8 FF20A0E3 		mov	r2, #255
+ 2177 01bc 002083E5 		str	r2, [r3, #0]
+  92:../src/system.c **** 
+  93:../src/system.c ****     PDATE = ~0;
+ 2178              		.loc 1 93 0
+ 2179 01c0 C0309FE5 		ldr	r3, .L5+56
+ 2180 01c4 0020E0E3 		mvn	r2, #0
+ 2181 01c8 002083E5 		str	r2, [r3, #0]
+  94:../src/system.c ****     PCONE = 0x255A9;
+ 2182              		.loc 1 94 0
+ 2183 01cc B8309FE5 		ldr	r3, .L5+60
+ 2184 01d0 B8209FE5 		ldr	r2, .L5+64
+ 2185 01d4 002083E5 		str	r2, [r3, #0]
+  95:../src/system.c ****     PUPE  = 0x1FB;
+ 2186              		.loc 1 95 0
+ 2187 01d8 B4309FE5 		ldr	r3, .L5+68
+ 2188 01dc B4209FE5 		ldr	r2, .L5+72
+ 2189 01e0 002083E5 		str	r2, [r3, #0]
+  96:../src/system.c **** 
+  97:../src/system.c ****     PDATF = ~0;
+ 2190              		.loc 1 97 0
+ 2191 01e4 B0309FE5 		ldr	r3, .L5+76
+ 2192 01e8 0020E0E3 		mvn	r2, #0
+ 2193 01ec 002083E5 		str	r2, [r3, #0]
+  98:../src/system.c ****     PCONF = 0x251A;
+ 2194              		.loc 1 98 0
+ 2195 01f0 A8309FE5 		ldr	r3, .L5+80
+ 2196 01f4 A8209FE5 		ldr	r2, .L5+84
+ 2197 01f8 002083E5 		str	r2, [r3, #0]
+  99:../src/system.c ****     PUPF  = 0x74;
+ 2198              		.loc 1 99 0
+ 2199 01fc A4309FE5 		ldr	r3, .L5+88
+ 2200 0200 7420A0E3 		mov	r2, #116
+ 2201 0204 002083E5 		str	r2, [r3, #0]
+ 100:../src/system.c **** 
+ 101:../src/system.c ****     PDATG = ~0;
+ 2202              		.loc 1 101 0
+ 2203 0208 9C309FE5 		ldr	r3, .L5+92
+ 2204 020c 0020E0E3 		mvn	r2, #0
+ 2205 0210 002083E5 		str	r2, [r3, #0]
+ 102:../src/system.c ****     PCONG = 0xF5FF;
+ 2206              		.loc 1 102 0
+ 2207 0214 94309FE5 		ldr	r3, .L5+96
+ 2208 0218 94209FE5 		ldr	r2, .L5+100
+ 2209 021c 002083E5 		str	r2, [r3, #0]
+ 103:../src/system.c ****     PUPG  = 0x30;
+ 2210              		.loc 1 103 0
+ 2211 0220 90309FE5 		ldr	r3, .L5+104
+ 2212 0224 3020A0E3 		mov	r2, #48
+ 2213 0228 002083E5 		str	r2, [r3, #0]
+ 104:../src/system.c **** 
+ 105:../src/system.c ****     SPUCR = 0x7;
+ 2214              		.loc 1 105 0
+ 2215 022c 88309FE5 		ldr	r3, .L5+108
+ 2216 0230 0720A0E3 		mov	r2, #7
+ 2217 0234 002083E5 		str	r2, [r3, #0]
+ 106:../src/system.c **** 
+ 107:../src/system.c ****     EXTINT = 0x22000220;
+ 2218              		.loc 1 107 0
+ 2219 0238 80309FE5 		ldr	r3, .L5+112
+ 2220 023c 80209FE5 		ldr	r2, .L5+116
+ 2221 0240 002083E5 		str	r2, [r3, #0]
+ 108:../src/system.c **** }
+ 2222              		.loc 1 108 0
+ 2223 0244 0CD04BE2 		sub	sp, fp, #12
+ 2224 0248 00689DE8 		ldmfd	sp, {fp, sp, lr}
+ 2225 024c 1EFF2FE1 		bx	lr
+ 2226              	.L6:
+ 2227              		.align	2
+ 2228              	.L5:
+ 2229 0250 0400D201 		.word	30539780
+ 2230 0254 0000D201 		.word	30539776
+ 2231 0258 0C00D201 		.word	30539788
+ 2232 025c 0800D201 		.word	30539784
+ 2233 0260 4F010000 		.word	335
+ 2234 0264 1400D201 		.word	30539796
+ 2235 0268 1000D201 		.word	30539792
+ 2236 026c FF55F55F 		.word	1609913855
+ 2237 0270 1800D201 		.word	30539800
+ 2238 0274 FB940000 		.word	38139
+ 2239 0278 2000D201 		.word	30539808
+ 2240 027c 1C00D201 		.word	30539804
+ 2241 0280 AAAA0000 		.word	43690
+ 2242 0284 2400D201 		.word	30539812
+ 2243 0288 2C00D201 		.word	30539820
+ 2244 028c 2800D201 		.word	30539816
+ 2245 0290 A9550200 		.word	153001
+ 2246 0294 3000D201 		.word	30539824
+ 2247 0298 FB010000 		.word	507
+ 2248 029c 3800D201 		.word	30539832
+ 2249 02a0 3400D201 		.word	30539828
+ 2250 02a4 1A250000 		.word	9498
+ 2251 02a8 3C00D201 		.word	30539836
+ 2252 02ac 4400D201 		.word	30539844
+ 2253 02b0 4000D201 		.word	30539840
+ 2254 02b4 FFF50000 		.word	62975
+ 2255 02b8 4800D201 		.word	30539848
+ 2256 02bc 4C00D201 		.word	30539852
+ 2257 02c0 5000D201 		.word	30539856
+ 2258 02c4 20020022 		.word	570425888
+ 2259              		.cfi_endproc
+ 2260              	.LFE1:
+ 2262              		.align	2
+ 2264              	install_dummy_isr:
+ 2265              	.LFB2:
+ 109:../src/system.c **** 
+ 110:../src/system.c **** static void install_dummy_isr( void )
+ 111:../src/system.c **** { 
+ 2266              		.loc 1 111 0
+ 2267              		.cfi_startproc
+ 2268              		@ Function supports interworking.
+ 2269              		@ args = 0, pretend = 0, frame = 0
+ 2270              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2271 02c8 0DC0A0E1 		mov	ip, sp
+ 2272              	.LCFI4:
+ 2273              		.cfi_def_cfa_register 12
+ 2274 02cc 00D82DE9 		stmfd	sp!, {fp, ip, lr, pc}
+ 2275 02d0 04B04CE2 		sub	fp, ip, #4
+ 2276              		.cfi_offset 14, -8
+ 2277              		.cfi_offset 13, -12
+ 2278              		.cfi_offset 11, -16
+ 2279              	.LCFI5:
+ 2280              		.cfi_def_cfa 11, 4
+ 112:../src/system.c **** 	pISR_SWI = (uint32) isr_SWI_dummy;
+ 2281              		.loc 1 112 0
+ 2282 02d4 7C309FE5 		ldr	r3, .L8
+ 2283 02d8 7C209FE5 		ldr	r2, .L8+4
+ 2284 02dc 002083E5 		str	r2, [r3, #0]
+ 113:../src/system.c **** 	pISR_UNDEF = (uint32) isr_UNDEF_dummy;
+ 2285              		.loc 1 113 0
+ 2286 02e0 78309FE5 		ldr	r3, .L8+8
+ 2287 02e4 78209FE5 		ldr	r2, .L8+12
+ 2288 02e8 002083E5 		str	r2, [r3, #0]
+ 114:../src/system.c **** 	pISR_IRQ = (uint32) isr_IRQ_dummy;
+ 2289              		.loc 1 114 0
+ 2290 02ec 74309FE5 		ldr	r3, .L8+16
+ 2291 02f0 74209FE5 		ldr	r2, .L8+20
+ 2292 02f4 002083E5 		str	r2, [r3, #0]
+ 115:../src/system.c **** 	pISR_FIQ = (uint32) isr_FIQ_dummy;
+ 2293              		.loc 1 115 0
+ 2294 02f8 70309FE5 		ldr	r3, .L8+24
+ 2295 02fc 70209FE5 		ldr	r2, .L8+28
+ 2296 0300 002083E5 		str	r2, [r3, #0]
+ 116:../src/system.c **** 	pISR_PABORT = (uint32) isr_PABORT_dummy;
+ 2297              		.loc 1 116 0
+ 2298 0304 6C309FE5 		ldr	r3, .L8+32
+ 2299 0308 6C209FE5 		ldr	r2, .L8+36
+ 2300 030c 002083E5 		str	r2, [r3, #0]
+ 117:../src/system.c **** 	pISR_DABORT = (uint32) isr_DABORT_dummy;
+ 2301              		.loc 1 117 0
+ 2302 0310 68309FE5 		ldr	r3, .L8+40
+ 2303 0314 68209FE5 		ldr	r2, .L8+44
+ 2304 0318 002083E5 		str	r2, [r3, #0]
+ 118:../src/system.c **** 	pISR_ADC = (uint32) isr_ADC_dummy;
+ 2305              		.loc 1 118 0
+ 2306 031c 64309FE5 		ldr	r3, .L8+48
+ 2307 0320 64209FE5 		ldr	r2, .L8+52
+ 2308 0324 002083E5 		str	r2, [r3, #0]
+ 119:../src/system.c **** 	pISR_RTC = (uint32) isr_RTC_dummy;
+ 2309              		.loc 1 119 0
+ 2310 0328 60309FE5 		ldr	r3, .L8+56
+ 2311 032c 60209FE5 		ldr	r2, .L8+60
+ 2312 0330 002083E5 		str	r2, [r3, #0]
+ 120:../src/system.c ****     pISR_TICK = (uint32) isr_TICK_dummy;
+ 2313              		.loc 1 120 0
+ 2314 0334 5C309FE5 		ldr	r3, .L8+64
+ 2315 0338 5C209FE5 		ldr	r2, .L8+68
+ 2316 033c 002083E5 		str	r2, [r3, #0]
+ 121:../src/system.c **** 	pISR_USB = (uint32) isr_USB_dummy;
+ 2317              		.loc 1 121 0
+ 2318 0340 58309FE5 		ldr	r3, .L8+72
+ 2319 0344 58209FE5 		ldr	r2, .L8+76
+ 2320 0348 002083E5 		str	r2, [r3, #0]
+ 122:../src/system.c **** }        
+ 2321              		.loc 1 122 0
+ 2322 034c 0CD04BE2 		sub	sp, fp, #12
+ 2323 0350 00689DE8 		ldmfd	sp, {fp, sp, lr}
+ 2324 0354 1EFF2FE1 		bx	lr
+ 2325              	.L9:
+ 2326              		.align	2
+ 2327              	.L8:
+ 2328 0358 08FF7F0C 		.word	209714952
+ 2329 035c 00000000 		.word	isr_SWI_dummy
+ 2330 0360 04FF7F0C 		.word	209714948
+ 2331 0364 00000000 		.word	isr_UNDEF_dummy
+ 2332 0368 18FF7F0C 		.word	209714968
+ 2333 036c 00000000 		.word	isr_IRQ_dummy
+ 2334 0370 1CFF7F0C 		.word	209714972
+ 2335 0374 00000000 		.word	isr_FIQ_dummy
+ 2336 0378 0CFF7F0C 		.word	209714956
+ 2337 037c 00000000 		.word	isr_PABORT_dummy
+ 2338 0380 10FF7F0C 		.word	209714960
+ 2339 0384 00000000 		.word	isr_DABORT_dummy
+ 2340 0388 20FF7F0C 		.word	209714976
+ 2341 038c 00000000 		.word	isr_ADC_dummy
+ 2342 0390 24FF7F0C 		.word	209714980
+ 2343 0394 00000000 		.word	isr_RTC_dummy
+ 2344 0398 70FF7F0C 		.word	209715056
+ 2345 039c 00000000 		.word	isr_TICK_dummy
+ 2346 03a0 84FF7F0C 		.word	209715076
+ 2347 03a4 00000000 		.word	isr_USB_dummy
+ 2348              		.cfi_endproc
+ 2349              	.LFE2:
+ 2351              		.section	.rodata
+ 2352              		.align	2
+ 2353              	.LC0:
+ 2354 0000 0A0A2A2A 		.ascii	"\012\012*** ERROR FATAL: ejecutando isr_SWI_dummy\000"
+ 2354      2A204552 
+ 2354      524F5220 
+ 2354      46415441 
+ 2354      4C3A2065 
+ 2355              		.text
+ 2356              		.align	2
+ 2357              		.global	isr_SWI_dummy
+ 2359              	isr_SWI_dummy:
+ 2360              	.LFB3:
+ 123:../src/system.c **** 
+ 124:../src/system.c **** void isr_SWI_dummy( void )
+ 125:../src/system.c **** {
+ 2361              		.loc 1 125 0
+ 2362              		.cfi_startproc
+ 2363              		@ ARM Exception Handler.
+ 2364              		@ args = 0, pretend = 0, frame = 0
+ 2365              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2366 03a8 04C02DE5 		str	ip, [sp, #-4]!
+ 2367 03ac 0DC0A0E1 		mov	ip, sp
+ 2368              	.LCFI6:
+ 2369              		.cfi_def_cfa_register 12
+ 2370 03b0 0FD82DE9 		stmfd	sp!, {r0, r1, r2, r3, fp, ip, lr, pc}
+ 2371 03b4 04B04CE2 		sub	fp, ip, #4
+ 2372              		.cfi_offset 14, -8
+ 2373              		.cfi_offset 13, -12
+ 2374              		.cfi_offset 11, -16
+ 2375              		.cfi_offset 3, -20
+ 2376              		.cfi_offset 2, -24
+ 2377              		.cfi_offset 1, -28
+ 2378              		.cfi_offset 0, -32
+ 2379              	.LCFI7:
+ 2380              		.cfi_def_cfa 11, 4
+ 126:../src/system.c ****     uart0_puts( "\n\n*** ERROR FATAL: ejecutando isr_SWI_dummy" );
+ 2381              		.loc 1 126 0
+ 2382 03b8 10009FE5 		ldr	r0, .L12
+ 2383 03bc FEFFFFEB 		bl	uart0_puts
+ 127:../src/system.c ****     SEGS = 0x75;
+ 2384              		.loc 1 127 0
+ 2385 03c0 8537A0E3 		mov	r3, #34865152
+ 2386 03c4 7520A0E3 		mov	r2, #117
+ 2387 03c8 0020C3E5 		strb	r2, [r3, #0]
+ 2388              	.L11:
+ 128:../src/system.c ****     while( 1 );
+ 2389              		.loc 1 128 0 discriminator 1
+ 2390 03cc FEFFFFEA 		b	.L11
+ 2391              	.L13:
+ 2392              		.align	2
+ 2393              	.L12:
+ 2394 03d0 00000000 		.word	.LC0
+ 2395              		.cfi_endproc
+ 2396              	.LFE3:
+ 2398              		.section	.rodata
+ 2399              		.align	2
+ 2400              	.LC1:
+ 2401 002c 0A0A2A2A 		.ascii	"\012\012*** ERROR FATAL: ejecutando isr_UNDEF_dummy"
+ 2401      2A204552 
+ 2401      524F5220 
+ 2401      46415441 
+ 2401      4C3A2065 
+ 2402 0059 00       		.ascii	"\000"
+ 2403              		.text
+ 2404              		.align	2
+ 2405              		.global	isr_UNDEF_dummy
+ 2407              	isr_UNDEF_dummy:
+ 2408              	.LFB4:
+ 129:../src/system.c **** }
+ 130:../src/system.c **** 
+ 131:../src/system.c **** void isr_UNDEF_dummy( void )
+ 132:../src/system.c **** {
+ 2409              		.loc 1 132 0
+ 2410              		.cfi_startproc
+ 2411              		@ ARM Exception Handler.
+ 2412              		@ args = 0, pretend = 0, frame = 0
+ 2413              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2414 03d4 04C02DE5 		str	ip, [sp, #-4]!
+ 2415 03d8 0DC0A0E1 		mov	ip, sp
+ 2416              	.LCFI8:
+ 2417              		.cfi_def_cfa_register 12
+ 2418 03dc 0FD82DE9 		stmfd	sp!, {r0, r1, r2, r3, fp, ip, lr, pc}
+ 2419 03e0 04B04CE2 		sub	fp, ip, #4
+ 2420              		.cfi_offset 14, -8
+ 2421              		.cfi_offset 13, -12
+ 2422              		.cfi_offset 11, -16
+ 2423              		.cfi_offset 3, -20
+ 2424              		.cfi_offset 2, -24
+ 2425              		.cfi_offset 1, -28
+ 2426              		.cfi_offset 0, -32
+ 2427              	.LCFI9:
+ 2428              		.cfi_def_cfa 11, 4
+ 133:../src/system.c ****     uart0_puts( "\n\n*** ERROR FATAL: ejecutando isr_UNDEF_dummy" );
+ 2429              		.loc 1 133 0
+ 2430 03e4 10009FE5 		ldr	r0, .L16
+ 2431 03e8 FEFFFFEB 		bl	uart0_puts
+ 134:../src/system.c ****     SEGS = 0x75;
+ 2432              		.loc 1 134 0
+ 2433 03ec 8537A0E3 		mov	r3, #34865152
+ 2434 03f0 7520A0E3 		mov	r2, #117
+ 2435 03f4 0020C3E5 		strb	r2, [r3, #0]
+ 2436              	.L15:
+ 135:../src/system.c ****     while( 1 );
+ 2437              		.loc 1 135 0 discriminator 1
+ 2438 03f8 FEFFFFEA 		b	.L15
+ 2439              	.L17:
+ 2440              		.align	2
+ 2441              	.L16:
+ 2442 03fc 2C000000 		.word	.LC1
+ 2443              		.cfi_endproc
+ 2444              	.LFE4:
+ 2446              		.section	.rodata
+ 2447 005a 0000     		.align	2
+ 2448              	.LC2:
+ 2449 005c 0A0A2A2A 		.ascii	"\012\012*** ERROR FATAL: ejecutando isr_IRQ_dummy\000"
+ 2449      2A204552 
+ 2449      524F5220 
+ 2449      46415441 
+ 2449      4C3A2065 
+ 2450              		.text
+ 2451              		.align	2
+ 2452              		.global	isr_IRQ_dummy
+ 2454              	isr_IRQ_dummy:
+ 2455              	.LFB5:
+ 136:../src/system.c **** }
+ 137:../src/system.c **** 
+ 138:../src/system.c **** void isr_IRQ_dummy( void )
+ 139:../src/system.c **** {
+ 2456              		.loc 1 139 0
+ 2457              		.cfi_startproc
+ 2458              		@ Interrupt Service Routine.
+ 2459              		@ args = 0, pretend = 0, frame = 0
+ 2460              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2461 0400 04C02DE5 		str	ip, [sp, #-4]!
+ 2462 0404 0DC0A0E1 		mov	ip, sp
+ 2463              	.LCFI10:
+ 2464              		.cfi_def_cfa_register 12
+ 2465 0408 0FD82DE9 		stmfd	sp!, {r0, r1, r2, r3, fp, ip, lr, pc}
+ 2466 040c 04B04CE2 		sub	fp, ip, #4
+ 2467              		.cfi_offset 14, -8
+ 2468              		.cfi_offset 13, -12
+ 2469              		.cfi_offset 11, -16
+ 2470              		.cfi_offset 3, -20
+ 2471              		.cfi_offset 2, -24
+ 2472              		.cfi_offset 1, -28
+ 2473              		.cfi_offset 0, -32
+ 2474              	.LCFI11:
+ 2475              		.cfi_def_cfa 11, 4
+ 140:../src/system.c ****     uart0_puts( "\n\n*** ERROR FATAL: ejecutando isr_IRQ_dummy" );
+ 2476              		.loc 1 140 0
+ 2477 0410 10009FE5 		ldr	r0, .L20
+ 2478 0414 FEFFFFEB 		bl	uart0_puts
+ 141:../src/system.c ****     SEGS = 0x75;
+ 2479              		.loc 1 141 0
+ 2480 0418 8537A0E3 		mov	r3, #34865152
+ 2481 041c 7520A0E3 		mov	r2, #117
+ 2482 0420 0020C3E5 		strb	r2, [r3, #0]
+ 2483              	.L19:
+ 142:../src/system.c ****     while( 1 );
+ 2484              		.loc 1 142 0 discriminator 1
+ 2485 0424 FEFFFFEA 		b	.L19
+ 2486              	.L21:
+ 2487              		.align	2
+ 2488              	.L20:
+ 2489 0428 5C000000 		.word	.LC2
+ 2490              		.cfi_endproc
+ 2491              	.LFE5:
+ 2493              		.section	.rodata
+ 2494              		.align	2
+ 2495              	.LC3:
+ 2496 0088 0A0A2A2A 		.ascii	"\012\012*** ERROR FATAL: ejecutando isr_FIQ_dummy\000"
+ 2496      2A204552 
+ 2496      524F5220 
+ 2496      46415441 
+ 2496      4C3A2065 
+ 2497              		.text
+ 2498              		.align	2
+ 2499              		.global	isr_FIQ_dummy
+ 2501              	isr_FIQ_dummy:
+ 2502              	.LFB6:
+ 143:../src/system.c **** }
+ 144:../src/system.c **** 
+ 145:../src/system.c **** void isr_FIQ_dummy( void )
+ 146:../src/system.c **** {
+ 2503              		.loc 1 146 0
+ 2504              		.cfi_startproc
+ 2505              		@ Fast Interrupt Service Routine.
+ 2506              		@ args = 0, pretend = 0, frame = 0
+ 2507              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2508 042c 04C02DE5 		str	ip, [sp, #-4]!
+ 2509 0430 0DC0A0E1 		mov	ip, sp
+ 2510              	.LCFI12:
+ 2511              		.cfi_def_cfa_register 12
+ 2512 0434 0FD82DE9 		stmfd	sp!, {r0, r1, r2, r3, fp, ip, lr, pc}
+ 2513 0438 04B04CE2 		sub	fp, ip, #4
+ 2514              		.cfi_offset 14, -8
+ 2515              		.cfi_offset 13, -12
+ 2516              		.cfi_offset 11, -16
+ 2517              		.cfi_offset 3, -20
+ 2518              		.cfi_offset 2, -24
+ 2519              		.cfi_offset 1, -28
+ 2520              		.cfi_offset 0, -32
+ 2521              	.LCFI13:
+ 2522              		.cfi_def_cfa 11, 4
+ 147:../src/system.c ****     uart0_puts( "\n\n*** ERROR FATAL: ejecutando isr_FIQ_dummy" );
+ 2523              		.loc 1 147 0
+ 2524 043c 10009FE5 		ldr	r0, .L24
+ 2525 0440 FEFFFFEB 		bl	uart0_puts
+ 148:../src/system.c ****     SEGS = 0x75;
+ 2526              		.loc 1 148 0
+ 2527 0444 8537A0E3 		mov	r3, #34865152
+ 2528 0448 7520A0E3 		mov	r2, #117
+ 2529 044c 0020C3E5 		strb	r2, [r3, #0]
+ 2530              	.L23:
+ 149:../src/system.c ****     while( 1 );
+ 2531              		.loc 1 149 0 discriminator 1
+ 2532 0450 FEFFFFEA 		b	.L23
+ 2533              	.L25:
+ 2534              		.align	2
+ 2535              	.L24:
+ 2536 0454 88000000 		.word	.LC3
+ 2537              		.cfi_endproc
+ 2538              	.LFE6:
+ 2540              		.section	.rodata
+ 2541              		.align	2
+ 2542              	.LC4:
+ 2543 00b4 0A0A2A2A 		.ascii	"\012\012*** ERROR FATAL: ejecutando isr_PABORT_dumm"
+ 2543      2A204552 
+ 2543      524F5220 
+ 2543      46415441 
+ 2543      4C3A2065 
+ 2544 00e1 7900     		.ascii	"y\000"
+ 2545              		.text
+ 2546              		.align	2
+ 2547              		.global	isr_PABORT_dummy
+ 2549              	isr_PABORT_dummy:
+ 2550              	.LFB7:
+ 150:../src/system.c **** }
+ 151:../src/system.c **** 
+ 152:../src/system.c **** void isr_PABORT_dummy( void )
+ 153:../src/system.c **** {
+ 2551              		.loc 1 153 0
+ 2552              		.cfi_startproc
+ 2553              		@ Interrupt Service Routine.
+ 2554              		@ args = 0, pretend = 0, frame = 0
+ 2555              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2556 0458 04C02DE5 		str	ip, [sp, #-4]!
+ 2557 045c 0DC0A0E1 		mov	ip, sp
+ 2558              	.LCFI14:
+ 2559              		.cfi_def_cfa_register 12
+ 2560 0460 0FD82DE9 		stmfd	sp!, {r0, r1, r2, r3, fp, ip, lr, pc}
+ 2561 0464 04B04CE2 		sub	fp, ip, #4
+ 2562              		.cfi_offset 14, -8
+ 2563              		.cfi_offset 13, -12
+ 2564              		.cfi_offset 11, -16
+ 2565              		.cfi_offset 3, -20
+ 2566              		.cfi_offset 2, -24
+ 2567              		.cfi_offset 1, -28
+ 2568              		.cfi_offset 0, -32
+ 2569              	.LCFI15:
+ 2570              		.cfi_def_cfa 11, 4
+ 154:../src/system.c ****     uart0_puts( "\n\n*** ERROR FATAL: ejecutando isr_PABORT_dummy" );
+ 2571              		.loc 1 154 0
+ 2572 0468 10009FE5 		ldr	r0, .L28
+ 2573 046c FEFFFFEB 		bl	uart0_puts
+ 155:../src/system.c ****     SEGS = 0x75;
+ 2574              		.loc 1 155 0
+ 2575 0470 8537A0E3 		mov	r3, #34865152
+ 2576 0474 7520A0E3 		mov	r2, #117
+ 2577 0478 0020C3E5 		strb	r2, [r3, #0]
+ 2578              	.L27:
+ 156:../src/system.c ****     while( 1 );
+ 2579              		.loc 1 156 0 discriminator 1
+ 2580 047c FEFFFFEA 		b	.L27
+ 2581              	.L29:
+ 2582              		.align	2
+ 2583              	.L28:
+ 2584 0480 B4000000 		.word	.LC4
+ 2585              		.cfi_endproc
+ 2586              	.LFE7:
+ 2588              		.section	.rodata
+ 2589 00e3 00       		.align	2
+ 2590              	.LC5:
+ 2591 00e4 0A0A2A2A 		.ascii	"\012\012*** ERROR FATAL: ejecutando isr_DABORT_dumm"
+ 2591      2A204552 
+ 2591      524F5220 
+ 2591      46415441 
+ 2591      4C3A2065 
+ 2592 0111 7900     		.ascii	"y\000"
+ 2593              		.text
+ 2594              		.align	2
+ 2595              		.global	isr_DABORT_dummy
+ 2597              	isr_DABORT_dummy:
+ 2598              	.LFB8:
+ 157:../src/system.c **** }
+ 158:../src/system.c **** 
+ 159:../src/system.c **** void isr_DABORT_dummy( void )
+ 160:../src/system.c **** {
+ 2599              		.loc 1 160 0
+ 2600              		.cfi_startproc
+ 2601              		@ Interrupt Service Routine.
+ 2602              		@ args = 0, pretend = 0, frame = 0
+ 2603              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2604 0484 04C02DE5 		str	ip, [sp, #-4]!
+ 2605 0488 0DC0A0E1 		mov	ip, sp
+ 2606              	.LCFI16:
+ 2607              		.cfi_def_cfa_register 12
+ 2608 048c 0FD82DE9 		stmfd	sp!, {r0, r1, r2, r3, fp, ip, lr, pc}
+ 2609 0490 04B04CE2 		sub	fp, ip, #4
+ 2610              		.cfi_offset 14, -8
+ 2611              		.cfi_offset 13, -12
+ 2612              		.cfi_offset 11, -16
+ 2613              		.cfi_offset 3, -20
+ 2614              		.cfi_offset 2, -24
+ 2615              		.cfi_offset 1, -28
+ 2616              		.cfi_offset 0, -32
+ 2617              	.LCFI17:
+ 2618              		.cfi_def_cfa 11, 4
+ 161:../src/system.c ****     uart0_puts( "\n\n*** ERROR FATAL: ejecutando isr_DABORT_dummy" );
+ 2619              		.loc 1 161 0
+ 2620 0494 10009FE5 		ldr	r0, .L32
+ 2621 0498 FEFFFFEB 		bl	uart0_puts
+ 162:../src/system.c ****     SEGS = 0x75;
+ 2622              		.loc 1 162 0
+ 2623 049c 8537A0E3 		mov	r3, #34865152
+ 2624 04a0 7520A0E3 		mov	r2, #117
+ 2625 04a4 0020C3E5 		strb	r2, [r3, #0]
+ 2626              	.L31:
+ 163:../src/system.c ****     while( 1 );
+ 2627              		.loc 1 163 0 discriminator 1
+ 2628 04a8 FEFFFFEA 		b	.L31
+ 2629              	.L33:
+ 2630              		.align	2
+ 2631              	.L32:
+ 2632 04ac E4000000 		.word	.LC5
+ 2633              		.cfi_endproc
+ 2634              	.LFE8:
+ 2636              		.section	.rodata
+ 2637 0113 00       		.align	2
+ 2638              	.LC6:
+ 2639 0114 0A0A2A2A 		.ascii	"\012\012*** ERROR FATAL: ejecutando isr_ADC_dummy\000"
+ 2639      2A204552 
+ 2639      524F5220 
+ 2639      46415441 
+ 2639      4C3A2065 
+ 2640              		.text
+ 2641              		.align	2
+ 2642              		.global	isr_ADC_dummy
+ 2644              	isr_ADC_dummy:
+ 2645              	.LFB9:
+ 164:../src/system.c **** }
+ 165:../src/system.c **** 
+ 166:../src/system.c **** void isr_ADC_dummy( void )
+ 167:../src/system.c **** {
+ 2646              		.loc 1 167 0
+ 2647              		.cfi_startproc
+ 2648              		@ Interrupt Service Routine.
+ 2649              		@ args = 0, pretend = 0, frame = 0
+ 2650              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2651 04b0 04C02DE5 		str	ip, [sp, #-4]!
+ 2652 04b4 0DC0A0E1 		mov	ip, sp
+ 2653              	.LCFI18:
+ 2654              		.cfi_def_cfa_register 12
+ 2655 04b8 0FD82DE9 		stmfd	sp!, {r0, r1, r2, r3, fp, ip, lr, pc}
+ 2656 04bc 04B04CE2 		sub	fp, ip, #4
+ 2657              		.cfi_offset 14, -8
+ 2658              		.cfi_offset 13, -12
+ 2659              		.cfi_offset 11, -16
+ 2660              		.cfi_offset 3, -20
+ 2661              		.cfi_offset 2, -24
+ 2662              		.cfi_offset 1, -28
+ 2663              		.cfi_offset 0, -32
+ 2664              	.LCFI19:
+ 2665              		.cfi_def_cfa 11, 4
+ 168:../src/system.c ****     uart0_puts( "\n\n*** ERROR FATAL: ejecutando isr_ADC_dummy" );
+ 2666              		.loc 1 168 0
+ 2667 04c0 10009FE5 		ldr	r0, .L36
+ 2668 04c4 FEFFFFEB 		bl	uart0_puts
+ 169:../src/system.c ****     SEGS = 0x75;
+ 2669              		.loc 1 169 0
+ 2670 04c8 8537A0E3 		mov	r3, #34865152
+ 2671 04cc 7520A0E3 		mov	r2, #117
+ 2672 04d0 0020C3E5 		strb	r2, [r3, #0]
+ 2673              	.L35:
+ 170:../src/system.c ****     while( 1 );
+ 2674              		.loc 1 170 0 discriminator 1
+ 2675 04d4 FEFFFFEA 		b	.L35
+ 2676              	.L37:
+ 2677              		.align	2
+ 2678              	.L36:
+ 2679 04d8 14010000 		.word	.LC6
+ 2680              		.cfi_endproc
+ 2681              	.LFE9:
+ 2683              		.section	.rodata
+ 2684              		.align	2
+ 2685              	.LC7:
+ 2686 0140 0A0A2A2A 		.ascii	"\012\012*** ERROR FATAL: ejecutando isr_RTC_dummy\000"
+ 2686      2A204552 
+ 2686      524F5220 
+ 2686      46415441 
+ 2686      4C3A2065 
+ 2687              		.text
+ 2688              		.align	2
+ 2689              		.global	isr_RTC_dummy
+ 2691              	isr_RTC_dummy:
+ 2692              	.LFB10:
+ 171:../src/system.c **** }
+ 172:../src/system.c **** 
+ 173:../src/system.c **** void isr_RTC_dummy( void )
+ 174:../src/system.c **** {
+ 2693              		.loc 1 174 0
+ 2694              		.cfi_startproc
+ 2695              		@ Interrupt Service Routine.
+ 2696              		@ args = 0, pretend = 0, frame = 0
+ 2697              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2698 04dc 04C02DE5 		str	ip, [sp, #-4]!
+ 2699 04e0 0DC0A0E1 		mov	ip, sp
+ 2700              	.LCFI20:
+ 2701              		.cfi_def_cfa_register 12
+ 2702 04e4 0FD82DE9 		stmfd	sp!, {r0, r1, r2, r3, fp, ip, lr, pc}
+ 2703 04e8 04B04CE2 		sub	fp, ip, #4
+ 2704              		.cfi_offset 14, -8
+ 2705              		.cfi_offset 13, -12
+ 2706              		.cfi_offset 11, -16
+ 2707              		.cfi_offset 3, -20
+ 2708              		.cfi_offset 2, -24
+ 2709              		.cfi_offset 1, -28
+ 2710              		.cfi_offset 0, -32
+ 2711              	.LCFI21:
+ 2712              		.cfi_def_cfa 11, 4
+ 175:../src/system.c ****     uart0_puts( "\n\n*** ERROR FATAL: ejecutando isr_RTC_dummy" );
+ 2713              		.loc 1 175 0
+ 2714 04ec 10009FE5 		ldr	r0, .L40
+ 2715 04f0 FEFFFFEB 		bl	uart0_puts
+ 176:../src/system.c ****     SEGS = 0x75;
+ 2716              		.loc 1 176 0
+ 2717 04f4 8537A0E3 		mov	r3, #34865152
+ 2718 04f8 7520A0E3 		mov	r2, #117
+ 2719 04fc 0020C3E5 		strb	r2, [r3, #0]
+ 2720              	.L39:
+ 177:../src/system.c ****     while( 1 );
+ 2721              		.loc 1 177 0 discriminator 1
+ 2722 0500 FEFFFFEA 		b	.L39
+ 2723              	.L41:
+ 2724              		.align	2
+ 2725              	.L40:
+ 2726 0504 40010000 		.word	.LC7
+ 2727              		.cfi_endproc
+ 2728              	.LFE10:
+ 2730              		.section	.rodata
+ 2731              		.align	2
+ 2732              	.LC8:
+ 2733 016c 0A0A2A2A 		.ascii	"\012\012*** ERROR FATAL: ejecutando isr_UTXD1_dummy"
+ 2733      2A204552 
+ 2733      524F5220 
+ 2733      46415441 
+ 2733      4C3A2065 
+ 2734 0199 00       		.ascii	"\000"
+ 2735              		.text
+ 2736              		.align	2
+ 2737              		.global	isr_UTXD1_dummy
+ 2739              	isr_UTXD1_dummy:
+ 2740              	.LFB11:
+ 178:../src/system.c **** }
+ 179:../src/system.c **** 
+ 180:../src/system.c **** void isr_UTXD1_dummy( void )
+ 181:../src/system.c **** {
+ 2741              		.loc 1 181 0
+ 2742              		.cfi_startproc
+ 2743              		@ Interrupt Service Routine.
+ 2744              		@ args = 0, pretend = 0, frame = 0
+ 2745              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2746 0508 04C02DE5 		str	ip, [sp, #-4]!
+ 2747 050c 0DC0A0E1 		mov	ip, sp
+ 2748              	.LCFI22:
+ 2749              		.cfi_def_cfa_register 12
+ 2750 0510 0FD82DE9 		stmfd	sp!, {r0, r1, r2, r3, fp, ip, lr, pc}
+ 2751 0514 04B04CE2 		sub	fp, ip, #4
+ 2752              		.cfi_offset 14, -8
+ 2753              		.cfi_offset 13, -12
+ 2754              		.cfi_offset 11, -16
+ 2755              		.cfi_offset 3, -20
+ 2756              		.cfi_offset 2, -24
+ 2757              		.cfi_offset 1, -28
+ 2758              		.cfi_offset 0, -32
+ 2759              	.LCFI23:
+ 2760              		.cfi_def_cfa 11, 4
+ 182:../src/system.c ****     uart0_puts( "\n\n*** ERROR FATAL: ejecutando isr_UTXD1_dummy" );
+ 2761              		.loc 1 182 0
+ 2762 0518 10009FE5 		ldr	r0, .L44
+ 2763 051c FEFFFFEB 		bl	uart0_puts
+ 183:../src/system.c ****     SEGS = 0x75;
+ 2764              		.loc 1 183 0
+ 2765 0520 8537A0E3 		mov	r3, #34865152
+ 2766 0524 7520A0E3 		mov	r2, #117
+ 2767 0528 0020C3E5 		strb	r2, [r3, #0]
+ 2768              	.L43:
+ 184:../src/system.c ****     while( 1 );
+ 2769              		.loc 1 184 0 discriminator 1
+ 2770 052c FEFFFFEA 		b	.L43
+ 2771              	.L45:
+ 2772              		.align	2
+ 2773              	.L44:
+ 2774 0530 6C010000 		.word	.LC8
+ 2775              		.cfi_endproc
+ 2776              	.LFE11:
+ 2778              		.section	.rodata
+ 2779 019a 0000     		.align	2
+ 2780              	.LC9:
+ 2781 019c 0A0A2A2A 		.ascii	"\012\012*** ERROR FATAL: ejecutando isr_UTXD0_dummy"
+ 2781      2A204552 
+ 2781      524F5220 
+ 2781      46415441 
+ 2781      4C3A2065 
+ 2782 01c9 00       		.ascii	"\000"
+ 2783              		.text
+ 2784              		.align	2
+ 2785              		.global	isr_UTXD0_dummy
+ 2787              	isr_UTXD0_dummy:
+ 2788              	.LFB12:
+ 185:../src/system.c **** }
+ 186:../src/system.c **** 
+ 187:../src/system.c **** void isr_UTXD0_dummy( void )
+ 188:../src/system.c **** {
+ 2789              		.loc 1 188 0
+ 2790              		.cfi_startproc
+ 2791              		@ Interrupt Service Routine.
+ 2792              		@ args = 0, pretend = 0, frame = 0
+ 2793              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2794 0534 04C02DE5 		str	ip, [sp, #-4]!
+ 2795 0538 0DC0A0E1 		mov	ip, sp
+ 2796              	.LCFI24:
+ 2797              		.cfi_def_cfa_register 12
+ 2798 053c 0FD82DE9 		stmfd	sp!, {r0, r1, r2, r3, fp, ip, lr, pc}
+ 2799 0540 04B04CE2 		sub	fp, ip, #4
+ 2800              		.cfi_offset 14, -8
+ 2801              		.cfi_offset 13, -12
+ 2802              		.cfi_offset 11, -16
+ 2803              		.cfi_offset 3, -20
+ 2804              		.cfi_offset 2, -24
+ 2805              		.cfi_offset 1, -28
+ 2806              		.cfi_offset 0, -32
+ 2807              	.LCFI25:
+ 2808              		.cfi_def_cfa 11, 4
+ 189:../src/system.c ****     uart0_puts( "\n\n*** ERROR FATAL: ejecutando isr_UTXD0_dummy" );
+ 2809              		.loc 1 189 0
+ 2810 0544 10009FE5 		ldr	r0, .L48
+ 2811 0548 FEFFFFEB 		bl	uart0_puts
+ 190:../src/system.c ****     SEGS = 0x75;
+ 2812              		.loc 1 190 0
+ 2813 054c 8537A0E3 		mov	r3, #34865152
+ 2814 0550 7520A0E3 		mov	r2, #117
+ 2815 0554 0020C3E5 		strb	r2, [r3, #0]
+ 2816              	.L47:
+ 191:../src/system.c ****     while( 1 );
+ 2817              		.loc 1 191 0 discriminator 1
+ 2818 0558 FEFFFFEA 		b	.L47
+ 2819              	.L49:
+ 2820              		.align	2
+ 2821              	.L48:
+ 2822 055c 9C010000 		.word	.LC9
+ 2823              		.cfi_endproc
+ 2824              	.LFE12:
+ 2826              		.section	.rodata
+ 2827 01ca 0000     		.align	2
+ 2828              	.LC10:
+ 2829 01cc 0A0A2A2A 		.ascii	"\012\012*** ERROR FATAL: ejecutando isr_SIO_dummy\000"
+ 2829      2A204552 
+ 2829      524F5220 
+ 2829      46415441 
+ 2829      4C3A2065 
+ 2830              		.text
+ 2831              		.align	2
+ 2832              		.global	isr_SIO_dummy
+ 2834              	isr_SIO_dummy:
+ 2835              	.LFB13:
+ 192:../src/system.c **** }
+ 193:../src/system.c **** 
+ 194:../src/system.c **** void isr_SIO_dummy( void )
+ 195:../src/system.c **** {
+ 2836              		.loc 1 195 0
+ 2837              		.cfi_startproc
+ 2838              		@ Interrupt Service Routine.
+ 2839              		@ args = 0, pretend = 0, frame = 0
+ 2840              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2841 0560 04C02DE5 		str	ip, [sp, #-4]!
+ 2842 0564 0DC0A0E1 		mov	ip, sp
+ 2843              	.LCFI26:
+ 2844              		.cfi_def_cfa_register 12
+ 2845 0568 0FD82DE9 		stmfd	sp!, {r0, r1, r2, r3, fp, ip, lr, pc}
+ 2846 056c 04B04CE2 		sub	fp, ip, #4
+ 2847              		.cfi_offset 14, -8
+ 2848              		.cfi_offset 13, -12
+ 2849              		.cfi_offset 11, -16
+ 2850              		.cfi_offset 3, -20
+ 2851              		.cfi_offset 2, -24
+ 2852              		.cfi_offset 1, -28
+ 2853              		.cfi_offset 0, -32
+ 2854              	.LCFI27:
+ 2855              		.cfi_def_cfa 11, 4
+ 196:../src/system.c ****     uart0_puts( "\n\n*** ERROR FATAL: ejecutando isr_SIO_dummy" );
+ 2856              		.loc 1 196 0
+ 2857 0570 10009FE5 		ldr	r0, .L52
+ 2858 0574 FEFFFFEB 		bl	uart0_puts
+ 197:../src/system.c ****     SEGS = 0x75;
+ 2859              		.loc 1 197 0
+ 2860 0578 8537A0E3 		mov	r3, #34865152
+ 2861 057c 7520A0E3 		mov	r2, #117
+ 2862 0580 0020C3E5 		strb	r2, [r3, #0]
+ 2863              	.L51:
+ 198:../src/system.c ****     while( 1 );
+ 2864              		.loc 1 198 0 discriminator 1
+ 2865 0584 FEFFFFEA 		b	.L51
+ 2866              	.L53:
+ 2867              		.align	2
+ 2868              	.L52:
+ 2869 0588 CC010000 		.word	.LC10
+ 2870              		.cfi_endproc
+ 2871              	.LFE13:
+ 2873              		.section	.rodata
+ 2874              		.align	2
+ 2875              	.LC11:
+ 2876 01f8 0A0A2A2A 		.ascii	"\012\012*** ERROR FATAL: ejecutando isr_IIC_dummy\000"
+ 2876      2A204552 
+ 2876      524F5220 
+ 2876      46415441 
+ 2876      4C3A2065 
+ 2877              		.text
+ 2878              		.align	2
+ 2879              		.global	isr_IIC_dummy
+ 2881              	isr_IIC_dummy:
+ 2882              	.LFB14:
+ 199:../src/system.c **** }
+ 200:../src/system.c **** 
+ 201:../src/system.c **** void isr_IIC_dummy( void )
+ 202:../src/system.c **** {
+ 2883              		.loc 1 202 0
+ 2884              		.cfi_startproc
+ 2885              		@ Interrupt Service Routine.
+ 2886              		@ args = 0, pretend = 0, frame = 0
+ 2887              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2888 058c 04C02DE5 		str	ip, [sp, #-4]!
+ 2889 0590 0DC0A0E1 		mov	ip, sp
+ 2890              	.LCFI28:
+ 2891              		.cfi_def_cfa_register 12
+ 2892 0594 0FD82DE9 		stmfd	sp!, {r0, r1, r2, r3, fp, ip, lr, pc}
+ 2893 0598 04B04CE2 		sub	fp, ip, #4
+ 2894              		.cfi_offset 14, -8
+ 2895              		.cfi_offset 13, -12
+ 2896              		.cfi_offset 11, -16
+ 2897              		.cfi_offset 3, -20
+ 2898              		.cfi_offset 2, -24
+ 2899              		.cfi_offset 1, -28
+ 2900              		.cfi_offset 0, -32
+ 2901              	.LCFI29:
+ 2902              		.cfi_def_cfa 11, 4
+ 203:../src/system.c ****     uart0_puts( "\n\n*** ERROR FATAL: ejecutando isr_IIC_dummy" );
+ 2903              		.loc 1 203 0
+ 2904 059c 10009FE5 		ldr	r0, .L56
+ 2905 05a0 FEFFFFEB 		bl	uart0_puts
+ 204:../src/system.c ****     SEGS = 0x75;
+ 2906              		.loc 1 204 0
+ 2907 05a4 8537A0E3 		mov	r3, #34865152
+ 2908 05a8 7520A0E3 		mov	r2, #117
+ 2909 05ac 0020C3E5 		strb	r2, [r3, #0]
+ 2910              	.L55:
+ 205:../src/system.c ****     while( 1 );
+ 2911              		.loc 1 205 0 discriminator 1
+ 2912 05b0 FEFFFFEA 		b	.L55
+ 2913              	.L57:
+ 2914              		.align	2
+ 2915              	.L56:
+ 2916 05b4 F8010000 		.word	.LC11
+ 2917              		.cfi_endproc
+ 2918              	.LFE14:
+ 2920              		.section	.rodata
+ 2921              		.align	2
+ 2922              	.LC12:
+ 2923 0224 0A0A2A2A 		.ascii	"\012\012*** ERROR FATAL: ejecutando isr_URCD1_dummy"
+ 2923      2A204552 
+ 2923      524F5220 
+ 2923      46415441 
+ 2923      4C3A2065 
+ 2924 0251 00       		.ascii	"\000"
+ 2925              		.text
+ 2926              		.align	2
+ 2927              		.global	isr_URXD1_dummy
+ 2929              	isr_URXD1_dummy:
+ 2930              	.LFB15:
+ 206:../src/system.c **** }
+ 207:../src/system.c **** 
+ 208:../src/system.c **** void isr_URXD1_dummy( void )
+ 209:../src/system.c **** {
+ 2931              		.loc 1 209 0
+ 2932              		.cfi_startproc
+ 2933              		@ Interrupt Service Routine.
+ 2934              		@ args = 0, pretend = 0, frame = 0
+ 2935              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2936 05b8 04C02DE5 		str	ip, [sp, #-4]!
+ 2937 05bc 0DC0A0E1 		mov	ip, sp
+ 2938              	.LCFI30:
+ 2939              		.cfi_def_cfa_register 12
+ 2940 05c0 0FD82DE9 		stmfd	sp!, {r0, r1, r2, r3, fp, ip, lr, pc}
+ 2941 05c4 04B04CE2 		sub	fp, ip, #4
+ 2942              		.cfi_offset 14, -8
+ 2943              		.cfi_offset 13, -12
+ 2944              		.cfi_offset 11, -16
+ 2945              		.cfi_offset 3, -20
+ 2946              		.cfi_offset 2, -24
+ 2947              		.cfi_offset 1, -28
+ 2948              		.cfi_offset 0, -32
+ 2949              	.LCFI31:
+ 2950              		.cfi_def_cfa 11, 4
+ 210:../src/system.c ****     uart0_puts( "\n\n*** ERROR FATAL: ejecutando isr_URCD1_dummy" );
+ 2951              		.loc 1 210 0
+ 2952 05c8 10009FE5 		ldr	r0, .L60
+ 2953 05cc FEFFFFEB 		bl	uart0_puts
+ 211:../src/system.c ****     SEGS = 0x75;
+ 2954              		.loc 1 211 0
+ 2955 05d0 8537A0E3 		mov	r3, #34865152
+ 2956 05d4 7520A0E3 		mov	r2, #117
+ 2957 05d8 0020C3E5 		strb	r2, [r3, #0]
+ 2958              	.L59:
+ 212:../src/system.c ****     while( 1 );
+ 2959              		.loc 1 212 0 discriminator 1
+ 2960 05dc FEFFFFEA 		b	.L59
+ 2961              	.L61:
+ 2962              		.align	2
+ 2963              	.L60:
+ 2964 05e0 24020000 		.word	.LC12
+ 2965              		.cfi_endproc
+ 2966              	.LFE15:
+ 2968              		.section	.rodata
+ 2969 0252 0000     		.align	2
+ 2970              	.LC13:
+ 2971 0254 0A0A2A2A 		.ascii	"\012\012*** ERROR FATAL: ejecutando isr_URCD0_dummy"
+ 2971      2A204552 
+ 2971      524F5220 
+ 2971      46415441 
+ 2971      4C3A2065 
+ 2972 0281 00       		.ascii	"\000"
+ 2973              		.text
+ 2974              		.align	2
+ 2975              		.global	isr_URXD0_dummy
+ 2977              	isr_URXD0_dummy:
+ 2978              	.LFB16:
+ 213:../src/system.c **** }
+ 214:../src/system.c **** 
+ 215:../src/system.c **** void isr_URXD0_dummy( void )
+ 216:../src/system.c **** {
+ 2979              		.loc 1 216 0
+ 2980              		.cfi_startproc
+ 2981              		@ Interrupt Service Routine.
+ 2982              		@ args = 0, pretend = 0, frame = 0
+ 2983              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2984 05e4 04C02DE5 		str	ip, [sp, #-4]!
+ 2985 05e8 0DC0A0E1 		mov	ip, sp
+ 2986              	.LCFI32:
+ 2987              		.cfi_def_cfa_register 12
+ 2988 05ec 0FD82DE9 		stmfd	sp!, {r0, r1, r2, r3, fp, ip, lr, pc}
+ 2989 05f0 04B04CE2 		sub	fp, ip, #4
+ 2990              		.cfi_offset 14, -8
+ 2991              		.cfi_offset 13, -12
+ 2992              		.cfi_offset 11, -16
+ 2993              		.cfi_offset 3, -20
+ 2994              		.cfi_offset 2, -24
+ 2995              		.cfi_offset 1, -28
+ 2996              		.cfi_offset 0, -32
+ 2997              	.LCFI33:
+ 2998              		.cfi_def_cfa 11, 4
+ 217:../src/system.c ****     uart0_puts( "\n\n*** ERROR FATAL: ejecutando isr_URCD0_dummy" );
+ 2999              		.loc 1 217 0
+ 3000 05f4 10009FE5 		ldr	r0, .L64
+ 3001 05f8 FEFFFFEB 		bl	uart0_puts
+ 218:../src/system.c ****     SEGS = 0x75;
+ 3002              		.loc 1 218 0
+ 3003 05fc 8537A0E3 		mov	r3, #34865152
+ 3004 0600 7520A0E3 		mov	r2, #117
+ 3005 0604 0020C3E5 		strb	r2, [r3, #0]
+ 3006              	.L63:
+ 219:../src/system.c ****     while( 1 );
+ 3007              		.loc 1 219 0 discriminator 1
+ 3008 0608 FEFFFFEA 		b	.L63
+ 3009              	.L65:
+ 3010              		.align	2
+ 3011              	.L64:
+ 3012 060c 54020000 		.word	.LC13
+ 3013              		.cfi_endproc
+ 3014              	.LFE16:
+ 3016              		.section	.rodata
+ 3017 0282 0000     		.align	2
+ 3018              	.LC14:
+ 3019 0284 0A0A2A2A 		.ascii	"\012\012*** ERROR FATAL: ejecutando isr_TIMER5_dumm"
+ 3019      2A204552 
+ 3019      524F5220 
+ 3019      46415441 
+ 3019      4C3A2065 
+ 3020 02b1 7900     		.ascii	"y\000"
+ 3021              		.text
+ 3022              		.align	2
+ 3023              		.global	isr_TIMER5_dummy
+ 3025              	isr_TIMER5_dummy:
+ 3026              	.LFB17:
+ 220:../src/system.c **** }
+ 221:../src/system.c **** 
+ 222:../src/system.c **** void isr_TIMER5_dummy( void )
+ 223:../src/system.c **** {
+ 3027              		.loc 1 223 0
+ 3028              		.cfi_startproc
+ 3029              		@ Interrupt Service Routine.
+ 3030              		@ args = 0, pretend = 0, frame = 0
+ 3031              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3032 0610 04C02DE5 		str	ip, [sp, #-4]!
+ 3033 0614 0DC0A0E1 		mov	ip, sp
+ 3034              	.LCFI34:
+ 3035              		.cfi_def_cfa_register 12
+ 3036 0618 0FD82DE9 		stmfd	sp!, {r0, r1, r2, r3, fp, ip, lr, pc}
+ 3037 061c 04B04CE2 		sub	fp, ip, #4
+ 3038              		.cfi_offset 14, -8
+ 3039              		.cfi_offset 13, -12
+ 3040              		.cfi_offset 11, -16
+ 3041              		.cfi_offset 3, -20
+ 3042              		.cfi_offset 2, -24
+ 3043              		.cfi_offset 1, -28
+ 3044              		.cfi_offset 0, -32
+ 3045              	.LCFI35:
+ 3046              		.cfi_def_cfa 11, 4
+ 224:../src/system.c ****     uart0_puts( "\n\n*** ERROR FATAL: ejecutando isr_TIMER5_dummy" );
+ 3047              		.loc 1 224 0
+ 3048 0620 10009FE5 		ldr	r0, .L68
+ 3049 0624 FEFFFFEB 		bl	uart0_puts
+ 225:../src/system.c ****     SEGS = 0x75;
+ 3050              		.loc 1 225 0
+ 3051 0628 8537A0E3 		mov	r3, #34865152
+ 3052 062c 7520A0E3 		mov	r2, #117
+ 3053 0630 0020C3E5 		strb	r2, [r3, #0]
+ 3054              	.L67:
+ 226:../src/system.c ****     while( 1 );
+ 3055              		.loc 1 226 0 discriminator 1
+ 3056 0634 FEFFFFEA 		b	.L67
+ 3057              	.L69:
+ 3058              		.align	2
+ 3059              	.L68:
+ 3060 0638 84020000 		.word	.LC14
+ 3061              		.cfi_endproc
+ 3062              	.LFE17:
+ 3064              		.section	.rodata
+ 3065 02b3 00       		.align	2
+ 3066              	.LC15:
+ 3067 02b4 0A0A2A2A 		.ascii	"\012\012*** ERROR FATAL: ejecutando isr_TIMER4_dumm"
+ 3067      2A204552 
+ 3067      524F5220 
+ 3067      46415441 
+ 3067      4C3A2065 
+ 3068 02e1 7900     		.ascii	"y\000"
+ 3069              		.text
+ 3070              		.align	2
+ 3071              		.global	isr_TIMER4_dummy
+ 3073              	isr_TIMER4_dummy:
+ 3074              	.LFB18:
+ 227:../src/system.c **** }
+ 228:../src/system.c **** 
+ 229:../src/system.c **** void isr_TIMER4_dummy( void )
+ 230:../src/system.c **** {
+ 3075              		.loc 1 230 0
+ 3076              		.cfi_startproc
+ 3077              		@ Interrupt Service Routine.
+ 3078              		@ args = 0, pretend = 0, frame = 0
+ 3079              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3080 063c 04C02DE5 		str	ip, [sp, #-4]!
+ 3081 0640 0DC0A0E1 		mov	ip, sp
+ 3082              	.LCFI36:
+ 3083              		.cfi_def_cfa_register 12
+ 3084 0644 0FD82DE9 		stmfd	sp!, {r0, r1, r2, r3, fp, ip, lr, pc}
+ 3085 0648 04B04CE2 		sub	fp, ip, #4
+ 3086              		.cfi_offset 14, -8
+ 3087              		.cfi_offset 13, -12
+ 3088              		.cfi_offset 11, -16
+ 3089              		.cfi_offset 3, -20
+ 3090              		.cfi_offset 2, -24
+ 3091              		.cfi_offset 1, -28
+ 3092              		.cfi_offset 0, -32
+ 3093              	.LCFI37:
+ 3094              		.cfi_def_cfa 11, 4
+ 231:../src/system.c ****     uart0_puts( "\n\n*** ERROR FATAL: ejecutando isr_TIMER4_dummy" );
+ 3095              		.loc 1 231 0
+ 3096 064c 10009FE5 		ldr	r0, .L72
+ 3097 0650 FEFFFFEB 		bl	uart0_puts
+ 232:../src/system.c ****     SEGS = 0x75;
+ 3098              		.loc 1 232 0
+ 3099 0654 8537A0E3 		mov	r3, #34865152
+ 3100 0658 7520A0E3 		mov	r2, #117
+ 3101 065c 0020C3E5 		strb	r2, [r3, #0]
+ 3102              	.L71:
+ 233:../src/system.c ****     while( 1 );
+ 3103              		.loc 1 233 0 discriminator 1
+ 3104 0660 FEFFFFEA 		b	.L71
+ 3105              	.L73:
+ 3106              		.align	2
+ 3107              	.L72:
+ 3108 0664 B4020000 		.word	.LC15
+ 3109              		.cfi_endproc
+ 3110              	.LFE18:
+ 3112              		.section	.rodata
+ 3113 02e3 00       		.align	2
+ 3114              	.LC16:
+ 3115 02e4 0A0A2A2A 		.ascii	"\012\012*** ERROR FATAL: ejecutando isr_TIMER3_dumm"
+ 3115      2A204552 
+ 3115      524F5220 
+ 3115      46415441 
+ 3115      4C3A2065 
+ 3116 0311 7900     		.ascii	"y\000"
+ 3117              		.text
+ 3118              		.align	2
+ 3119              		.global	isr_TIMER3_dummy
+ 3121              	isr_TIMER3_dummy:
+ 3122              	.LFB19:
+ 234:../src/system.c **** }
+ 235:../src/system.c **** 
+ 236:../src/system.c **** void isr_TIMER3_dummy( void )
+ 237:../src/system.c **** {
+ 3123              		.loc 1 237 0
+ 3124              		.cfi_startproc
+ 3125              		@ Interrupt Service Routine.
+ 3126              		@ args = 0, pretend = 0, frame = 0
+ 3127              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3128 0668 04C02DE5 		str	ip, [sp, #-4]!
+ 3129 066c 0DC0A0E1 		mov	ip, sp
+ 3130              	.LCFI38:
+ 3131              		.cfi_def_cfa_register 12
+ 3132 0670 0FD82DE9 		stmfd	sp!, {r0, r1, r2, r3, fp, ip, lr, pc}
+ 3133 0674 04B04CE2 		sub	fp, ip, #4
+ 3134              		.cfi_offset 14, -8
+ 3135              		.cfi_offset 13, -12
+ 3136              		.cfi_offset 11, -16
+ 3137              		.cfi_offset 3, -20
+ 3138              		.cfi_offset 2, -24
+ 3139              		.cfi_offset 1, -28
+ 3140              		.cfi_offset 0, -32
+ 3141              	.LCFI39:
+ 3142              		.cfi_def_cfa 11, 4
+ 238:../src/system.c ****     uart0_puts( "\n\n*** ERROR FATAL: ejecutando isr_TIMER3_dummy" );
+ 3143              		.loc 1 238 0
+ 3144 0678 10009FE5 		ldr	r0, .L76
+ 3145 067c FEFFFFEB 		bl	uart0_puts
+ 239:../src/system.c ****     SEGS = 0x75;
+ 3146              		.loc 1 239 0
+ 3147 0680 8537A0E3 		mov	r3, #34865152
+ 3148 0684 7520A0E3 		mov	r2, #117
+ 3149 0688 0020C3E5 		strb	r2, [r3, #0]
+ 3150              	.L75:
+ 240:../src/system.c ****     while( 1 );
+ 3151              		.loc 1 240 0 discriminator 1
+ 3152 068c FEFFFFEA 		b	.L75
+ 3153              	.L77:
+ 3154              		.align	2
+ 3155              	.L76:
+ 3156 0690 E4020000 		.word	.LC16
+ 3157              		.cfi_endproc
+ 3158              	.LFE19:
+ 3160              		.section	.rodata
+ 3161 0313 00       		.align	2
+ 3162              	.LC17:
+ 3163 0314 0A0A2A2A 		.ascii	"\012\012*** ERROR FATAL: ejecutando isr_TIMER2_dumm"
+ 3163      2A204552 
+ 3163      524F5220 
+ 3163      46415441 
+ 3163      4C3A2065 
+ 3164 0341 7900     		.ascii	"y\000"
+ 3165              		.text
+ 3166              		.align	2
+ 3167              		.global	isr_TIMER2_dummy
+ 3169              	isr_TIMER2_dummy:
+ 3170              	.LFB20:
+ 241:../src/system.c **** }
+ 242:../src/system.c **** 
+ 243:../src/system.c **** void isr_TIMER2_dummy( void )
+ 244:../src/system.c **** {
+ 3171              		.loc 1 244 0
+ 3172              		.cfi_startproc
+ 3173              		@ Interrupt Service Routine.
+ 3174              		@ args = 0, pretend = 0, frame = 0
+ 3175              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3176 0694 04C02DE5 		str	ip, [sp, #-4]!
+ 3177 0698 0DC0A0E1 		mov	ip, sp
+ 3178              	.LCFI40:
+ 3179              		.cfi_def_cfa_register 12
+ 3180 069c 0FD82DE9 		stmfd	sp!, {r0, r1, r2, r3, fp, ip, lr, pc}
+ 3181 06a0 04B04CE2 		sub	fp, ip, #4
+ 3182              		.cfi_offset 14, -8
+ 3183              		.cfi_offset 13, -12
+ 3184              		.cfi_offset 11, -16
+ 3185              		.cfi_offset 3, -20
+ 3186              		.cfi_offset 2, -24
+ 3187              		.cfi_offset 1, -28
+ 3188              		.cfi_offset 0, -32
+ 3189              	.LCFI41:
+ 3190              		.cfi_def_cfa 11, 4
+ 245:../src/system.c ****     uart0_puts( "\n\n*** ERROR FATAL: ejecutando isr_TIMER2_dummy" );
+ 3191              		.loc 1 245 0
+ 3192 06a4 10009FE5 		ldr	r0, .L80
+ 3193 06a8 FEFFFFEB 		bl	uart0_puts
+ 246:../src/system.c ****     SEGS = 0x75;
+ 3194              		.loc 1 246 0
+ 3195 06ac 8537A0E3 		mov	r3, #34865152
+ 3196 06b0 7520A0E3 		mov	r2, #117
+ 3197 06b4 0020C3E5 		strb	r2, [r3, #0]
+ 3198              	.L79:
+ 247:../src/system.c ****     while( 1 );
+ 3199              		.loc 1 247 0 discriminator 1
+ 3200 06b8 FEFFFFEA 		b	.L79
+ 3201              	.L81:
+ 3202              		.align	2
+ 3203              	.L80:
+ 3204 06bc 14030000 		.word	.LC17
+ 3205              		.cfi_endproc
+ 3206              	.LFE20:
+ 3208              		.section	.rodata
+ 3209 0343 00       		.align	2
+ 3210              	.LC18:
+ 3211 0344 0A0A2A2A 		.ascii	"\012\012*** ERROR FATAL: ejecutando isr_TIMER1_dumm"
+ 3211      2A204552 
+ 3211      524F5220 
+ 3211      46415441 
+ 3211      4C3A2065 
+ 3212 0371 7900     		.ascii	"y\000"
+ 3213              		.text
+ 3214              		.align	2
+ 3215              		.global	isr_TIMER1_dummy
+ 3217              	isr_TIMER1_dummy:
+ 3218              	.LFB21:
+ 248:../src/system.c **** }
+ 249:../src/system.c **** 
+ 250:../src/system.c **** void isr_TIMER1_dummy( void )
+ 251:../src/system.c **** {
+ 3219              		.loc 1 251 0
+ 3220              		.cfi_startproc
+ 3221              		@ Interrupt Service Routine.
+ 3222              		@ args = 0, pretend = 0, frame = 0
+ 3223              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3224 06c0 04C02DE5 		str	ip, [sp, #-4]!
+ 3225 06c4 0DC0A0E1 		mov	ip, sp
+ 3226              	.LCFI42:
+ 3227              		.cfi_def_cfa_register 12
+ 3228 06c8 0FD82DE9 		stmfd	sp!, {r0, r1, r2, r3, fp, ip, lr, pc}
+ 3229 06cc 04B04CE2 		sub	fp, ip, #4
+ 3230              		.cfi_offset 14, -8
+ 3231              		.cfi_offset 13, -12
+ 3232              		.cfi_offset 11, -16
+ 3233              		.cfi_offset 3, -20
+ 3234              		.cfi_offset 2, -24
+ 3235              		.cfi_offset 1, -28
+ 3236              		.cfi_offset 0, -32
+ 3237              	.LCFI43:
+ 3238              		.cfi_def_cfa 11, 4
+ 252:../src/system.c ****     uart0_puts( "\n\n*** ERROR FATAL: ejecutando isr_TIMER1_dummy" );
+ 3239              		.loc 1 252 0
+ 3240 06d0 10009FE5 		ldr	r0, .L84
+ 3241 06d4 FEFFFFEB 		bl	uart0_puts
+ 253:../src/system.c ****     SEGS = 0x75;
+ 3242              		.loc 1 253 0
+ 3243 06d8 8537A0E3 		mov	r3, #34865152
+ 3244 06dc 7520A0E3 		mov	r2, #117
+ 3245 06e0 0020C3E5 		strb	r2, [r3, #0]
+ 3246              	.L83:
+ 254:../src/system.c ****     while( 1 );
+ 3247              		.loc 1 254 0 discriminator 1
+ 3248 06e4 FEFFFFEA 		b	.L83
+ 3249              	.L85:
+ 3250              		.align	2
+ 3251              	.L84:
+ 3252 06e8 44030000 		.word	.LC18
+ 3253              		.cfi_endproc
+ 3254              	.LFE21:
+ 3256              		.section	.rodata
+ 3257 0373 00       		.align	2
+ 3258              	.LC19:
+ 3259 0374 0A0A2A2A 		.ascii	"\012\012*** ERROR FATAL: ejecutando isr_TIMER0_dumm"
+ 3259      2A204552 
+ 3259      524F5220 
+ 3259      46415441 
+ 3259      4C3A2065 
+ 3260 03a1 7900     		.ascii	"y\000"
+ 3261              		.text
+ 3262              		.align	2
+ 3263              		.global	isr_TIMER0_dummy
+ 3265              	isr_TIMER0_dummy:
+ 3266              	.LFB22:
+ 255:../src/system.c **** }
+ 256:../src/system.c **** 
+ 257:../src/system.c **** void isr_TIMER0_dummy( void )
+ 258:../src/system.c **** {
+ 3267              		.loc 1 258 0
+ 3268              		.cfi_startproc
+ 3269              		@ Interrupt Service Routine.
+ 3270              		@ args = 0, pretend = 0, frame = 0
+ 3271              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3272 06ec 04C02DE5 		str	ip, [sp, #-4]!
+ 3273 06f0 0DC0A0E1 		mov	ip, sp
+ 3274              	.LCFI44:
+ 3275              		.cfi_def_cfa_register 12
+ 3276 06f4 0FD82DE9 		stmfd	sp!, {r0, r1, r2, r3, fp, ip, lr, pc}
+ 3277 06f8 04B04CE2 		sub	fp, ip, #4
+ 3278              		.cfi_offset 14, -8
+ 3279              		.cfi_offset 13, -12
+ 3280              		.cfi_offset 11, -16
+ 3281              		.cfi_offset 3, -20
+ 3282              		.cfi_offset 2, -24
+ 3283              		.cfi_offset 1, -28
+ 3284              		.cfi_offset 0, -32
+ 3285              	.LCFI45:
+ 3286              		.cfi_def_cfa 11, 4
+ 259:../src/system.c ****     uart0_puts( "\n\n*** ERROR FATAL: ejecutando isr_TIMER0_dummy" );
+ 3287              		.loc 1 259 0
+ 3288 06fc 10009FE5 		ldr	r0, .L88
+ 3289 0700 FEFFFFEB 		bl	uart0_puts
+ 260:../src/system.c ****     SEGS = 0x75;
+ 3290              		.loc 1 260 0
+ 3291 0704 8537A0E3 		mov	r3, #34865152
+ 3292 0708 7520A0E3 		mov	r2, #117
+ 3293 070c 0020C3E5 		strb	r2, [r3, #0]
+ 3294              	.L87:
+ 261:../src/system.c ****     while( 1 );
+ 3295              		.loc 1 261 0 discriminator 1
+ 3296 0710 FEFFFFEA 		b	.L87
+ 3297              	.L89:
+ 3298              		.align	2
+ 3299              	.L88:
+ 3300 0714 74030000 		.word	.LC19
+ 3301              		.cfi_endproc
+ 3302              	.LFE22:
+ 3304              		.section	.rodata
+ 3305 03a3 00       		.align	2
+ 3306              	.LC20:
+ 3307 03a4 0A0A2A2A 		.ascii	"\012\012*** ERROR FATAL: ejecutando isr_UERR01_dumm"
+ 3307      2A204552 
+ 3307      524F5220 
+ 3307      46415441 
+ 3307      4C3A2065 
+ 3308 03d1 7900     		.ascii	"y\000"
+ 3309              		.text
+ 3310              		.align	2
+ 3311              		.global	isr_UERR01_dummy
+ 3313              	isr_UERR01_dummy:
+ 3314              	.LFB23:
+ 262:../src/system.c **** }
+ 263:../src/system.c **** 
+ 264:../src/system.c **** void isr_UERR01_dummy( void )
+ 265:../src/system.c **** {
+ 3315              		.loc 1 265 0
+ 3316              		.cfi_startproc
+ 3317              		@ Interrupt Service Routine.
+ 3318              		@ args = 0, pretend = 0, frame = 0
+ 3319              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3320 0718 04C02DE5 		str	ip, [sp, #-4]!
+ 3321 071c 0DC0A0E1 		mov	ip, sp
+ 3322              	.LCFI46:
+ 3323              		.cfi_def_cfa_register 12
+ 3324 0720 0FD82DE9 		stmfd	sp!, {r0, r1, r2, r3, fp, ip, lr, pc}
+ 3325 0724 04B04CE2 		sub	fp, ip, #4
+ 3326              		.cfi_offset 14, -8
+ 3327              		.cfi_offset 13, -12
+ 3328              		.cfi_offset 11, -16
+ 3329              		.cfi_offset 3, -20
+ 3330              		.cfi_offset 2, -24
+ 3331              		.cfi_offset 1, -28
+ 3332              		.cfi_offset 0, -32
+ 3333              	.LCFI47:
+ 3334              		.cfi_def_cfa 11, 4
+ 266:../src/system.c ****     uart0_puts( "\n\n*** ERROR FATAL: ejecutando isr_UERR01_dummy" );
+ 3335              		.loc 1 266 0
+ 3336 0728 10009FE5 		ldr	r0, .L92
+ 3337 072c FEFFFFEB 		bl	uart0_puts
+ 267:../src/system.c ****     SEGS = 0x75;
+ 3338              		.loc 1 267 0
+ 3339 0730 8537A0E3 		mov	r3, #34865152
+ 3340 0734 7520A0E3 		mov	r2, #117
+ 3341 0738 0020C3E5 		strb	r2, [r3, #0]
+ 3342              	.L91:
+ 268:../src/system.c ****     while( 1 );
+ 3343              		.loc 1 268 0 discriminator 1
+ 3344 073c FEFFFFEA 		b	.L91
+ 3345              	.L93:
+ 3346              		.align	2
+ 3347              	.L92:
+ 3348 0740 A4030000 		.word	.LC20
+ 3349              		.cfi_endproc
+ 3350              	.LFE23:
+ 3352              		.section	.rodata
+ 3353 03d3 00       		.align	2
+ 3354              	.LC21:
+ 3355 03d4 0A0A2A2A 		.ascii	"\012\012*** ERROR FATAL: ejecutando isr_WDT_dummy\000"
+ 3355      2A204552 
+ 3355      524F5220 
+ 3355      46415441 
+ 3355      4C3A2065 
+ 3356              		.text
+ 3357              		.align	2
+ 3358              		.global	isr_WDT_dummy
+ 3360              	isr_WDT_dummy:
+ 3361              	.LFB24:
+ 269:../src/system.c **** }
+ 270:../src/system.c **** 
+ 271:../src/system.c **** void isr_WDT_dummy( void )
+ 272:../src/system.c **** {
+ 3362              		.loc 1 272 0
+ 3363              		.cfi_startproc
+ 3364              		@ Interrupt Service Routine.
+ 3365              		@ args = 0, pretend = 0, frame = 0
+ 3366              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3367 0744 04C02DE5 		str	ip, [sp, #-4]!
+ 3368 0748 0DC0A0E1 		mov	ip, sp
+ 3369              	.LCFI48:
+ 3370              		.cfi_def_cfa_register 12
+ 3371 074c 0FD82DE9 		stmfd	sp!, {r0, r1, r2, r3, fp, ip, lr, pc}
+ 3372 0750 04B04CE2 		sub	fp, ip, #4
+ 3373              		.cfi_offset 14, -8
+ 3374              		.cfi_offset 13, -12
+ 3375              		.cfi_offset 11, -16
+ 3376              		.cfi_offset 3, -20
+ 3377              		.cfi_offset 2, -24
+ 3378              		.cfi_offset 1, -28
+ 3379              		.cfi_offset 0, -32
+ 3380              	.LCFI49:
+ 3381              		.cfi_def_cfa 11, 4
+ 273:../src/system.c ****     uart0_puts( "\n\n*** ERROR FATAL: ejecutando isr_WDT_dummy" );
+ 3382              		.loc 1 273 0
+ 3383 0754 10009FE5 		ldr	r0, .L96
+ 3384 0758 FEFFFFEB 		bl	uart0_puts
+ 274:../src/system.c ****     SEGS = 0x75;
+ 3385              		.loc 1 274 0
+ 3386 075c 8537A0E3 		mov	r3, #34865152
+ 3387 0760 7520A0E3 		mov	r2, #117
+ 3388 0764 0020C3E5 		strb	r2, [r3, #0]
+ 3389              	.L95:
+ 275:../src/system.c ****     while( 1 );
+ 3390              		.loc 1 275 0 discriminator 1
+ 3391 0768 FEFFFFEA 		b	.L95
+ 3392              	.L97:
+ 3393              		.align	2
+ 3394              	.L96:
+ 3395 076c D4030000 		.word	.LC21
+ 3396              		.cfi_endproc
+ 3397              	.LFE24:
+ 3399              		.section	.rodata
+ 3400              		.align	2
+ 3401              	.LC22:
+ 3402 0400 0A0A2A2A 		.ascii	"\012\012*** ERROR FATAL: ejecutando isr_BDMA1_dummy"
+ 3402      2A204552 
+ 3402      524F5220 
+ 3402      46415441 
+ 3402      4C3A2065 
+ 3403 042d 00       		.ascii	"\000"
+ 3404              		.text
+ 3405              		.align	2
+ 3406              		.global	isr_BDMA1_dummy
+ 3408              	isr_BDMA1_dummy:
+ 3409              	.LFB25:
+ 276:../src/system.c **** }
+ 277:../src/system.c **** 
+ 278:../src/system.c **** void isr_BDMA1_dummy( void )
+ 279:../src/system.c **** {
+ 3410              		.loc 1 279 0
+ 3411              		.cfi_startproc
+ 3412              		@ Interrupt Service Routine.
+ 3413              		@ args = 0, pretend = 0, frame = 0
+ 3414              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3415 0770 04C02DE5 		str	ip, [sp, #-4]!
+ 3416 0774 0DC0A0E1 		mov	ip, sp
+ 3417              	.LCFI50:
+ 3418              		.cfi_def_cfa_register 12
+ 3419 0778 0FD82DE9 		stmfd	sp!, {r0, r1, r2, r3, fp, ip, lr, pc}
+ 3420 077c 04B04CE2 		sub	fp, ip, #4
+ 3421              		.cfi_offset 14, -8
+ 3422              		.cfi_offset 13, -12
+ 3423              		.cfi_offset 11, -16
+ 3424              		.cfi_offset 3, -20
+ 3425              		.cfi_offset 2, -24
+ 3426              		.cfi_offset 1, -28
+ 3427              		.cfi_offset 0, -32
+ 3428              	.LCFI51:
+ 3429              		.cfi_def_cfa 11, 4
+ 280:../src/system.c ****     uart0_puts( "\n\n*** ERROR FATAL: ejecutando isr_BDMA1_dummy" );
+ 3430              		.loc 1 280 0
+ 3431 0780 10009FE5 		ldr	r0, .L100
+ 3432 0784 FEFFFFEB 		bl	uart0_puts
+ 281:../src/system.c ****     SEGS = 0x75;
+ 3433              		.loc 1 281 0
+ 3434 0788 8537A0E3 		mov	r3, #34865152
+ 3435 078c 7520A0E3 		mov	r2, #117
+ 3436 0790 0020C3E5 		strb	r2, [r3, #0]
+ 3437              	.L99:
+ 282:../src/system.c ****     while( 1 );
+ 3438              		.loc 1 282 0 discriminator 1
+ 3439 0794 FEFFFFEA 		b	.L99
+ 3440              	.L101:
+ 3441              		.align	2
+ 3442              	.L100:
+ 3443 0798 00040000 		.word	.LC22
+ 3444              		.cfi_endproc
+ 3445              	.LFE25:
+ 3447              		.section	.rodata
+ 3448 042e 0000     		.align	2
+ 3449              	.LC23:
+ 3450 0430 0A0A2A2A 		.ascii	"\012\012*** ERROR FATAL: ejecutando isr_BDMA0_dummy"
+ 3450      2A204552 
+ 3450      524F5220 
+ 3450      46415441 
+ 3450      4C3A2065 
+ 3451 045d 00       		.ascii	"\000"
+ 3452              		.text
+ 3453              		.align	2
+ 3454              		.global	isr_BDMA0_dummy
+ 3456              	isr_BDMA0_dummy:
+ 3457              	.LFB26:
+ 283:../src/system.c **** }
+ 284:../src/system.c **** 
+ 285:../src/system.c **** void isr_BDMA0_dummy( void )
+ 286:../src/system.c **** {
+ 3458              		.loc 1 286 0
+ 3459              		.cfi_startproc
+ 3460              		@ Interrupt Service Routine.
+ 3461              		@ args = 0, pretend = 0, frame = 0
+ 3462              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3463 079c 04C02DE5 		str	ip, [sp, #-4]!
+ 3464 07a0 0DC0A0E1 		mov	ip, sp
+ 3465              	.LCFI52:
+ 3466              		.cfi_def_cfa_register 12
+ 3467 07a4 0FD82DE9 		stmfd	sp!, {r0, r1, r2, r3, fp, ip, lr, pc}
+ 3468 07a8 04B04CE2 		sub	fp, ip, #4
+ 3469              		.cfi_offset 14, -8
+ 3470              		.cfi_offset 13, -12
+ 3471              		.cfi_offset 11, -16
+ 3472              		.cfi_offset 3, -20
+ 3473              		.cfi_offset 2, -24
+ 3474              		.cfi_offset 1, -28
+ 3475              		.cfi_offset 0, -32
+ 3476              	.LCFI53:
+ 3477              		.cfi_def_cfa 11, 4
+ 287:../src/system.c ****     uart0_puts( "\n\n*** ERROR FATAL: ejecutando isr_BDMA0_dummy" );
+ 3478              		.loc 1 287 0
+ 3479 07ac 10009FE5 		ldr	r0, .L104
+ 3480 07b0 FEFFFFEB 		bl	uart0_puts
+ 288:../src/system.c ****     SEGS = 0x75;
+ 3481              		.loc 1 288 0
+ 3482 07b4 8537A0E3 		mov	r3, #34865152
+ 3483 07b8 7520A0E3 		mov	r2, #117
+ 3484 07bc 0020C3E5 		strb	r2, [r3, #0]
+ 3485              	.L103:
+ 289:../src/system.c ****     while( 1 );
+ 3486              		.loc 1 289 0 discriminator 1
+ 3487 07c0 FEFFFFEA 		b	.L103
+ 3488              	.L105:
+ 3489              		.align	2
+ 3490              	.L104:
+ 3491 07c4 30040000 		.word	.LC23
+ 3492              		.cfi_endproc
+ 3493              	.LFE26:
+ 3495              		.section	.rodata
+ 3496 045e 0000     		.align	2
+ 3497              	.LC24:
+ 3498 0460 0A0A2A2A 		.ascii	"\012\012*** ERROR FATAL: ejecutando isr_ZDMA1_dummy"
+ 3498      2A204552 
+ 3498      524F5220 
+ 3498      46415441 
+ 3498      4C3A2065 
+ 3499 048d 00       		.ascii	"\000"
+ 3500              		.text
+ 3501              		.align	2
+ 3502              		.global	isr_ZDMA1_dummy
+ 3504              	isr_ZDMA1_dummy:
+ 3505              	.LFB27:
+ 290:../src/system.c **** }
+ 291:../src/system.c **** 
+ 292:../src/system.c **** void isr_ZDMA1_dummy( void )
+ 293:../src/system.c **** {
+ 3506              		.loc 1 293 0
+ 3507              		.cfi_startproc
+ 3508              		@ Interrupt Service Routine.
+ 3509              		@ args = 0, pretend = 0, frame = 0
+ 3510              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3511 07c8 04C02DE5 		str	ip, [sp, #-4]!
+ 3512 07cc 0DC0A0E1 		mov	ip, sp
+ 3513              	.LCFI54:
+ 3514              		.cfi_def_cfa_register 12
+ 3515 07d0 0FD82DE9 		stmfd	sp!, {r0, r1, r2, r3, fp, ip, lr, pc}
+ 3516 07d4 04B04CE2 		sub	fp, ip, #4
+ 3517              		.cfi_offset 14, -8
+ 3518              		.cfi_offset 13, -12
+ 3519              		.cfi_offset 11, -16
+ 3520              		.cfi_offset 3, -20
+ 3521              		.cfi_offset 2, -24
+ 3522              		.cfi_offset 1, -28
+ 3523              		.cfi_offset 0, -32
+ 3524              	.LCFI55:
+ 3525              		.cfi_def_cfa 11, 4
+ 294:../src/system.c ****     uart0_puts( "\n\n*** ERROR FATAL: ejecutando isr_ZDMA1_dummy" );
+ 3526              		.loc 1 294 0
+ 3527 07d8 10009FE5 		ldr	r0, .L108
+ 3528 07dc FEFFFFEB 		bl	uart0_puts
+ 295:../src/system.c ****     SEGS = 0x75;
+ 3529              		.loc 1 295 0
+ 3530 07e0 8537A0E3 		mov	r3, #34865152
+ 3531 07e4 7520A0E3 		mov	r2, #117
+ 3532 07e8 0020C3E5 		strb	r2, [r3, #0]
+ 3533              	.L107:
+ 296:../src/system.c ****     while( 1 );
+ 3534              		.loc 1 296 0 discriminator 1
+ 3535 07ec FEFFFFEA 		b	.L107
+ 3536              	.L109:
+ 3537              		.align	2
+ 3538              	.L108:
+ 3539 07f0 60040000 		.word	.LC24
+ 3540              		.cfi_endproc
+ 3541              	.LFE27:
+ 3543              		.section	.rodata
+ 3544 048e 0000     		.align	2
+ 3545              	.LC25:
+ 3546 0490 0A0A2A2A 		.ascii	"\012\012*** ERROR FATAL: ejecutando isr_ZDMA0_dummy"
+ 3546      2A204552 
+ 3546      524F5220 
+ 3546      46415441 
+ 3546      4C3A2065 
+ 3547 04bd 00       		.ascii	"\000"
+ 3548              		.text
+ 3549              		.align	2
+ 3550              		.global	isr_ZDMA0_dummy
+ 3552              	isr_ZDMA0_dummy:
+ 3553              	.LFB28:
+ 297:../src/system.c **** }
+ 298:../src/system.c **** 
+ 299:../src/system.c **** void isr_ZDMA0_dummy( void )
+ 300:../src/system.c **** {
+ 3554              		.loc 1 300 0
+ 3555              		.cfi_startproc
+ 3556              		@ Interrupt Service Routine.
+ 3557              		@ args = 0, pretend = 0, frame = 0
+ 3558              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3559 07f4 04C02DE5 		str	ip, [sp, #-4]!
+ 3560 07f8 0DC0A0E1 		mov	ip, sp
+ 3561              	.LCFI56:
+ 3562              		.cfi_def_cfa_register 12
+ 3563 07fc 0FD82DE9 		stmfd	sp!, {r0, r1, r2, r3, fp, ip, lr, pc}
+ 3564 0800 04B04CE2 		sub	fp, ip, #4
+ 3565              		.cfi_offset 14, -8
+ 3566              		.cfi_offset 13, -12
+ 3567              		.cfi_offset 11, -16
+ 3568              		.cfi_offset 3, -20
+ 3569              		.cfi_offset 2, -24
+ 3570              		.cfi_offset 1, -28
+ 3571              		.cfi_offset 0, -32
+ 3572              	.LCFI57:
+ 3573              		.cfi_def_cfa 11, 4
+ 301:../src/system.c ****     uart0_puts( "\n\n*** ERROR FATAL: ejecutando isr_ZDMA0_dummy" );
+ 3574              		.loc 1 301 0
+ 3575 0804 10009FE5 		ldr	r0, .L112
+ 3576 0808 FEFFFFEB 		bl	uart0_puts
+ 302:../src/system.c ****     SEGS = 0x75;
+ 3577              		.loc 1 302 0
+ 3578 080c 8537A0E3 		mov	r3, #34865152
+ 3579 0810 7520A0E3 		mov	r2, #117
+ 3580 0814 0020C3E5 		strb	r2, [r3, #0]
+ 3581              	.L111:
+ 303:../src/system.c ****     while( 1 );
+ 3582              		.loc 1 303 0 discriminator 1
+ 3583 0818 FEFFFFEA 		b	.L111
+ 3584              	.L113:
+ 3585              		.align	2
+ 3586              	.L112:
+ 3587 081c 90040000 		.word	.LC25
+ 3588              		.cfi_endproc
+ 3589              	.LFE28:
+ 3591              		.section	.rodata
+ 3592 04be 0000     		.align	2
+ 3593              	.LC26:
+ 3594 04c0 0A0A2A2A 		.ascii	"\012\012*** ERROR FATAL: ejecutando isr_TICK_dummy\000"
+ 3594      2A204552 
+ 3594      524F5220 
+ 3594      46415441 
+ 3594      4C3A2065 
+ 3595              		.text
+ 3596              		.align	2
+ 3597              		.global	isr_TICK_dummy
+ 3599              	isr_TICK_dummy:
+ 3600              	.LFB29:
+ 304:../src/system.c **** }
+ 305:../src/system.c **** 
+ 306:../src/system.c **** void isr_TICK_dummy( void )
+ 307:../src/system.c **** {
+ 3601              		.loc 1 307 0
+ 3602              		.cfi_startproc
+ 3603              		@ Interrupt Service Routine.
+ 3604              		@ args = 0, pretend = 0, frame = 0
+ 3605              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3606 0820 04C02DE5 		str	ip, [sp, #-4]!
+ 3607 0824 0DC0A0E1 		mov	ip, sp
+ 3608              	.LCFI58:
+ 3609              		.cfi_def_cfa_register 12
+ 3610 0828 0FD82DE9 		stmfd	sp!, {r0, r1, r2, r3, fp, ip, lr, pc}
+ 3611 082c 04B04CE2 		sub	fp, ip, #4
+ 3612              		.cfi_offset 14, -8
+ 3613              		.cfi_offset 13, -12
+ 3614              		.cfi_offset 11, -16
+ 3615              		.cfi_offset 3, -20
+ 3616              		.cfi_offset 2, -24
+ 3617              		.cfi_offset 1, -28
+ 3618              		.cfi_offset 0, -32
+ 3619              	.LCFI59:
+ 3620              		.cfi_def_cfa 11, 4
+ 308:../src/system.c ****     uart0_puts( "\n\n*** ERROR FATAL: ejecutando isr_TICK_dummy" );
+ 3621              		.loc 1 308 0
+ 3622 0830 10009FE5 		ldr	r0, .L116
+ 3623 0834 FEFFFFEB 		bl	uart0_puts
+ 309:../src/system.c ****     SEGS = 0x75;
+ 3624              		.loc 1 309 0
+ 3625 0838 8537A0E3 		mov	r3, #34865152
+ 3626 083c 7520A0E3 		mov	r2, #117
+ 3627 0840 0020C3E5 		strb	r2, [r3, #0]
+ 3628              	.L115:
+ 310:../src/system.c ****     while( 1 );
+ 3629              		.loc 1 310 0 discriminator 1
+ 3630 0844 FEFFFFEA 		b	.L115
+ 3631              	.L117:
+ 3632              		.align	2
+ 3633              	.L116:
+ 3634 0848 C0040000 		.word	.LC26
+ 3635              		.cfi_endproc
+ 3636              	.LFE29:
+ 3638              		.section	.rodata
+ 3639 04ed 000000   		.align	2
+ 3640              	.LC27:
+ 3641 04f0 0A0A2A2A 		.ascii	"\012\012*** ERROR FATAL: ejecutando isr_PB_dummy\000"
+ 3641      2A204552 
+ 3641      524F5220 
+ 3641      46415441 
+ 3641      4C3A2065 
+ 3642              		.text
+ 3643              		.align	2
+ 3644              		.global	isr_PB_dummy
+ 3646              	isr_PB_dummy:
+ 3647              	.LFB30:
+ 311:../src/system.c **** }
+ 312:../src/system.c **** 
+ 313:../src/system.c **** void isr_PB_dummy( void )
+ 314:../src/system.c **** {
+ 3648              		.loc 1 314 0
+ 3649              		.cfi_startproc
+ 3650              		@ Interrupt Service Routine.
+ 3651              		@ args = 0, pretend = 0, frame = 0
+ 3652              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3653 084c 04C02DE5 		str	ip, [sp, #-4]!
+ 3654 0850 0DC0A0E1 		mov	ip, sp
+ 3655              	.LCFI60:
+ 3656              		.cfi_def_cfa_register 12
+ 3657 0854 0FD82DE9 		stmfd	sp!, {r0, r1, r2, r3, fp, ip, lr, pc}
+ 3658 0858 04B04CE2 		sub	fp, ip, #4
+ 3659              		.cfi_offset 14, -8
+ 3660              		.cfi_offset 13, -12
+ 3661              		.cfi_offset 11, -16
+ 3662              		.cfi_offset 3, -20
+ 3663              		.cfi_offset 2, -24
+ 3664              		.cfi_offset 1, -28
+ 3665              		.cfi_offset 0, -32
+ 3666              	.LCFI61:
+ 3667              		.cfi_def_cfa 11, 4
+ 315:../src/system.c ****     uart0_puts( "\n\n*** ERROR FATAL: ejecutando isr_PB_dummy" );
+ 3668              		.loc 1 315 0
+ 3669 085c 10009FE5 		ldr	r0, .L120
+ 3670 0860 FEFFFFEB 		bl	uart0_puts
+ 316:../src/system.c ****     SEGS = 0x75;
+ 3671              		.loc 1 316 0
+ 3672 0864 8537A0E3 		mov	r3, #34865152
+ 3673 0868 7520A0E3 		mov	r2, #117
+ 3674 086c 0020C3E5 		strb	r2, [r3, #0]
+ 3675              	.L119:
+ 317:../src/system.c ****     while( 1 );
+ 3676              		.loc 1 317 0 discriminator 1
+ 3677 0870 FEFFFFEA 		b	.L119
+ 3678              	.L121:
+ 3679              		.align	2
+ 3680              	.L120:
+ 3681 0874 F0040000 		.word	.LC27
+ 3682              		.cfi_endproc
+ 3683              	.LFE30:
+ 3685              		.section	.rodata
+ 3686 051b 00       		.align	2
+ 3687              	.LC28:
+ 3688 051c 0A0A2A2A 		.ascii	"\012\012*** ERROR FATAL: ejecutando isr_ETHERNET_du"
+ 3688      2A204552 
+ 3688      524F5220 
+ 3688      46415441 
+ 3688      4C3A2065 
+ 3689 0549 6D6D7900 		.ascii	"mmy\000"
+ 3690              		.text
+ 3691              		.align	2
+ 3692              		.global	isr_ETHERNET_dummy
+ 3694              	isr_ETHERNET_dummy:
+ 3695              	.LFB31:
+ 318:../src/system.c **** }
+ 319:../src/system.c **** 
+ 320:../src/system.c **** void isr_ETHERNET_dummy( void )
+ 321:../src/system.c **** {
+ 3696              		.loc 1 321 0
+ 3697              		.cfi_startproc
+ 3698              		@ Interrupt Service Routine.
+ 3699              		@ args = 0, pretend = 0, frame = 0
+ 3700              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3701 0878 04C02DE5 		str	ip, [sp, #-4]!
+ 3702 087c 0DC0A0E1 		mov	ip, sp
+ 3703              	.LCFI62:
+ 3704              		.cfi_def_cfa_register 12
+ 3705 0880 0FD82DE9 		stmfd	sp!, {r0, r1, r2, r3, fp, ip, lr, pc}
+ 3706 0884 04B04CE2 		sub	fp, ip, #4
+ 3707              		.cfi_offset 14, -8
+ 3708              		.cfi_offset 13, -12
+ 3709              		.cfi_offset 11, -16
+ 3710              		.cfi_offset 3, -20
+ 3711              		.cfi_offset 2, -24
+ 3712              		.cfi_offset 1, -28
+ 3713              		.cfi_offset 0, -32
+ 3714              	.LCFI63:
+ 3715              		.cfi_def_cfa 11, 4
+ 322:../src/system.c ****     uart0_puts( "\n\n*** ERROR FATAL: ejecutando isr_ETHERNET_dummy" );
+ 3716              		.loc 1 322 0
+ 3717 0888 10009FE5 		ldr	r0, .L124
+ 3718 088c FEFFFFEB 		bl	uart0_puts
+ 323:../src/system.c ****     SEGS = 0x75;
+ 3719              		.loc 1 323 0
+ 3720 0890 8537A0E3 		mov	r3, #34865152
+ 3721 0894 7520A0E3 		mov	r2, #117
+ 3722 0898 0020C3E5 		strb	r2, [r3, #0]
+ 3723              	.L123:
+ 324:../src/system.c ****     while( 1 );
+ 3724              		.loc 1 324 0 discriminator 1
+ 3725 089c FEFFFFEA 		b	.L123
+ 3726              	.L125:
+ 3727              		.align	2
+ 3728              	.L124:
+ 3729 08a0 1C050000 		.word	.LC28
+ 3730              		.cfi_endproc
+ 3731              	.LFE31:
+ 3733              		.section	.rodata
+ 3734 054d 000000   		.align	2
+ 3735              	.LC29:
+ 3736 0550 0A0A2A2A 		.ascii	"\012\012*** ERROR FATAL: ejecutando isr_TS_dummy\000"
+ 3736      2A204552 
+ 3736      524F5220 
+ 3736      46415441 
+ 3736      4C3A2065 
+ 3737              		.text
+ 3738              		.align	2
+ 3739              		.global	isr_TS_dummy
+ 3741              	isr_TS_dummy:
+ 3742              	.LFB32:
+ 325:../src/system.c **** }
+ 326:../src/system.c **** 
+ 327:../src/system.c **** void isr_TS_dummy( void )
+ 328:../src/system.c **** {
+ 3743              		.loc 1 328 0
+ 3744              		.cfi_startproc
+ 3745              		@ Interrupt Service Routine.
+ 3746              		@ args = 0, pretend = 0, frame = 0
+ 3747              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3748 08a4 04C02DE5 		str	ip, [sp, #-4]!
+ 3749 08a8 0DC0A0E1 		mov	ip, sp
+ 3750              	.LCFI64:
+ 3751              		.cfi_def_cfa_register 12
+ 3752 08ac 0FD82DE9 		stmfd	sp!, {r0, r1, r2, r3, fp, ip, lr, pc}
+ 3753 08b0 04B04CE2 		sub	fp, ip, #4
+ 3754              		.cfi_offset 14, -8
+ 3755              		.cfi_offset 13, -12
+ 3756              		.cfi_offset 11, -16
+ 3757              		.cfi_offset 3, -20
+ 3758              		.cfi_offset 2, -24
+ 3759              		.cfi_offset 1, -28
+ 3760              		.cfi_offset 0, -32
+ 3761              	.LCFI65:
+ 3762              		.cfi_def_cfa 11, 4
+ 329:../src/system.c ****     uart0_puts( "\n\n*** ERROR FATAL: ejecutando isr_TS_dummy" );
+ 3763              		.loc 1 329 0
+ 3764 08b4 10009FE5 		ldr	r0, .L128
+ 3765 08b8 FEFFFFEB 		bl	uart0_puts
+ 330:../src/system.c ****     SEGS = 0x75;
+ 3766              		.loc 1 330 0
+ 3767 08bc 8537A0E3 		mov	r3, #34865152
+ 3768 08c0 7520A0E3 		mov	r2, #117
+ 3769 08c4 0020C3E5 		strb	r2, [r3, #0]
+ 3770              	.L127:
+ 331:../src/system.c ****     while( 1 );
+ 3771              		.loc 1 331 0 discriminator 1
+ 3772 08c8 FEFFFFEA 		b	.L127
+ 3773              	.L129:
+ 3774              		.align	2
+ 3775              	.L128:
+ 3776 08cc 50050000 		.word	.LC29
+ 3777              		.cfi_endproc
+ 3778              	.LFE32:
+ 3780              		.section	.rodata
+ 3781 057b 00       		.align	2
+ 3782              	.LC30:
+ 3783 057c 0A0A2A2A 		.ascii	"\012\012*** ERROR FATAL: ejecutando isr_KEYPAD_dumm"
+ 3783      2A204552 
+ 3783      524F5220 
+ 3783      46415441 
+ 3783      4C3A2065 
+ 3784 05a9 7900     		.ascii	"y\000"
+ 3785              		.text
+ 3786              		.align	2
+ 3787              		.global	isr_KEYPAD_dummy
+ 3789              	isr_KEYPAD_dummy:
+ 3790              	.LFB33:
+ 332:../src/system.c **** }
+ 333:../src/system.c **** 
+ 334:../src/system.c **** void isr_KEYPAD_dummy( void )
+ 335:../src/system.c **** {
+ 3791              		.loc 1 335 0
+ 3792              		.cfi_startproc
+ 3793              		@ Interrupt Service Routine.
+ 3794              		@ args = 0, pretend = 0, frame = 0
+ 3795              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3796 08d0 04C02DE5 		str	ip, [sp, #-4]!
+ 3797 08d4 0DC0A0E1 		mov	ip, sp
+ 3798              	.LCFI66:
+ 3799              		.cfi_def_cfa_register 12
+ 3800 08d8 0FD82DE9 		stmfd	sp!, {r0, r1, r2, r3, fp, ip, lr, pc}
+ 3801 08dc 04B04CE2 		sub	fp, ip, #4
+ 3802              		.cfi_offset 14, -8
+ 3803              		.cfi_offset 13, -12
+ 3804              		.cfi_offset 11, -16
+ 3805              		.cfi_offset 3, -20
+ 3806              		.cfi_offset 2, -24
+ 3807              		.cfi_offset 1, -28
+ 3808              		.cfi_offset 0, -32
+ 3809              	.LCFI67:
+ 3810              		.cfi_def_cfa 11, 4
+ 336:../src/system.c ****     uart0_puts( "\n\n*** ERROR FATAL: ejecutando isr_KEYPAD_dummy" );
+ 3811              		.loc 1 336 0
+ 3812 08e0 10009FE5 		ldr	r0, .L132
+ 3813 08e4 FEFFFFEB 		bl	uart0_puts
+ 337:../src/system.c ****     SEGS = 0x75;
+ 3814              		.loc 1 337 0
+ 3815 08e8 8537A0E3 		mov	r3, #34865152
+ 3816 08ec 7520A0E3 		mov	r2, #117
+ 3817 08f0 0020C3E5 		strb	r2, [r3, #0]
+ 3818              	.L131:
+ 338:../src/system.c ****     while( 1 );
+ 3819              		.loc 1 338 0 discriminator 1
+ 3820 08f4 FEFFFFEA 		b	.L131
+ 3821              	.L133:
+ 3822              		.align	2
+ 3823              	.L132:
+ 3824 08f8 7C050000 		.word	.LC30
+ 3825              		.cfi_endproc
+ 3826              	.LFE33:
+ 3828              		.section	.rodata
+ 3829 05ab 00       		.align	2
+ 3830              	.LC31:
+ 3831 05ac 0A0A2A2A 		.ascii	"\012\012*** ERROR FATAL: ejecutando isr_USB_dummy\000"
+ 3831      2A204552 
+ 3831      524F5220 
+ 3831      46415441 
+ 3831      4C3A2065 
+ 3832              		.text
+ 3833              		.align	2
+ 3834              		.global	isr_USB_dummy
+ 3836              	isr_USB_dummy:
+ 3837              	.LFB34:
+ 339:../src/system.c **** }
+ 340:../src/system.c **** 
+ 341:../src/system.c **** void isr_USB_dummy( void )
+ 342:../src/system.c **** {
+ 3838              		.loc 1 342 0
+ 3839              		.cfi_startproc
+ 3840              		@ Interrupt Service Routine.
+ 3841              		@ args = 0, pretend = 0, frame = 0
+ 3842              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3843 08fc 04C02DE5 		str	ip, [sp, #-4]!
+ 3844 0900 0DC0A0E1 		mov	ip, sp
+ 3845              	.LCFI68:
+ 3846              		.cfi_def_cfa_register 12
+ 3847 0904 0FD82DE9 		stmfd	sp!, {r0, r1, r2, r3, fp, ip, lr, pc}
+ 3848 0908 04B04CE2 		sub	fp, ip, #4
+ 3849              		.cfi_offset 14, -8
+ 3850              		.cfi_offset 13, -12
+ 3851              		.cfi_offset 11, -16
+ 3852              		.cfi_offset 3, -20
+ 3853              		.cfi_offset 2, -24
+ 3854              		.cfi_offset 1, -28
+ 3855              		.cfi_offset 0, -32
+ 3856              	.LCFI69:
+ 3857              		.cfi_def_cfa 11, 4
+ 343:../src/system.c ****     uart0_puts( "\n\n*** ERROR FATAL: ejecutando isr_USB_dummy" );
+ 3858              		.loc 1 343 0
+ 3859 090c 10009FE5 		ldr	r0, .L136
+ 3860 0910 FEFFFFEB 		bl	uart0_puts
+ 344:../src/system.c ****     SEGS = 0x75;
+ 3861              		.loc 1 344 0
+ 3862 0914 8537A0E3 		mov	r3, #34865152
+ 3863 0918 7520A0E3 		mov	r2, #117
+ 3864 091c 0020C3E5 		strb	r2, [r3, #0]
+ 3865              	.L135:
+ 345:../src/system.c ****     while( 1 );
+ 3866              		.loc 1 345 0 discriminator 1
+ 3867 0920 FEFFFFEA 		b	.L135
+ 3868              	.L137:
+ 3869              		.align	2
+ 3870              	.L136:
+ 3871 0924 AC050000 		.word	.LC31
+ 3872              		.cfi_endproc
+ 3873              	.LFE34:
+ 3875              		.align	2
+ 3877              	show_sys_info:
+ 3878              	.LFB35:
+ 346:../src/system.c **** }
+ 347:../src/system.c **** 
+ 348:../src/system.c **** static void show_sys_info( void )
+ 349:../src/system.c **** {
+ 3879              		.loc 1 349 0
+ 3880              		.cfi_startproc
+ 3881              		@ Function supports interworking.
+ 3882              		@ args = 0, pretend = 0, frame = 0
+ 3883              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3884 0928 0DC0A0E1 		mov	ip, sp
+ 3885              	.LCFI70:
+ 3886              		.cfi_def_cfa_register 12
+ 3887 092c 00D82DE9 		stmfd	sp!, {fp, ip, lr, pc}
+ 3888 0930 04B04CE2 		sub	fp, ip, #4
+ 3889              		.cfi_offset 14, -8
+ 3890              		.cfi_offset 13, -12
+ 3891              		.cfi_offset 11, -16
+ 3892              	.LCFI71:
+ 3893              		.cfi_def_cfa 11, 4
+ 350:../src/system.c ****     //
+ 351:../src/system.c **** }
+ 3894              		.loc 1 351 0
+ 3895 0934 0CD04BE2 		sub	sp, fp, #12
+ 3896 0938 00689DE8 		ldmfd	sp, {fp, sp, lr}
+ 3897 093c 1EFF2FE1 		bx	lr
+ 3898              		.cfi_endproc
+ 3899              	.LFE35:
+ 3901              		.align	2
+ 3902              		.global	sleep
+ 3904              	sleep:
+ 3905              	.LFB36:
+ 352:../src/system.c **** 
+ 353:../src/system.c **** inline void sleep( void )
+ 354:../src/system.c **** {
+ 3906              		.loc 1 354 0
+ 3907              		.cfi_startproc
+ 3908              		@ Function supports interworking.
+ 3909              		@ args = 0, pretend = 0, frame = 0
+ 3910              		@ frame_needed = 1, uses_anonymous_args = 0
+ 3911 0940 0DC0A0E1 		mov	ip, sp
+ 3912              	.LCFI72:
+ 3913              		.cfi_def_cfa_register 12
+ 3914 0944 00D82DE9 		stmfd	sp!, {fp, ip, lr, pc}
+ 3915 0948 04B04CE2 		sub	fp, ip, #4
+ 3916              		.cfi_offset 14, -8
+ 3917              		.cfi_offset 13, -12
+ 3918              		.cfi_offset 11, -16
+ 3919              	.LCFI73:
+ 3920              		.cfi_def_cfa 11, 4
+ 355:../src/system.c ****     CLKCON |= (1 << 2);    // Pone a la CPU en estado IDLE
+ 3921              		.loc 1 355 0
+ 3922 094c 18309FE5 		ldr	r3, .L140
+ 3923 0950 14209FE5 		ldr	r2, .L140
+ 3924 0954 002092E5 		ldr	r2, [r2, #0]
+ 3925 0958 042082E3 		orr	r2, r2, #4
+ 3926 095c 002083E5 		str	r2, [r3, #0]
+ 356:../src/system.c **** }
+ 3927              		.loc 1 356 0
+ 3928 0960 0CD04BE2 		sub	sp, fp, #12
+ 3929 0964 00689DE8 		ldmfd	sp, {fp, sp, lr}
+ 3930 0968 1EFF2FE1 		bx	lr
+ 3931              	.L141:
+ 3932              		.align	2
+ 3933              	.L140:
+ 3934 096c 0400D801 		.word	30932996
+ 3935              		.cfi_endproc
+ 3936              	.LFE36:
+ 3938              	.Letext0:
+DEFINED SYMBOLS
+                            *ABS*:00000000 system.c
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:1971   .text:00000000 $a
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:1974   .text:00000000 sys_init
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2264   .text:000002c8 install_dummy_isr
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2121   .text:0000013c port_init
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3877   .text:00000928 show_sys_info
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2101   .text:00000100 $d
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2119   .text:0000013c $a
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2229   .text:00000250 $d
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2262   .text:000002c8 $a
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2328   .text:00000358 $d
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2359   .text:000003a8 isr_SWI_dummy
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2407   .text:000003d4 isr_UNDEF_dummy
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2454   .text:00000400 isr_IRQ_dummy
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2501   .text:0000042c isr_FIQ_dummy
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2549   .text:00000458 isr_PABORT_dummy
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2597   .text:00000484 isr_DABORT_dummy
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2644   .text:000004b0 isr_ADC_dummy
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2691   .text:000004dc isr_RTC_dummy
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3599   .text:00000820 isr_TICK_dummy
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3836   .text:000008fc isr_USB_dummy
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2352   .rodata:00000000 $d
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2356   .text:000003a8 $a
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2394   .text:000003d0 $d
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2404   .text:000003d4 $a
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2442   .text:000003fc $d
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2451   .text:00000400 $a
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2489   .text:00000428 $d
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2498   .text:0000042c $a
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2536   .text:00000454 $d
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2546   .text:00000458 $a
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2584   .text:00000480 $d
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2594   .text:00000484 $a
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2632   .text:000004ac $d
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2641   .text:000004b0 $a
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2679   .text:000004d8 $d
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2688   .text:000004dc $a
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2726   .text:00000504 $d
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2736   .text:00000508 $a
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2739   .text:00000508 isr_UTXD1_dummy
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2774   .text:00000530 $d
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2784   .text:00000534 $a
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2787   .text:00000534 isr_UTXD0_dummy
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2822   .text:0000055c $d
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2831   .text:00000560 $a
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2834   .text:00000560 isr_SIO_dummy
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2869   .text:00000588 $d
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2878   .text:0000058c $a
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2881   .text:0000058c isr_IIC_dummy
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2916   .text:000005b4 $d
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2926   .text:000005b8 $a
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2929   .text:000005b8 isr_URXD1_dummy
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2964   .text:000005e0 $d
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2974   .text:000005e4 $a
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:2977   .text:000005e4 isr_URXD0_dummy
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3012   .text:0000060c $d
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3022   .text:00000610 $a
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3025   .text:00000610 isr_TIMER5_dummy
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3060   .text:00000638 $d
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3070   .text:0000063c $a
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3073   .text:0000063c isr_TIMER4_dummy
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3108   .text:00000664 $d
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3118   .text:00000668 $a
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3121   .text:00000668 isr_TIMER3_dummy
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3156   .text:00000690 $d
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3166   .text:00000694 $a
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3169   .text:00000694 isr_TIMER2_dummy
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3204   .text:000006bc $d
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3214   .text:000006c0 $a
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3217   .text:000006c0 isr_TIMER1_dummy
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3252   .text:000006e8 $d
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3262   .text:000006ec $a
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3265   .text:000006ec isr_TIMER0_dummy
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3300   .text:00000714 $d
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3310   .text:00000718 $a
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3313   .text:00000718 isr_UERR01_dummy
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3348   .text:00000740 $d
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3357   .text:00000744 $a
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3360   .text:00000744 isr_WDT_dummy
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3395   .text:0000076c $d
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3405   .text:00000770 $a
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3408   .text:00000770 isr_BDMA1_dummy
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3443   .text:00000798 $d
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3453   .text:0000079c $a
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3456   .text:0000079c isr_BDMA0_dummy
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3491   .text:000007c4 $d
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3501   .text:000007c8 $a
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3504   .text:000007c8 isr_ZDMA1_dummy
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3539   .text:000007f0 $d
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3549   .text:000007f4 $a
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3552   .text:000007f4 isr_ZDMA0_dummy
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3587   .text:0000081c $d
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3596   .text:00000820 $a
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3634   .text:00000848 $d
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3643   .text:0000084c $a
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3646   .text:0000084c isr_PB_dummy
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3681   .text:00000874 $d
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3691   .text:00000878 $a
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3694   .text:00000878 isr_ETHERNET_dummy
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3729   .text:000008a0 $d
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3738   .text:000008a4 $a
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3741   .text:000008a4 isr_TS_dummy
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3776   .text:000008cc $d
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3786   .text:000008d0 $a
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3789   .text:000008d0 isr_KEYPAD_dummy
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3824   .text:000008f8 $d
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3833   .text:000008fc $a
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3871   .text:00000924 $d
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3875   .text:00000928 $a
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3904   .text:00000940 sleep
+C:\Users\baneg\AppData\Local\Temp\ccOZukwc.s:3934   .text:0000096c $d
+                     .debug_frame:00000010 $d
+
+UNDEFINED SYMBOLS
+uart0_init
+uart0_puts

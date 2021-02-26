@@ -1,0 +1,11 @@
+11:47:56 **** Incremental Build of configuration Debug for project lab12 ****
+cs-make all 
+'Invoking: ARM Sourcery Windows GNU Print Size'
+arm-none-eabi-size  --format=berkeley lab12.elf
+   text	   data	    bss	    dec	    hex	filename
+  62848	      0	 415108	 477956	  74b04	lab12.elf
+'Finished building: lab12.siz'
+' '
+
+11:47:58 Build Finished (took 1s.252ms)
+

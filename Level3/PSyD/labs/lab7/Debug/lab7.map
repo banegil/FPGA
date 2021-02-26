@@ -1,0 +1,248 @@
+Archive member included because of file (symbol)
+
+../../BSP/Debug\libBSP.a(lcd.o)
+                              ./lab7.o (lcd_init)
+../../BSP/Debug\libBSP.a(system.o)
+                              ./lab7.o (sys_init)
+../../BSP/Debug\libBSP.a(uart.o)
+                              ../../BSP/Debug\libBSP.a(system.o) (uart0_init)
+../../BSP/Debug\libBSP.a(font8x16.o)
+                              ../../BSP/Debug\libBSP.a(lcd.o) (font)
+
+Memory Configuration
+
+Name             Origin             Length             Attributes
+*default*        0x00000000         0xffffffff
+
+Linker script and memory map
+
+LOAD ./lab7.o
+LOAD ../../BSP/Debug\libBSP.a
+START GROUP
+LOAD c:/hlocal/eclipsearm/sourcery/bin/../lib/gcc/arm-none-eabi/4.5.2\libgcc.a
+LOAD c:/hlocal/eclipsearm/sourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/../../../../arm-none-eabi/lib\libc.a
+END GROUP
+                0x0c100000                . = 0xc100000
+
+.text           0x0c100000     0x2050
+ *(.text)
+ .text          0x0c100000      0x204 ./lab7.o
+                0x0c100000                main
+                0x0c1001d0                delay
+ .text          0x0c100204     0x1014 ../../BSP/Debug\libBSP.a(lcd.o)
+                0x0c100204                lcd_init
+                0x0c100388                lcd_on
+                0x0c1003c4                lcd_off
+                0x0c100400                lcd_status
+                0x0c100428                lcd_clear
+                0x0c1004ac                lcd_putpixel
+                0x0c100598                lcd_getpixel
+                0x0c100654                lcd_draw_hline
+                0x0c1006f4                lcd_draw_vline
+                0x0c100794                lcd_draw_box
+                0x0c10083c                lcd_putchar
+                0x0c100990                lcd_puts
+                0x0c100a04                lcd_putint
+                0x0c100b38                lcd_puthex
+                0x0c100c18                lcd_putchar_x2
+                0x0c100e30                lcd_puts_x2
+                0x0c100ea4                lcd_putint_x2
+                0x0c100fd8                lcd_puthex_x2
+                0x0c1010bc                lcd_putWallpaper
+ .text          0x0c101218      0x974 ../../BSP/Debug\libBSP.a(system.o)
+                0x0c101218                sys_init
+                0x0c1015c4                isr_SWI_dummy
+                0x0c1015f0                isr_UNDEF_dummy
+                0x0c10161c                isr_IRQ_dummy
+                0x0c101648                isr_FIQ_dummy
+                0x0c101674                isr_PABORT_dummy
+                0x0c1016a0                isr_DABORT_dummy
+                0x0c1016cc                isr_ADC_dummy
+                0x0c1016f8                isr_RTC_dummy
+                0x0c101724                isr_UTXD1_dummy
+                0x0c101750                isr_UTXD0_dummy
+                0x0c10177c                isr_SIO_dummy
+                0x0c1017a8                isr_IIC_dummy
+                0x0c1017d4                isr_URXD1_dummy
+                0x0c101800                isr_URXD0_dummy
+                0x0c10182c                isr_TIMER5_dummy
+                0x0c101858                isr_TIMER4_dummy
+                0x0c101884                isr_TIMER3_dummy
+                0x0c1018b0                isr_TIMER2_dummy
+                0x0c1018dc                isr_TIMER1_dummy
+                0x0c101908                isr_TIMER0_dummy
+                0x0c101934                isr_UERR01_dummy
+                0x0c101960                isr_WDT_dummy
+                0x0c10198c                isr_BDMA1_dummy
+                0x0c1019b8                isr_BDMA0_dummy
+                0x0c1019e4                isr_ZDMA1_dummy
+                0x0c101a10                isr_ZDMA0_dummy
+                0x0c101a3c                isr_TICK_dummy
+                0x0c101a68                isr_PB_dummy
+                0x0c101a94                isr_ETHERNET_dummy
+                0x0c101ac0                isr_TS_dummy
+                0x0c101aec                isr_KEYPAD_dummy
+                0x0c101b18                isr_USB_dummy
+                0x0c101b5c                sleep
+ .text          0x0c101b8c      0x4c4 ../../BSP/Debug\libBSP.a(uart.o)
+                0x0c101b8c                uart0_init
+                0x0c101bf0                uart0_putchar
+                0x0c101c40                uart0_getchar
+                0x0c101c88                uart0_puts
+                0x0c101cd8                uart0_putint
+                0x0c101de4                uart0_puthex
+                0x0c101e9c                uart0_gets
+                0x0c101f0c                uart0_getint
+                0x0c101fb4                uart0_gethex
+ .text          0x0c102050        0x0 ../../BSP/Debug\libBSP.a(font8x16.o)
+
+.glue_7         0x0c102050        0x0
+ .glue_7        0x00000000        0x0 linker stubs
+
+.glue_7t        0x0c102050        0x0
+ .glue_7t       0x00000000        0x0 linker stubs
+
+.vfp11_veneer   0x0c102050        0x0
+ .vfp11_veneer  0x00000000        0x0 linker stubs
+
+.v4_bx          0x0c102050        0x0
+ .v4_bx         0x00000000        0x0 linker stubs
+
+.rodata         0x0c102050     0x166c
+ *(.rodata)
+ .rodata        0x0c102050       0x94 ./lab7.o
+ .rodata        0x0c1020e4      0x5d8 ../../BSP/Debug\libBSP.a(system.o)
+ .rodata        0x0c1026bc     0x1000 ../../BSP/Debug\libBSP.a(font8x16.o)
+                0x0c1026bc                font
+
+.data           0x0c1036bc        0x0
+ *(.data)
+ .data          0x0c1036bc        0x0 ./lab7.o
+ .data          0x0c1036bc        0x0 ../../BSP/Debug\libBSP.a(lcd.o)
+ .data          0x0c1036bc        0x0 ../../BSP/Debug\libBSP.a(system.o)
+ .data          0x0c1036bc        0x0 ../../BSP/Debug\libBSP.a(uart.o)
+ .data          0x0c1036bc        0x0 ../../BSP/Debug\libBSP.a(font8x16.o)
+
+.bss            0x0c1036bc     0x9604
+ *(.bss)
+ .bss           0x0c1036bc        0x0 ./lab7.o
+ .bss           0x0c1036bc     0x9604 ../../BSP/Debug\libBSP.a(lcd.o)
+ .bss           0x0c10ccc0        0x0 ../../BSP/Debug\libBSP.a(system.o)
+ .bss           0x0c10ccc0        0x0 ../../BSP/Debug\libBSP.a(uart.o)
+ .bss           0x0c10ccc0        0x0 ../../BSP/Debug\libBSP.a(font8x16.o)
+                0x0c10ccc0                end = .
+OUTPUT(lab7.elf elf32-littlearm)
+
+.debug_abbrev   0x00000000      0x392
+ .debug_abbrev  0x00000000       0x72 ./lab7.o
+ .debug_abbrev  0x00000072      0x14f ../../BSP/Debug\libBSP.a(lcd.o)
+ .debug_abbrev  0x000001c1       0x89 ../../BSP/Debug\libBSP.a(system.o)
+ .debug_abbrev  0x0000024a       0xe5 ../../BSP/Debug\libBSP.a(uart.o)
+ .debug_abbrev  0x0000032f       0x63 ../../BSP/Debug\libBSP.a(font8x16.o)
+
+.debug_info     0x00000000      0xf1a
+ .debug_info    0x00000000       0xae ./lab7.o
+ .debug_info    0x000000ae      0x7d2 ../../BSP/Debug\libBSP.a(lcd.o)
+ .debug_info    0x00000880      0x38d ../../BSP/Debug\libBSP.a(system.o)
+ .debug_info    0x00000c0d      0x278 ../../BSP/Debug\libBSP.a(uart.o)
+ .debug_info    0x00000e85       0x95 ../../BSP/Debug\libBSP.a(font8x16.o)
+
+.debug_line     0x00000000      0x6d7
+ .debug_line    0x00000000      0x14f ./lab7.o
+ .debug_line    0x0000014f      0x245 ../../BSP/Debug\libBSP.a(lcd.o)
+ .debug_line    0x00000394      0x1d8 ../../BSP/Debug\libBSP.a(system.o)
+ .debug_line    0x0000056c      0x115 ../../BSP/Debug\libBSP.a(uart.o)
+ .debug_line    0x00000681       0x56 ../../BSP/Debug\libBSP.a(font8x16.o)
+
+.debug_macinfo  0x00000000    0x14801
+ .debug_macinfo
+                0x00000000     0x4b16 ./lab7.o
+ .debug_macinfo
+                0x00004b16     0x439b ../../BSP/Debug\libBSP.a(lcd.o)
+ .debug_macinfo
+                0x00008eb1     0x530a ../../BSP/Debug\libBSP.a(system.o)
+ .debug_macinfo
+                0x0000e1bb     0x430d ../../BSP/Debug\libBSP.a(uart.o)
+ .debug_macinfo
+                0x000124c8     0x2339 ../../BSP/Debug\libBSP.a(font8x16.o)
+
+.debug_loc      0x00000000      0xb84
+ .debug_loc     0x00000000       0x58 ./lab7.o
+ .debug_loc     0x00000058      0x344 ../../BSP/Debug\libBSP.a(lcd.o)
+ .debug_loc     0x0000039c      0x65c ../../BSP/Debug\libBSP.a(system.o)
+ .debug_loc     0x000009f8      0x18c ../../BSP/Debug\libBSP.a(uart.o)
+
+.debug_pubnames
+                0x00000000      0x4c7
+ .debug_pubnames
+                0x00000000       0x25 ./lab7.o
+ .debug_pubnames
+                0x00000025      0x143 ../../BSP/Debug\libBSP.a(lcd.o)
+ .debug_pubnames
+                0x00000168      0x29d ../../BSP/Debug\libBSP.a(system.o)
+ .debug_pubnames
+                0x00000405       0xa7 ../../BSP/Debug\libBSP.a(uart.o)
+ .debug_pubnames
+                0x000004ac       0x1b ../../BSP/Debug\libBSP.a(font8x16.o)
+
+.debug_pubtypes
+                0x00000000       0xe9
+ .debug_pubtypes
+                0x00000000       0x27 ./lab7.o
+ .debug_pubtypes
+                0x00000027       0x45 ../../BSP/Debug\libBSP.a(lcd.o)
+ .debug_pubtypes
+                0x0000006c       0x27 ../../BSP/Debug\libBSP.a(system.o)
+ .debug_pubtypes
+                0x00000093       0x3a ../../BSP/Debug\libBSP.a(uart.o)
+ .debug_pubtypes
+                0x000000cd       0x1c ../../BSP/Debug\libBSP.a(font8x16.o)
+
+.debug_aranges  0x00000000       0x80
+ .debug_aranges
+                0x00000000       0x20 ./lab7.o
+ .debug_aranges
+                0x00000020       0x20 ../../BSP/Debug\libBSP.a(lcd.o)
+ .debug_aranges
+                0x00000040       0x20 ../../BSP/Debug\libBSP.a(system.o)
+ .debug_aranges
+                0x00000060       0x20 ../../BSP/Debug\libBSP.a(uart.o)
+
+.debug_str      0x00000000      0x515
+ .debug_str     0x00000000       0xaf ./lab7.o
+                                 0xc8 (size before relaxing)
+ .debug_str     0x000000af      0x198 ../../BSP/Debug\libBSP.a(lcd.o)
+                                0x22f (size before relaxing)
+ .debug_str     0x00000247      0x23d ../../BSP/Debug\libBSP.a(system.o)
+                                0x2ef (size before relaxing)
+ .debug_str     0x00000484       0x7f ../../BSP/Debug\libBSP.a(uart.o)
+                                0x141 (size before relaxing)
+ .debug_str     0x00000503       0x12 ../../BSP/Debug\libBSP.a(font8x16.o)
+                                 0xc2 (size before relaxing)
+
+.comment        0x00000000       0x2a
+ .comment       0x00000000       0x2a ./lab7.o
+                                 0x2b (size before relaxing)
+ .comment       0x00000000       0x2b ../../BSP/Debug\libBSP.a(lcd.o)
+ .comment       0x00000000       0x2b ../../BSP/Debug\libBSP.a(system.o)
+ .comment       0x00000000       0x2b ../../BSP/Debug\libBSP.a(uart.o)
+ .comment       0x00000000       0x2b ../../BSP/Debug\libBSP.a(font8x16.o)
+
+.ARM.attributes
+                0x00000000       0x32
+ .ARM.attributes
+                0x00000000       0x32 ./lab7.o
+ .ARM.attributes
+                0x00000032       0x32 ../../BSP/Debug\libBSP.a(lcd.o)
+ .ARM.attributes
+                0x00000064       0x32 ../../BSP/Debug\libBSP.a(system.o)
+ .ARM.attributes
+                0x00000096       0x32 ../../BSP/Debug\libBSP.a(uart.o)
+ .ARM.attributes
+                0x000000c8       0x32 ../../BSP/Debug\libBSP.a(font8x16.o)
+
+.debug_frame    0x00000000      0xa28
+ .debug_frame   0x00000000       0x54 ./lab7.o
+ .debug_frame   0x00000054      0x270 ../../BSP/Debug\libBSP.a(lcd.o)
+ .debug_frame   0x000002c4      0x630 ../../BSP/Debug\libBSP.a(system.o)
+ .debug_frame   0x000008f4      0x134 ../../BSP/Debug\libBSP.a(uart.o)

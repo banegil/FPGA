@@ -1,0 +1,650 @@
+#include "sintesisVoz.h"
+#include "os_cpu.h"
+#include "os_cfg.h"
+#include "ucos_ii.h"
+
+#include <common_types.h>
+#include <system.h>
+#include <uart.h>
+#include <uda1341ts.h>
+#include <adc.h>
+#include <lcd.h>
+#include <iis.h>
+#include <s3c44b0x.h>
+#include <s3cev40.h>
+#include <rtc.h>
+#include <ts.h>
+#include <timers.h>
+#include <keypad.h>
+
+#define TASK_STK_SIZE    10*1024
+#define KEYPAD_QUEUE_SIZE 64
+
+OS_STK Task1Stk[TASK_STK_SIZE];
+OS_STK Task2Stk[TASK_STK_SIZE];
+OS_STK TaskStartStk[TASK_STK_SIZE];
+
+OS_EVENT *uart0Sem;                /* Semáforo para el acceso mutex a la UART0 */
+OS_EVENT *keypadQueue;             /* Cola para scancodes de teclas pulsadas */
+void     *keypadQueueTable[KEYPAD_QUEUE_SIZE];
+void isr_keypad( void ) __attribute__ ((interrupt ("IRQ")));
+void isr_tick( void ) __attribute__ ((interrupt ("IRQ")));
+
+void Task1( void *id );
+void Task2( void *id );
+void TaskStart( void *pdata );
+
+char *hpC, *mpC, opChar;
+char bufAH[5], bufAM[5], bufCal[5];
+uint8 menu, alarma, calculadora, ponerHora, h, m, contH, contM, activarAlarma;
+int8 op1, op2, contOp1, contOp2, resul, op, horaFijada;
+volatile boolean flag;
+extern uint8 font[];
+extern void OSTickISR( void );       /* RTI del tick del sistema */
+
+extern void OS_CPU_isr_pb( void );   /* RTI (wrapper) por pulsación teclado */
+void isr_pb( void ); /* Función invocada por el anterior wrapper que atiende al dispositivo*/
+
+char *intToStr(uint32 m, char a){
+    int c;
+    if(a == 'h'){
+    	char *hmp;
+		hmp = bufAH + 5;
+		*hmp = '\0';
+		do {
+			c = m % 10;
+			*--hmp = '0' + c;
+			m /= 10;
+		} while( m > 0 );
+		return hmp;
+    }
+    else{
+		char *hmp2 = bufAM + 5;
+		*hmp2 = '\0';
+		do {
+			c = m % 10;
+			*--hmp2 = '0' + c;
+			m /= 10;
+		} while( m > 0 );
+		return hmp2;
+    }
+}
+
+char *intToStrC(uint32 m){
+    int c;
+	char *hmp;
+	hmp = bufCal + 5;
+	*hmp = '\0';
+	do {
+		c = m % 10;
+		*--hmp = '0' + c;
+		m /= 10;
+	} while( m > 0 );
+	return hmp;
+}
+
+void lcd_putchar_xTam( uint16 x, uint16 y, uint8 color, char ch , uint8 tam)
+{
+    uint8 line, row, i, j;
+    uint8 *bitmap;
+    uint16 save = x;
+
+    bitmap = font + ch*16;
+    for( line=0; line<16; ++line ){
+    	x = save;
+        for( row=0; row<8; ++row ){
+            if( bitmap[line] & (0x80 >> row) ){
+            	for (i = x; i < x+tam; i++)
+            		for (j = y; j < y+tam; j++)
+            			lcd_putpixel( i, j, BLACK );
+            }
+            else{
+            	for (i = x; i < x+tam; i++)
+            		for (j = y; j < y+tam; j++)
+            			lcd_putpixel( i, j, WHITE );
+            }
+            x += tam;
+        }
+        y += tam;
+    }
+}
+
+void lcd_puts_xTam( uint16 x, uint16 y, uint8 color, char *s , uint8 tam)
+{
+	while( *s  ) {
+		lcd_putchar_xTam( x, y, color, *s++ , tam);
+		if(tam == 2) x += 14;
+		else if(tam == 3) x += 24;
+		else if(tam == 4) x += 32;
+		else x += 46;
+	}
+}
+
+void uart0_putTimeLCD( void )
+{
+	uint8  c;
+	char bufH[5], bufM[5], bufS[5];
+	char *hp = bufH + 5;
+	char *mp = bufM + 5;
+	char *sp = bufS + 5;
+	*hp = '\0';
+	*mp = '\0';
+	*sp = '\0';
+	rtc_time_t rtc_time;
+
+	if(horaFijada){
+		rtc_time.hour = contH;
+		rtc_time.min = contM;
+		rtc_time.sec = 0;
+		rtc_puttime( &rtc_time );
+		horaFijada = 0;
+	}
+
+	rtc_gettime( &rtc_time );
+	uint32 hh = (uint32)rtc_time.hour;
+	uint32 mm = (uint32)rtc_time.min;
+	uint32 s = (uint32)rtc_time.sec;
+	uint32 hSave = hh, mSave = mm, sSave = s;
+
+	do {
+		c = hh % 10;
+		*--hp = '0' + c;
+		hh /= 10;
+	} while( hh > 0 );
+	do {
+		c = mm % 10;
+		*--mp = '0' + c;
+		mm /= 10;
+	} while( mm > 0 );
+	do {
+		c = s % 10;
+		*--sp = '0' + c;
+		s /= 10;
+	} while( s > 0 );
+
+    if(hSave < 10) {*hp--; *hp = '0'+(uint8)0;}
+    if(mSave < 10) {*mp--; *mp = '0'+(uint8)0;}
+
+    if(hSave == h && mSave == m && activarAlarma && flag)
+    	iis_textToSpeech( "pipipipi " );
+
+    hpC = hp;
+    mpC = mp;
+
+    if(!menu){
+    	lcd_puts_xTam( 44, 60, BLACK, hp, 6);
+    	lcd_puts_xTam( 161, 60, BLACK, mp, 6);
+
+    	char * borrar = "  \0";
+    	if(sSave == 10 || sSave == 0)
+    		lcd_puts_xTam( 126, 147, WHITE, borrar, 3);
+    	if(sSave < 10)lcd_puts_xTam( 136, 145, BLACK, sp, 3);
+    	else lcd_puts_xTam( 126, 147, BLACK, sp, 3);
+    }
+}
+
+void TaskStart( void *pdata )
+{
+    const char id1 = '1'; /* Identificadores de tareas */
+    const char id2 = '2';
+
+    OS_ENTER_CRITICAL();
+    timer0_open_tick( OSTickISR, OS_TICKS_PER_SEC );  /* Instala OSTickISR como RTI del timer0                     */
+    OS_EXIT_CRITICAL();
+
+    OSTaskCreate( Task1, (void *)&id1, &Task1Stk[TASK_STK_SIZE - 1], 1 );      /* Crea las tareas de la aplicación */
+    OSTaskCreate( Task2, (void *)&id2, &Task2Stk[TASK_STK_SIZE - 1], 2 );
+
+    OSTaskDel(OS_PRIO_SELF);             /* La tarea inicial de arranque se auto-elimina */
+}
+
+void isr_tick( void )
+{
+	uart0_putTimeLCD( );
+	I_ISPC = BIT_TICK;
+}
+
+void isr_keypad( void )
+{
+    uint8 scancode, horas, minutos, c;
+    uint16 time;
+    char *str, *hmp, *hmpp, *s, *s2, *cOp1, *cOp2;
+    char buf[3], buf2[3];
+
+    scancode = keypad_getchartime( &time );
+    if(flag){
+    flag = FALSE;
+		switch( scancode )
+		{
+			case 0xc: //Entrar al menu y contHoras(en fijar hora)
+				menu = 1;
+				contH = contM = alarma = calculadora = ponerHora = 0;
+				op1 = op2 = contOp1 = contOp2 = resul = op = 0;
+				lcd_clear();
+				str = "OPCIONES DEL MENU";
+				lcd_puts_xTam( 5, 20, BLACK, str, 2);
+				iis_textToSpeech( str );
+				str = "0. Calculadora ";
+				lcd_puts_xTam( 10, 80, BLACK, str, 2);
+				iis_textToSpeech( str );
+				str = "1. Alarma";
+				lcd_puts_xTam( 10, 120, BLACK, str, 2);
+				iis_textToSpeech( str );
+				str = "2. Poner hora";
+				lcd_puts_xTam( 10, 160, BLACK, str, 2);
+				iis_textToSpeech( str );
+				break;
+			case 0xf: //Entrar modo reloj, activar/desactivar alarma y fijar hora
+				menu = calculadora = op1 = op2 = contOp1 = contOp2 = resul = op = 0;
+				if(ponerHora){
+					iis_textToSpeech( "Hora fijada" );
+					horaFijada = 1;
+					ponerHora = 0;
+				}
+				else {
+					if(!activarAlarma || alarma) {
+						activarAlarma = 1;
+						iis_textToSpeech( "Alarma activada" );
+					}
+					else {
+						activarAlarma = 0;
+						iis_textToSpeech( "Alarma desactivada" );
+					}
+					alarma = 0;
+				}
+
+				lcd_clear();
+				lcd_puts_xTam( 126, 72,BLACK, ":", 5);
+				break;
+			case 0x0: //Entrar opcion calculadora, Hora en fijar hora, numero 0 en alarma y calculadora
+				if(menu){
+					if(alarma){
+						if(contH < 2) {
+							if(contH == 0) h = 0;
+							iis_textToSpeech( "0" );
+							contH++;
+							hmp=intToStr(h, 'h');
+							if(h < 10) {*hmp--; *hmp = '0'+(uint8)0;}
+							lcd_puts_xTam( 44, 60, BLACK, hmp, 6);
+						}
+						else if(contH == 2 && contM < 2) {
+							if(contM == 0) m = 0;
+							iis_textToSpeech( "0" );
+							contM++;
+							hmpp=intToStr(m, 'm');
+							if(m < 10) {*hmpp--; *hmpp = '0'+(uint8)0;}
+							lcd_puts_xTam( 161, 60, BLACK, hmpp, 6);
+						}
+					}
+					else if(calculadora){
+						if(contOp1 < 2 && op1 > 0){
+							op1 *= 10;
+							contOp1++;
+
+							iis_textToSpeech( "0" );
+							cOp1=intToStrC(op1);
+							lcd_puts_xTam( 44, 72, BLACK, cOp1, 4);
+						}
+						else if(op == 1 && op2 > 0){
+							op2 *= 10;
+							contOp2++;
+
+							iis_textToSpeech( "0" );
+							cOp2=intToStrC(op2);
+							lcd_puts_xTam( 171, 72, BLACK, cOp2, 4);
+						}
+					}
+					else if(ponerHora){
+						contH++;
+						if(contH == 24) contH = 0;
+						hmp=intToStr(contH, 'h');
+						if(contH < 10) {*hmp--; *hmp = '0'+(uint8)0;}
+						lcd_puts_xTam( 44, 60, BLACK, hmp, 6);
+					}
+					else{
+						op1 = op2 = contOp1 = contOp2 = resul = op = 0;
+						calculadora = 1;
+						lcd_clear();
+						str = "Calculadora.";
+						lcd_puts_xTam( 10, 20, BLACK, str, 2);
+						iis_textToSpeech( "Introduzca operandos" );
+					}
+				}
+				break;
+			case 0x1: //Entrar opcion alarma, Minutos en fijar hora, numero 1 en alarma y calculadora
+				if(menu){
+					if(alarma){
+						if(contH < 2) {
+							if(contH == 0) h = 10;
+							else h += 1;
+							iis_textToSpeech( "1" );
+							contH++;
+							hmp=intToStr(h, 'h');
+							if(h < 10) {*hmp--; *hmp = '0'+(uint8)0;}
+							lcd_puts_xTam( 44, 60, BLACK, hmp, 6);
+						}
+						else if(contH == 2 && contM < 2) {
+							if(contM == 0) m = 10;
+							else m += 1;
+							iis_textToSpeech( "1" );
+							contM++;
+							hmpp=intToStr(m, 'm');
+							if(m < 10) {*hmpp--; *hmpp = '0'+(uint8)0;}
+							lcd_puts_xTam( 161, 60, BLACK, hmpp, 6);
+						}
+					}
+					else if(calculadora){
+						if(contOp1 < 2){
+							if(op1 == 0) op1 = 1;
+							else op1 = op1 * 10 + 1;
+							contOp1++;
+
+							iis_textToSpeech( "1" );
+							cOp1=intToStrC(op1);
+							lcd_puts_xTam( 44, 72, BLACK, cOp1, 4);
+						}
+						else if(op == 1){
+							if(op2 == 0) op2 = 1;
+							else op2 = op2 * 10 + 1;
+							contOp2++;
+
+							iis_textToSpeech( "1" );
+							cOp2=intToStrC(op2);
+							lcd_puts_xTam( 171, 72, BLACK, cOp2, 4);
+						}
+					}
+					else if(ponerHora){
+						contM++;
+						if(contM == 59) contM = 0;
+
+						hmpp=intToStr(contM, 'm');
+						if(contM < 10) {*hmpp--; *hmpp = '0'+(uint8)0;}
+						lcd_puts_xTam( 161, 60, BLACK, hmpp, 6);
+					}
+					else {
+						contH = contM = h = m = 0;
+						alarma = 1;
+						lcd_clear();
+						str = "Introduzca alarma";
+						lcd_puts_xTam( 10, 20, BLACK, str, 2);
+						iis_textToSpeech( str );
+						lcd_puts_xTam( 126, 72,BLACK, ":", 5);
+					}
+				}
+				break;
+			case 0x2:
+				if(alarma){
+					if(contH < 2) {
+						if(contH == 0) h = 20;
+						else h += 2;
+						iis_textToSpeech( "2" );
+						contH++;
+						hmp=intToStr(h, 'h');
+						if(h < 10) {*hmp--; *hmp = '0'+(uint8)0;}
+						lcd_puts_xTam( 44, 60, BLACK, hmp, 6);
+					}
+					else if(contH == 2 && contM < 2) {
+						if(contM == 0) m = 20;
+						else m += 2;
+						iis_textToSpeech( "2" );
+						contM++;
+						hmpp=intToStr(m, 'm');
+						if(m < 10) {*hmpp--; *hmpp = '0'+(uint8)0;}
+						lcd_puts_xTam( 161, 60, BLACK, hmpp, 6);
+					}
+				}
+				else if(calculadora){
+					if(contOp1 < 2){
+						if(op1 == 0) op1 = 2;
+						else op1 = op1 * 10 + 2;
+						contOp1++;
+
+						iis_textToSpeech( "2" );
+						cOp1=intToStrC(op1);
+						lcd_puts_xTam( 44, 72, BLACK, cOp1, 4);
+					}
+					else if(op == 1){
+						if(op2 == 0) op2 = 2;
+						else op2 = op2 * 10 + 2;
+						contOp2++;
+
+						iis_textToSpeech( "2" );
+						cOp2=intToStrC(op2);
+						lcd_puts_xTam( 171, 72, BLACK, cOp2, 4);
+					}
+				}
+				else {
+					contH = contM = 0;
+					ponerHora = 1;
+					lcd_clear();
+					lcd_puts_xTam( 126, 72,BLACK, ":", 5);
+					str = "Fija hora:";
+					lcd_puts_xTam( 10, 20, BLACK, str, 2);
+					iis_textToSpeech( str );
+				}
+				break;
+			case 0x3:
+			case 0x4:
+			case 0x5:
+				if(alarma){
+					if((contH == 1 && h == 20 && scancode == 0x3)
+						|| (contH == 1 && h != 20 && (scancode == 0x4 || scancode == 0x5))) {
+						s = buf + 2;
+						h += scancode;
+						*s = (uint8)scancode + '0';
+
+						iis_textToSpeech( s );
+						contH++;
+						hmp=intToStr(h, 'h');
+						lcd_puts_xTam( 44, 60, BLACK, hmp, 6);
+					}
+					else if(contH == 2 && contM < 2) {
+						s = buf + 2;
+						if(contM == 0) m = scancode * 10;
+						else m += scancode;
+						*s = (uint8)scancode + '0';
+
+						iis_textToSpeech( s );
+						contM++;
+						hmpp=intToStr(m, 'm');
+						if(m < 10) {*hmpp--; *hmpp = '0'+(uint8)0;}
+						lcd_puts_xTam( 161, 60, BLACK, hmpp, 6);
+					}
+				}
+				else if(calculadora){
+					if(contOp1 < 2){
+						s2 = buf2 + 2;
+						if(op1 == 0) op1 = scancode;
+						else op1 = op1 * 10 + scancode;
+						*s2 = (uint8)scancode + '0';
+						contOp1++;
+
+						iis_textToSpeech( s2 );
+						cOp1=intToStrC(op1);
+						lcd_puts_xTam( 44, 72, BLACK, cOp1, 4);
+					}
+					else if(op == 1){
+						s2 = buf2 + 2;
+						if(op2 == 0) op2 = scancode;
+						else op2 = op2 * 10 + scancode;
+						*s2 = (uint8)scancode + '0';
+						contOp2++;
+
+						iis_textToSpeech( s2 );
+						cOp2=intToStrC(op2);
+						lcd_puts_xTam( 171, 72, BLACK, cOp2, 4);
+					}
+				}
+				break;
+			case 0x6:
+			case 0x7:
+			case 0x8:
+			case 0x9:
+				if(alarma){
+					if(contH == 1 && h != 20) {
+						s = buf + 2;
+						h += (uint8)scancode;
+						*s = (uint8)scancode + '0';
+
+						iis_textToSpeech( s );
+						contH++;
+						hmp=intToStr(h, 'h');
+						lcd_puts_xTam( 44, 60, BLACK, hmp, 6);
+					}
+					else if(contH == 2 && contM == 1) {
+						s = buf + 2;
+						if(contM == 0) m = scancode * 10;
+						else m += scancode;
+						*s = (uint8)scancode + '0';
+
+						iis_textToSpeech( s );
+						contM++;
+						hmpp=intToStr(m, 'm');
+						if(m < 10) {*hmpp--; *hmpp = '0'+(uint8)0;}
+						lcd_puts_xTam( 161, 60, BLACK, hmpp, 6);
+					}
+				}
+				else if(calculadora == 1){
+					if(contOp1 < 2){
+						s2 = buf2 + 2;
+						if(op1 == 0) op1 = scancode;
+						else op1 = op1 * 10 + scancode;
+						*s2 = (uint8)scancode + '0';
+						contOp1++;
+
+						iis_textToSpeech( s2 );
+						cOp1=intToStrC(op1);
+						lcd_puts_xTam( 44, 72, BLACK, cOp1, 4);
+					}
+					else if(op == 1){
+						s2 = buf2 + 2;
+						if(op2 == 0) op2 = scancode;
+						else op2 = op2 * 10 + scancode;
+						*s2 = (uint8)scancode + '0';
+						contOp2++;
+
+						iis_textToSpeech( s2 );
+						cOp2=intToStrC(op2);
+						lcd_puts_xTam( 171, 72, BLACK, cOp2, 4);
+					}
+				}
+				break;
+			case 0xa:
+				if(calculadora && contOp1 > 0){
+					if(contOp1 < 2) contOp1 = 2;
+					opChar = '+';
+					iis_textToSpeech( "mas" );
+					lcd_puts_xTam( 126, 72,BLACK, "+", 4);
+					op = 1;
+				}
+				break;
+			case 0xb:
+				if(calculadora && contOp1 > 0){
+					if(contOp1 < 2) contOp1 = 2;
+					opChar = '-';
+					iis_textToSpeech( "menos" );
+					lcd_puts_xTam( 126, 72,BLACK, "-", 4);
+					op = 1;
+				}
+				break;
+			case 0xd:
+				if(calculadora && contOp1 > 0){
+					if(contOp1 < 2) contOp1 = 2;
+					opChar = 'X';
+					iis_textToSpeech( "por" );
+					lcd_puts_xTam( 126, 72,BLACK, "x", 4);
+					op = 1;
+				}
+				break;
+			case 0xe:
+				if(calculadora && op == 1){
+					s2 = buf2 + 2;
+					if(contOp2 < 2) contOp2 = 2;
+					iis_textToSpeech( "Igual a" );
+					lcd_puts_xTam( 126, 122,BLACK, "=", 4);
+
+					if(opChar == '+') resul = op1 + op2;
+					else if(opChar == '-') resul = op1 - op2;
+					else if(opChar == 'X') resul = op1 * op2;
+
+					if(resul < 0) {
+						resul *= -1;
+						iis_textToSpeech("menos");
+					}
+					s2=intToStrC(resul);
+					if(resul < 60) iis_textToSpeech( s2 );
+					else iis_textToSpeech( "numero mayor que 59" );
+					lcd_puts_xTam( 116, 172,BLACK, s2, 4);
+					calculadora = 0;
+				}
+				break;
+
+		}
+		flag = TRUE;
+    }
+    I_ISPC = BIT_KEYPAD;
+}
+
+void Task1( void *id)
+{
+	uint16 x, y, ms;
+	lcd_puts_xTam( 126, 72,BLACK, ":", 5);
+	rtc_open( isr_tick, 127 );
+
+	while( 1 ){
+		OSTimeDly( 10 );
+
+		while ((PDATG & (1 << 2)));
+		timer3_start();
+		sw_delay_ms(TS_DOWN_DELAY);
+
+		while (!(PDATG & (1 << 2)));
+
+		if(flag){
+			flag = FALSE;
+			iis_textToSpeech( "Son las" );
+			iis_textToSpeech( hpC);
+			iis_textToSpeech( "i" );
+			iis_textToSpeech( mpC );
+			flag = TRUE;
+		}
+	}
+}
+
+void Task2( void *id)
+{
+    while( 1 )
+    {
+    	keypad_open( isr_keypad );
+        OSTimeDly( 15 );
+    }
+}
+
+void main( void )
+{
+	menu = alarma = calculadora = ponerHora = contH = contM = h = m = activarAlarma = 0;
+	op1 = op2 = contOp1 = contOp2 = resul = op = horaFijada = 0;
+	flag = TRUE;
+	sys_init();
+	timers_init();
+	rtc_init();
+	lcd_init();
+    adc_init();
+    PDATE = (0xB << 4);
+    keypad_init();
+    uda1341ts_init();
+    iis_init( IIS_POLLING );
+
+    lcd_clear();
+    lcd_on();
+    ts_on();
+    ts_off();
+    uda1341ts_setvol( VOL_MAX );
+
+    OSInit();                                                              /* Inicializa el kernel              */
+    uart0Sem = OSSemCreate( 1 );                                           /* Crea recursos                     */
+    keypadQueue = OSQCreate( &keypadQueueTable[0], KEYPAD_QUEUE_SIZE );
+    OSTaskCreate( TaskStart, NULL, &TaskStartStk[TASK_STK_SIZE - 1], 0 );  /* Crea la tarea inicial de arranque */
+    OSStart();                                                             /* Inicia multitarea                 */
+
+}

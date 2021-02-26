@@ -1,0 +1,227 @@
+   1              		.cpu arm7tdmi
+   2              		.fpu softvfp
+   3              		.eabi_attribute 20, 1
+   4              		.eabi_attribute 21, 1
+   5              		.eabi_attribute 23, 3
+   6              		.eabi_attribute 24, 1
+   7              		.eabi_attribute 25, 1
+   8              		.eabi_attribute 26, 1
+   9              		.eabi_attribute 30, 6
+  10              		.eabi_attribute 18, 4
+  11              		.file	"systemLab3.c"
+  21              	.Ltext0:
+  22              		.file 1 "../systemLab3.c"
+ 1691              		.align	2
+ 1693              	port_init:
+ 1694              	.LFB0:
+   1:../systemLab3.c **** #include <s3c44b0x.h>
+   2:../systemLab3.c **** #include "systemLab3.h"    
+   3:../systemLab3.c **** 
+   4:../systemLab3.c **** static void port_init( void )
+   5:../systemLab3.c **** {
+ 1695              		.loc 1 5 0
+ 1696              		.cfi_startproc
+ 1697              		@ Function supports interworking.
+ 1698              		@ args = 0, pretend = 0, frame = 0
+ 1699              		@ frame_needed = 1, uses_anonymous_args = 0
+ 1700 0000 0DC0A0E1 		mov	ip, sp
+ 1701              	.LCFI0:
+ 1702              		.cfi_def_cfa_register 12
+ 1703 0004 00D82DE9 		stmfd	sp!, {fp, ip, lr, pc}
+ 1704 0008 04B04CE2 		sub	fp, ip, #4
+ 1705              		.cfi_offset 14, -8
+ 1706              		.cfi_offset 13, -12
+ 1707              		.cfi_offset 11, -16
+ 1708              	.LCFI1:
+ 1709              		.cfi_def_cfa 11, 4
+   6:../systemLab3.c ****     PDATA = ~0;
+ 1710              		.loc 1 6 0
+ 1711 000c 08319FE5 		ldr	r3, .L2
+ 1712 0010 0020E0E3 		mvn	r2, #0
+ 1713 0014 002083E5 		str	r2, [r3, #0]
+   7:../systemLab3.c ****     PCONA = 0x3FF;
+ 1714              		.loc 1 7 0
+ 1715 0018 00319FE5 		ldr	r3, .L2+4
+ 1716 001c 00219FE5 		ldr	r2, .L2+8
+ 1717 0020 002083E5 		str	r2, [r3, #0]
+   8:../systemLab3.c **** 
+   9:../systemLab3.c ****     PDATB = ~0;
+ 1718              		.loc 1 9 0
+ 1719 0024 FC309FE5 		ldr	r3, .L2+12
+ 1720 0028 0020E0E3 		mvn	r2, #0
+ 1721 002c 002083E5 		str	r2, [r3, #0]
+  10:../systemLab3.c **** 	PCONB &= ~( (1<<10) | 1<<9 );  // PB[10] = out, PF[9] = out
+ 1722              		.loc 1 10 0
+ 1723 0030 F4309FE5 		ldr	r3, .L2+16
+ 1724 0034 F0209FE5 		ldr	r2, .L2+16
+ 1725 0038 002092E5 		ldr	r2, [r2, #0]
+ 1726 003c 062CC2E3 		bic	r2, r2, #1536
+ 1727 0040 002083E5 		str	r2, [r3, #0]
+  11:../systemLab3.c **** 
+  12:../systemLab3.c ****     PDATC = ~0;
+ 1728              		.loc 1 12 0
+ 1729 0044 E4309FE5 		ldr	r3, .L2+20
+ 1730 0048 0020E0E3 		mvn	r2, #0
+ 1731 004c 002083E5 		str	r2, [r3, #0]
+  13:../systemLab3.c ****     PCONC = 0xAAAAAAAA;
+ 1732              		.loc 1 13 0
+ 1733 0050 DC309FE5 		ldr	r3, .L2+24
+ 1734 0054 DC209FE5 		ldr	r2, .L2+28
+ 1735 0058 002083E5 		str	r2, [r3, #0]
+  14:../systemLab3.c ****     PUPC  = 0x0000;
+ 1736              		.loc 1 14 0
+ 1737 005c D8309FE5 		ldr	r3, .L2+32
+ 1738 0060 0020A0E3 		mov	r2, #0
+ 1739 0064 002083E5 		str	r2, [r3, #0]
+  15:../systemLab3.c **** 
+  16:../systemLab3.c ****     PDATD = ~0;
+ 1740              		.loc 1 16 0
+ 1741 0068 D0309FE5 		ldr	r3, .L2+36
+ 1742 006c 0020E0E3 		mvn	r2, #0
+ 1743 0070 002083E5 		str	r2, [r3, #0]
+  17:../systemLab3.c ****     PCOND = 0x0000;
+ 1744              		.loc 1 17 0
+ 1745 0074 C8309FE5 		ldr	r3, .L2+40
+ 1746 0078 0020A0E3 		mov	r2, #0
+ 1747 007c 002083E5 		str	r2, [r3, #0]
+  18:../systemLab3.c ****     PUPD  = 0x00;
+ 1748              		.loc 1 18 0
+ 1749 0080 C0309FE5 		ldr	r3, .L2+44
+ 1750 0084 0020A0E3 		mov	r2, #0
+ 1751 0088 002083E5 		str	r2, [r3, #0]
+  19:../systemLab3.c ****     
+  20:../systemLab3.c ****     PDATE = ~0;
+ 1752              		.loc 1 20 0
+ 1753 008c B8309FE5 		ldr	r3, .L2+48
+ 1754 0090 0020E0E3 		mvn	r2, #0
+ 1755 0094 002083E5 		str	r2, [r3, #0]
+  21:../systemLab3.c ****     PCONE = 0x00000;
+ 1756              		.loc 1 21 0
+ 1757 0098 B0309FE5 		ldr	r3, .L2+52
+ 1758 009c 0020A0E3 		mov	r2, #0
+ 1759 00a0 002083E5 		str	r2, [r3, #0]
+  22:../systemLab3.c ****     PUPE  = 0x000;
+ 1760              		.loc 1 22 0
+ 1761 00a4 A8309FE5 		ldr	r3, .L2+56
+ 1762 00a8 0020A0E3 		mov	r2, #0
+ 1763 00ac 002083E5 		str	r2, [r3, #0]
+  23:../systemLab3.c **** 
+  24:../systemLab3.c ****     PDATF = ~0;
+ 1764              		.loc 1 24 0
+ 1765 00b0 A0309FE5 		ldr	r3, .L2+60
+ 1766 00b4 0020E0E3 		mvn	r2, #0
+ 1767 00b8 002083E5 		str	r2, [r3, #0]
+  25:../systemLab3.c ****     PCONF = 0x0000;
+ 1768              		.loc 1 25 0
+ 1769 00bc 98309FE5 		ldr	r3, .L2+64
+ 1770 00c0 0020A0E3 		mov	r2, #0
+ 1771 00c4 002083E5 		str	r2, [r3, #0]
+  26:../systemLab3.c ****     PUPF  = 0x000;
+ 1772              		.loc 1 26 0
+ 1773 00c8 90309FE5 		ldr	r3, .L2+68
+ 1774 00cc 0020A0E3 		mov	r2, #0
+ 1775 00d0 002083E5 		str	r2, [r3, #0]
+  27:../systemLab3.c ****     
+  28:../systemLab3.c ****     PDATG = ~0;
+ 1776              		.loc 1 28 0
+ 1777 00d4 88309FE5 		ldr	r3, .L2+72
+ 1778 00d8 0020E0E3 		mvn	r2, #0
+ 1779 00dc 002083E5 		str	r2, [r3, #0]
+  29:../systemLab3.c ****     PCONG = 0x0000;
+ 1780              		.loc 1 29 0
+ 1781 00e0 80309FE5 		ldr	r3, .L2+76
+ 1782 00e4 0020A0E3 		mov	r2, #0
+ 1783 00e8 002083E5 		str	r2, [r3, #0]
+  30:../systemLab3.c ****     PUPG  = 0x00;
+ 1784              		.loc 1 30 0
+ 1785 00ec 78309FE5 		ldr	r3, .L2+80
+ 1786 00f0 0020A0E3 		mov	r2, #0
+ 1787 00f4 002083E5 		str	r2, [r3, #0]
+  31:../systemLab3.c **** 
+  32:../systemLab3.c ****     SPUCR = 0x4;
+ 1788              		.loc 1 32 0
+ 1789 00f8 70309FE5 		ldr	r3, .L2+84
+ 1790 00fc 0420A0E3 		mov	r2, #4
+ 1791 0100 002083E5 		str	r2, [r3, #0]
+  33:../systemLab3.c ****     
+  34:../systemLab3.c ****     EXTINT = 0x00000000;
+ 1792              		.loc 1 34 0
+ 1793 0104 68309FE5 		ldr	r3, .L2+88
+ 1794 0108 0020A0E3 		mov	r2, #0
+ 1795 010c 002083E5 		str	r2, [r3, #0]
+  35:../systemLab3.c **** }
+ 1796              		.loc 1 35 0
+ 1797 0110 0CD04BE2 		sub	sp, fp, #12
+ 1798 0114 00689DE8 		ldmfd	sp, {fp, sp, lr}
+ 1799 0118 1EFF2FE1 		bx	lr
+ 1800              	.L3:
+ 1801              		.align	2
+ 1802              	.L2:
+ 1803 011c 0400D201 		.word	30539780
+ 1804 0120 0000D201 		.word	30539776
+ 1805 0124 FF030000 		.word	1023
+ 1806 0128 0C00D201 		.word	30539788
+ 1807 012c 0800D201 		.word	30539784
+ 1808 0130 1400D201 		.word	30539796
+ 1809 0134 1000D201 		.word	30539792
+ 1810 0138 AAAAAAAA 		.word	-1431655766
+ 1811 013c 1800D201 		.word	30539800
+ 1812 0140 2000D201 		.word	30539808
+ 1813 0144 1C00D201 		.word	30539804
+ 1814 0148 2400D201 		.word	30539812
+ 1815 014c 2C00D201 		.word	30539820
+ 1816 0150 2800D201 		.word	30539816
+ 1817 0154 3000D201 		.word	30539824
+ 1818 0158 3800D201 		.word	30539832
+ 1819 015c 3400D201 		.word	30539828
+ 1820 0160 3C00D201 		.word	30539836
+ 1821 0164 4400D201 		.word	30539844
+ 1822 0168 4000D201 		.word	30539840
+ 1823 016c 4800D201 		.word	30539848
+ 1824 0170 4C00D201 		.word	30539852
+ 1825 0174 5000D201 		.word	30539856
+ 1826              		.cfi_endproc
+ 1827              	.LFE0:
+ 1829              		.align	2
+ 1830              		.global	sys_init
+ 1832              	sys_init:
+ 1833              	.LFB1:
+  36:../systemLab3.c **** 
+  37:../systemLab3.c **** void sys_init( void )
+  38:../systemLab3.c **** {
+ 1834              		.loc 1 38 0
+ 1835              		.cfi_startproc
+ 1836              		@ Function supports interworking.
+ 1837              		@ args = 0, pretend = 0, frame = 0
+ 1838              		@ frame_needed = 1, uses_anonymous_args = 0
+ 1839 0178 0DC0A0E1 		mov	ip, sp
+ 1840              	.LCFI2:
+ 1841              		.cfi_def_cfa_register 12
+ 1842 017c 00D82DE9 		stmfd	sp!, {fp, ip, lr, pc}
+ 1843 0180 04B04CE2 		sub	fp, ip, #4
+ 1844              		.cfi_offset 14, -8
+ 1845              		.cfi_offset 13, -12
+ 1846              		.cfi_offset 11, -16
+ 1847              	.LCFI3:
+ 1848              		.cfi_def_cfa 11, 4
+  39:../systemLab3.c ****     port_init();    
+ 1849              		.loc 1 39 0
+ 1850 0184 9DFFFFEB 		bl	port_init
+  40:../systemLab3.c **** }
+ 1851              		.loc 1 40 0
+ 1852 0188 0CD04BE2 		sub	sp, fp, #12
+ 1853 018c 00689DE8 		ldmfd	sp, {fp, sp, lr}
+ 1854 0190 1EFF2FE1 		bx	lr
+ 1855              		.cfi_endproc
+ 1856              	.LFE1:
+ 1858              	.Letext0:
+DEFINED SYMBOLS
+                            *ABS*:00000000 systemLab3.c
+C:\Users\baneg\AppData\Local\Temp\ccSOz7WV.s:1691   .text:00000000 $a
+C:\Users\baneg\AppData\Local\Temp\ccSOz7WV.s:1693   .text:00000000 port_init
+C:\Users\baneg\AppData\Local\Temp\ccSOz7WV.s:1803   .text:0000011c $d
+C:\Users\baneg\AppData\Local\Temp\ccSOz7WV.s:1829   .text:00000178 $a
+C:\Users\baneg\AppData\Local\Temp\ccSOz7WV.s:1832   .text:00000178 sys_init
+                     .debug_frame:00000010 $d
+
+NO UNDEFINED SYMBOLS

@@ -1,0 +1,815 @@
+
+lab4.elf:     file format elf32-littlearm
+
+Sections:
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .text         0000083c  0c100000  0c100000  00008000  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+  1 .rodata       00000104  0c10083c  0c10083c  0000883c  2**2
+                  CONTENTS, ALLOC, LOAD, READONLY, DATA
+  2 .debug_abbrev 000001b7  00000000  00000000  00008940  2**0
+                  CONTENTS, READONLY, DEBUGGING
+  3 .debug_info   000003dc  00000000  00000000  00008af7  2**0
+                  CONTENTS, READONLY, DEBUGGING
+  4 .debug_line   000002ab  00000000  00000000  00008ed3  2**0
+                  CONTENTS, READONLY, DEBUGGING
+  5 .debug_macinfo 0000a97b  00000000  00000000  0000917e  2**0
+                  CONTENTS, READONLY, DEBUGGING
+  6 .debug_loc    00000210  00000000  00000000  00013af9  2**0
+                  CONTENTS, READONLY, DEBUGGING
+  7 .debug_pubnames 000000e1  00000000  00000000  00013d09  2**0
+                  CONTENTS, READONLY, DEBUGGING
+  8 .debug_pubtypes 0000007e  00000000  00000000  00013dea  2**0
+                  CONTENTS, READONLY, DEBUGGING
+  9 .debug_aranges 00000060  00000000  00000000  00013e68  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 10 .debug_str    0000017b  00000000  00000000  00013ec8  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 11 .comment      0000002a  00000000  00000000  00014043  2**0
+                  CONTENTS, READONLY
+ 12 .ARM.attributes 00000032  00000000  00000000  0001406d  2**0
+                  CONTENTS, READONLY
+ 13 .debug_frame  000001b4  00000000  00000000  000140a0  2**2
+                  CONTENTS, READONLY, DEBUGGING
+
+Disassembly of section .text:
+
+0c100000 <main>:
+#include <common_types.h>
+#include "systemLab4.h"
+#include <uart.h>
+
+void main( void )
+{
+ c100000:	e1a0c00d 	mov	ip, sp
+ c100004:	e92dd800 	push	{fp, ip, lr, pc}
+ c100008:	e24cb004 	sub	fp, ip, #4
+ c10000c:	e24ddf42 	sub	sp, sp, #264	; 0x108
+    char   s[256];
+    int32  i = 0;
+ c100010:	e3a03000 	mov	r3, #0
+ c100014:	e50b3010 	str	r3, [fp, #-16]
+    uint32 u = 0;
+ c100018:	e3a03000 	mov	r3, #0
+ c10001c:	e50b3014 	str	r3, [fp, #-20]	; 0xffffffec
+    
+    sys_init();
+ c100020:	eb0000ad 	bl	c1002dc <sys_init>
+    uart0_init();
+ c100024:	eb0000d3 	bl	c100378 <uart0_init>
+
+    /************************************/
+
+    uart0_puts( "\n\nEste programa fue compilado el dia " );
+ c100028:	e59f00e0 	ldr	r0, [pc, #224]	; c100110 <main+0x110>
+ c10002c:	eb000110 	bl	c100474 <uart0_puts>
+    uart0_puts( __DATE__ );
+ c100030:	e59f00dc 	ldr	r0, [pc, #220]	; c100114 <main+0x114>
+ c100034:	eb00010e 	bl	c100474 <uart0_puts>
+    uart0_puts( " a las " );
+ c100038:	e59f00d8 	ldr	r0, [pc, #216]	; c100118 <main+0x118>
+ c10003c:	eb00010c 	bl	c100474 <uart0_puts>
+    uart0_puts( __TIME__ );
+ c100040:	e59f00d4 	ldr	r0, [pc, #212]	; c10011c <main+0x11c>
+ c100044:	eb00010a 	bl	c100474 <uart0_puts>
+    uart0_puts( "\n" );
+ c100048:	e59f00d0 	ldr	r0, [pc, #208]	; c100120 <main+0x120>
+ c10004c:	eb000108 	bl	c100474 <uart0_puts>
+
+    /************************************/
+
+    while( 1 ){
+        uart0_puts( "  - Escriba algo: " );
+ c100050:	e59f00cc 	ldr	r0, [pc, #204]	; c100124 <main+0x124>
+ c100054:	eb000106 	bl	c100474 <uart0_puts>
+        uart0_gets( s );
+ c100058:	e24b3f45 	sub	r3, fp, #276	; 0x114
+ c10005c:	e1a00003 	mov	r0, r3
+ c100060:	eb000188 	bl	c100688 <uart0_gets>
+        uart0_puts( "  - Ha escrito: " );
+ c100064:	e59f00bc 	ldr	r0, [pc, #188]	; c100128 <main+0x128>
+ c100068:	eb000101 	bl	c100474 <uart0_puts>
+        uart0_puts( s );
+ c10006c:	e24b3f45 	sub	r3, fp, #276	; 0x114
+ c100070:	e1a00003 	mov	r0, r3
+ c100074:	eb0000fe 	bl	c100474 <uart0_puts>
+        uart0_putchar( '\n' );
+ c100078:	e3a0000a 	mov	r0, #10
+ c10007c:	eb0000d6 	bl	c1003dc <uart0_putchar>
+        uart0_puts( "  - Escriba su nombre: " );
+ c100080:	e59f00a4 	ldr	r0, [pc, #164]	; c10012c <main+0x12c>
+ c100084:	eb0000fa 	bl	c100474 <uart0_puts>
+        uart0_gets( s );
+ c100088:	e24b3f45 	sub	r3, fp, #276	; 0x114
+ c10008c:	e1a00003 	mov	r0, r3
+ c100090:	eb00017c 	bl	c100688 <uart0_gets>
+        uart0_puts( "  - Escriba su edad: ");
+ c100094:	e59f0094 	ldr	r0, [pc, #148]	; c100130 <main+0x130>
+ c100098:	eb0000f5 	bl	c100474 <uart0_puts>
+        i = uart0_getint();
+ c10009c:	eb000195 	bl	c1006f8 <uart0_getint>
+ c1000a0:	e50b0010 	str	r0, [fp, #-16]
+        uart0_puts( "  - D. " );
+ c1000a4:	e59f0088 	ldr	r0, [pc, #136]	; c100134 <main+0x134>
+ c1000a8:	eb0000f1 	bl	c100474 <uart0_puts>
+        uart0_puts( s );
+ c1000ac:	e24b3f45 	sub	r3, fp, #276	; 0x114
+ c1000b0:	e1a00003 	mov	r0, r3
+ c1000b4:	eb0000ee 	bl	c100474 <uart0_puts>
+        uart0_puts( ", tiene " );
+ c1000b8:	e59f0078 	ldr	r0, [pc, #120]	; c100138 <main+0x138>
+ c1000bc:	eb0000ec 	bl	c100474 <uart0_puts>
+        uart0_putint( i );
+ c1000c0:	e51b0010 	ldr	r0, [fp, #-16]
+ c1000c4:	eb0000fe 	bl	c1004c4 <uart0_putint>
+        uart0_puts( " annos.\n" );
+ c1000c8:	e59f006c 	ldr	r0, [pc, #108]	; c10013c <main+0x13c>
+ c1000cc:	eb0000e8 	bl	c100474 <uart0_puts>
+        uart0_puts( "  - Escriba un numero hexadecimal: ");
+ c1000d0:	e59f0068 	ldr	r0, [pc, #104]	; c100140 <main+0x140>
+ c1000d4:	eb0000e6 	bl	c100474 <uart0_puts>
+        u = uart0_gethex();
+ c1000d8:	eb0001b0 	bl	c1007a0 <uart0_gethex>
+ c1000dc:	e50b0014 	str	r0, [fp, #-20]	; 0xffffffec
+        uart0_puts( "  - Ha escrito 0x" );
+ c1000e0:	e59f005c 	ldr	r0, [pc, #92]	; c100144 <main+0x144>
+ c1000e4:	eb0000e2 	bl	c100474 <uart0_puts>
+        uart0_puthex( u );
+ c1000e8:	e51b0014 	ldr	r0, [fp, #-20]	; 0xffffffec
+ c1000ec:	eb000137 	bl	c1005d0 <uart0_puthex>
+        uart0_puts( " (" );
+ c1000f0:	e59f0050 	ldr	r0, [pc, #80]	; c100148 <main+0x148>
+ c1000f4:	eb0000de 	bl	c100474 <uart0_puts>
+        uart0_putint( u );
+ c1000f8:	e51b3014 	ldr	r3, [fp, #-20]	; 0xffffffec
+ c1000fc:	e1a00003 	mov	r0, r3
+ c100100:	eb0000ef 	bl	c1004c4 <uart0_putint>
+        uart0_puts( ").\n" );
+ c100104:	e59f0040 	ldr	r0, [pc, #64]	; c10014c <main+0x14c>
+ c100108:	eb0000d9 	bl	c100474 <uart0_puts>
+    };
+ c10010c:	eaffffcf 	b	c100050 <main+0x50>
+ c100110:	0c10083c 	.word	0x0c10083c
+ c100114:	0c100864 	.word	0x0c100864
+ c100118:	0c100870 	.word	0x0c100870
+ c10011c:	0c100878 	.word	0x0c100878
+ c100120:	0c100884 	.word	0x0c100884
+ c100124:	0c100888 	.word	0x0c100888
+ c100128:	0c10089c 	.word	0x0c10089c
+ c10012c:	0c1008b0 	.word	0x0c1008b0
+ c100130:	0c1008c8 	.word	0x0c1008c8
+ c100134:	0c1008e0 	.word	0x0c1008e0
+ c100138:	0c1008e8 	.word	0x0c1008e8
+ c10013c:	0c1008f4 	.word	0x0c1008f4
+ c100140:	0c100900 	.word	0x0c100900
+ c100144:	0c100924 	.word	0x0c100924
+ c100148:	0c100938 	.word	0x0c100938
+ c10014c:	0c10093c 	.word	0x0c10093c
+
+0c100150 <port_init>:
+#include <s3c44b0x.h>
+#include "systemLab4.h"    
+
+static void port_init( void )
+{
+ c100150:	e1a0c00d 	mov	ip, sp
+ c100154:	e92dd800 	push	{fp, ip, lr, pc}
+ c100158:	e24cb004 	sub	fp, ip, #4
+	    PDATA = ~0;
+ c10015c:	e59f3100 	ldr	r3, [pc, #256]	; c100264 <port_init+0x114>
+ c100160:	e3e02000 	mvn	r2, #0
+ c100164:	e5832000 	str	r2, [r3]
+	    PCONA = 0xFE;
+ c100168:	e59f30f8 	ldr	r3, [pc, #248]	; c100268 <port_init+0x118>
+ c10016c:	e3a020fe 	mov	r2, #254	; 0xfe
+ c100170:	e5832000 	str	r2, [r3]
+
+	    PDATB = ~0;
+ c100174:	e59f30f0 	ldr	r3, [pc, #240]	; c10026c <port_init+0x11c>
+ c100178:	e3e02000 	mvn	r2, #0
+ c10017c:	e5832000 	str	r2, [r3]
+		PCONB = 0x14F;
+ c100180:	e59f30e8 	ldr	r3, [pc, #232]	; c100270 <port_init+0x120>
+ c100184:	e59f20e8 	ldr	r2, [pc, #232]	; c100274 <port_init+0x124>
+ c100188:	e5832000 	str	r2, [r3]
+
+	    PDATC = ~0;
+ c10018c:	e59f30e4 	ldr	r3, [pc, #228]	; c100278 <port_init+0x128>
+ c100190:	e3e02000 	mvn	r2, #0
+ c100194:	e5832000 	str	r2, [r3]
+	    PCONC = 0x5FF555FF;
+ c100198:	e59f30dc 	ldr	r3, [pc, #220]	; c10027c <port_init+0x12c>
+ c10019c:	e59f20dc 	ldr	r2, [pc, #220]	; c100280 <port_init+0x130>
+ c1001a0:	e5832000 	str	r2, [r3]
+	    PUPC  = 0x94FB;
+ c1001a4:	e59f30d8 	ldr	r3, [pc, #216]	; c100284 <port_init+0x134>
+ c1001a8:	e59f20d8 	ldr	r2, [pc, #216]	; c100288 <port_init+0x138>
+ c1001ac:	e5832000 	str	r2, [r3]
+
+	    PDATD = ~0;
+ c1001b0:	e59f30d4 	ldr	r3, [pc, #212]	; c10028c <port_init+0x13c>
+ c1001b4:	e3e02000 	mvn	r2, #0
+ c1001b8:	e5832000 	str	r2, [r3]
+	    PCOND = 0xAAAA;
+ c1001bc:	e59f30cc 	ldr	r3, [pc, #204]	; c100290 <port_init+0x140>
+ c1001c0:	e59f20cc 	ldr	r2, [pc, #204]	; c100294 <port_init+0x144>
+ c1001c4:	e5832000 	str	r2, [r3]
+	    PUPD  = 0xFF;
+ c1001c8:	e59f30c8 	ldr	r3, [pc, #200]	; c100298 <port_init+0x148>
+ c1001cc:	e3a020ff 	mov	r2, #255	; 0xff
+ c1001d0:	e5832000 	str	r2, [r3]
+
+	    PDATE = ~0;
+ c1001d4:	e59f30c0 	ldr	r3, [pc, #192]	; c10029c <port_init+0x14c>
+ c1001d8:	e3e02000 	mvn	r2, #0
+ c1001dc:	e5832000 	str	r2, [r3]
+	    PCONE = 0x255A9;
+ c1001e0:	e59f30b8 	ldr	r3, [pc, #184]	; c1002a0 <port_init+0x150>
+ c1001e4:	e59f20b8 	ldr	r2, [pc, #184]	; c1002a4 <port_init+0x154>
+ c1001e8:	e5832000 	str	r2, [r3]
+	    PUPE  = 0x1FB;
+ c1001ec:	e59f30b4 	ldr	r3, [pc, #180]	; c1002a8 <port_init+0x158>
+ c1001f0:	e59f20b4 	ldr	r2, [pc, #180]	; c1002ac <port_init+0x15c>
+ c1001f4:	e5832000 	str	r2, [r3]
+
+	    PDATF = ~0;
+ c1001f8:	e59f30b0 	ldr	r3, [pc, #176]	; c1002b0 <port_init+0x160>
+ c1001fc:	e3e02000 	mvn	r2, #0
+ c100200:	e5832000 	str	r2, [r3]
+	    PCONF = 0x251A;
+ c100204:	e59f30a8 	ldr	r3, [pc, #168]	; c1002b4 <port_init+0x164>
+ c100208:	e59f20a8 	ldr	r2, [pc, #168]	; c1002b8 <port_init+0x168>
+ c10020c:	e5832000 	str	r2, [r3]
+	    PUPF  = 0x74;
+ c100210:	e59f30a4 	ldr	r3, [pc, #164]	; c1002bc <port_init+0x16c>
+ c100214:	e3a02074 	mov	r2, #116	; 0x74
+ c100218:	e5832000 	str	r2, [r3]
+
+	    PDATG = ~0;
+ c10021c:	e59f309c 	ldr	r3, [pc, #156]	; c1002c0 <port_init+0x170>
+ c100220:	e3e02000 	mvn	r2, #0
+ c100224:	e5832000 	str	r2, [r3]
+	    PCONG = 0xF5FF;
+ c100228:	e59f3094 	ldr	r3, [pc, #148]	; c1002c4 <port_init+0x174>
+ c10022c:	e59f2094 	ldr	r2, [pc, #148]	; c1002c8 <port_init+0x178>
+ c100230:	e5832000 	str	r2, [r3]
+	    PUPG  = 0x30;
+ c100234:	e59f3090 	ldr	r3, [pc, #144]	; c1002cc <port_init+0x17c>
+ c100238:	e3a02030 	mov	r2, #48	; 0x30
+ c10023c:	e5832000 	str	r2, [r3]
+
+	    SPUCR = 0x7;
+ c100240:	e59f3088 	ldr	r3, [pc, #136]	; c1002d0 <port_init+0x180>
+ c100244:	e3a02007 	mov	r2, #7
+ c100248:	e5832000 	str	r2, [r3]
+
+	    EXTINT = 0x22000220;
+ c10024c:	e59f3080 	ldr	r3, [pc, #128]	; c1002d4 <port_init+0x184>
+ c100250:	e59f2080 	ldr	r2, [pc, #128]	; c1002d8 <port_init+0x188>
+ c100254:	e5832000 	str	r2, [r3]
+}
+ c100258:	e24bd00c 	sub	sp, fp, #12
+ c10025c:	e89d6800 	ldm	sp, {fp, sp, lr}
+ c100260:	e12fff1e 	bx	lr
+ c100264:	01d20004 	.word	0x01d20004
+ c100268:	01d20000 	.word	0x01d20000
+ c10026c:	01d2000c 	.word	0x01d2000c
+ c100270:	01d20008 	.word	0x01d20008
+ c100274:	0000014f 	.word	0x0000014f
+ c100278:	01d20014 	.word	0x01d20014
+ c10027c:	01d20010 	.word	0x01d20010
+ c100280:	5ff555ff 	.word	0x5ff555ff
+ c100284:	01d20018 	.word	0x01d20018
+ c100288:	000094fb 	.word	0x000094fb
+ c10028c:	01d20020 	.word	0x01d20020
+ c100290:	01d2001c 	.word	0x01d2001c
+ c100294:	0000aaaa 	.word	0x0000aaaa
+ c100298:	01d20024 	.word	0x01d20024
+ c10029c:	01d2002c 	.word	0x01d2002c
+ c1002a0:	01d20028 	.word	0x01d20028
+ c1002a4:	000255a9 	.word	0x000255a9
+ c1002a8:	01d20030 	.word	0x01d20030
+ c1002ac:	000001fb 	.word	0x000001fb
+ c1002b0:	01d20038 	.word	0x01d20038
+ c1002b4:	01d20034 	.word	0x01d20034
+ c1002b8:	0000251a 	.word	0x0000251a
+ c1002bc:	01d2003c 	.word	0x01d2003c
+ c1002c0:	01d20044 	.word	0x01d20044
+ c1002c4:	01d20040 	.word	0x01d20040
+ c1002c8:	0000f5ff 	.word	0x0000f5ff
+ c1002cc:	01d20048 	.word	0x01d20048
+ c1002d0:	01d2004c 	.word	0x01d2004c
+ c1002d4:	01d20050 	.word	0x01d20050
+ c1002d8:	22000220 	.word	0x22000220
+
+0c1002dc <sys_init>:
+
+void sys_init( void )
+{
+ c1002dc:	e1a0c00d 	mov	ip, sp
+ c1002e0:	e92dd800 	push	{fp, ip, lr, pc}
+ c1002e4:	e24cb004 	sub	fp, ip, #4
+    WTCON  = 0;    
+ c1002e8:	e59f3068 	ldr	r3, [pc, #104]	; c100358 <sys_init+0x7c>
+ c1002ec:	e3a02000 	mov	r2, #0
+ c1002f0:	e5832000 	str	r2, [r3]
+    INTMSK = ~0;
+ c1002f4:	e59f3060 	ldr	r3, [pc, #96]	; c10035c <sys_init+0x80>
+ c1002f8:	e3e02000 	mvn	r2, #0
+ c1002fc:	e5832000 	str	r2, [r3]
+
+    LOCKTIME = 0xFFF;
+ c100300:	e59f3058 	ldr	r3, [pc, #88]	; c100360 <sys_init+0x84>
+ c100304:	e59f2058 	ldr	r2, [pc, #88]	; c100364 <sys_init+0x88>
+ c100308:	e5832000 	str	r2, [r3]
+    PLLCON   = 0x38021;
+ c10030c:	e3a03776 	mov	r3, #30932992	; 0x1d80000
+ c100310:	e59f2050 	ldr	r2, [pc, #80]	; c100368 <sys_init+0x8c>
+ c100314:	e5832000 	str	r2, [r3]
+    CLKSLOW  = 0x8;
+ c100318:	e59f304c 	ldr	r3, [pc, #76]	; c10036c <sys_init+0x90>
+ c10031c:	e3a02008 	mov	r2, #8
+ c100320:	e5832000 	str	r2, [r3]
+    CLKCON   = 0x7FF8;
+ c100324:	e59f3044 	ldr	r3, [pc, #68]	; c100370 <sys_init+0x94>
+ c100328:	e59f2044 	ldr	r2, [pc, #68]	; c100374 <sys_init+0x98>
+ c10032c:	e5832000 	str	r2, [r3]
+    
+    SBUSCON = 0x8000001B;
+ c100330:	e3a03771 	mov	r3, #29622272	; 0x1c40000
+ c100334:	e3a0216e 	mov	r2, #-2147483621	; 0x8000001b
+ c100338:	e5832000 	str	r2, [r3]
+    
+    SYSCFG = 0xE;
+ c10033c:	e3a03507 	mov	r3, #29360128	; 0x1c00000
+ c100340:	e3a0200e 	mov	r2, #14
+ c100344:	e5832000 	str	r2, [r3]
+       
+    port_init();    
+ c100348:	ebffff80 	bl	c100150 <port_init>
+}
+ c10034c:	e24bd00c 	sub	sp, fp, #12
+ c100350:	e89d6800 	ldm	sp, {fp, sp, lr}
+ c100354:	e12fff1e 	bx	lr
+ c100358:	01d30000 	.word	0x01d30000
+ c10035c:	01e0000c 	.word	0x01e0000c
+ c100360:	01d8000c 	.word	0x01d8000c
+ c100364:	00000fff 	.word	0x00000fff
+ c100368:	00038021 	.word	0x00038021
+ c10036c:	01d80008 	.word	0x01d80008
+ c100370:	01d80004 	.word	0x01d80004
+ c100374:	00007ff8 	.word	0x00007ff8
+
+0c100378 <uart0_init>:
+#include <s3c44b0x.h>
+#include <uart.h>
+
+void uart0_init( void )
+{
+ c100378:	e1a0c00d 	mov	ip, sp
+ c10037c:	e92dd800 	push	{fp, ip, lr, pc}
+ c100380:	e24cb004 	sub	fp, ip, #4
+    UFCON0 = 0x1;
+ c100384:	e59f3040 	ldr	r3, [pc, #64]	; c1003cc <uart0_init+0x54>
+ c100388:	e3a02001 	mov	r2, #1
+ c10038c:	e5832000 	str	r2, [r3]
+    UMCON0 = 0x0;
+ c100390:	e59f3038 	ldr	r3, [pc, #56]	; c1003d0 <uart0_init+0x58>
+ c100394:	e3a02000 	mov	r2, #0
+ c100398:	e5832000 	str	r2, [r3]
+    ULCON0 = 0x3;
+ c10039c:	e3a0361d 	mov	r3, #30408704	; 0x1d00000
+ c1003a0:	e3a02003 	mov	r2, #3
+ c1003a4:	e5832000 	str	r2, [r3]
+    UBRDIV0 = 0x22;
+ c1003a8:	e59f3024 	ldr	r3, [pc, #36]	; c1003d4 <uart0_init+0x5c>
+ c1003ac:	e3a02022 	mov	r2, #34	; 0x22
+ c1003b0:	e5832000 	str	r2, [r3]
+    UCON0 = 0x5;
+ c1003b4:	e59f301c 	ldr	r3, [pc, #28]	; c1003d8 <uart0_init+0x60>
+ c1003b8:	e3a02005 	mov	r2, #5
+ c1003bc:	e5832000 	str	r2, [r3]
+}
+ c1003c0:	e24bd00c 	sub	sp, fp, #12
+ c1003c4:	e89d6800 	ldm	sp, {fp, sp, lr}
+ c1003c8:	e12fff1e 	bx	lr
+ c1003cc:	01d00008 	.word	0x01d00008
+ c1003d0:	01d0000c 	.word	0x01d0000c
+ c1003d4:	01d00028 	.word	0x01d00028
+ c1003d8:	01d00004 	.word	0x01d00004
+
+0c1003dc <uart0_putchar>:
+
+void uart0_putchar( char ch )
+{
+ c1003dc:	e1a0c00d 	mov	ip, sp
+ c1003e0:	e92dd800 	push	{fp, ip, lr, pc}
+ c1003e4:	e24cb004 	sub	fp, ip, #4
+ c1003e8:	e24dd008 	sub	sp, sp, #8
+ c1003ec:	e1a03000 	mov	r3, r0
+ c1003f0:	e54b300d 	strb	r3, [fp, #-13]
+    while( UFSTAT0 & (1<<9) ); // leemos del bit 9 full
+ c1003f4:	e1a00000 	nop			; (mov r0, r0)
+ c1003f8:	e59f3024 	ldr	r3, [pc, #36]	; c100424 <uart0_putchar+0x48>
+ c1003fc:	e5933000 	ldr	r3, [r3]
+ c100400:	e2033c02 	and	r3, r3, #512	; 0x200
+ c100404:	e3530000 	cmp	r3, #0
+ c100408:	1afffffa 	bne	c1003f8 <uart0_putchar+0x1c>
+    UTXH0 = ch;
+ c10040c:	e59f3014 	ldr	r3, [pc, #20]	; c100428 <uart0_putchar+0x4c>
+ c100410:	e55b200d 	ldrb	r2, [fp, #-13]
+ c100414:	e5832000 	str	r2, [r3]
+}        
+ c100418:	e24bd00c 	sub	sp, fp, #12
+ c10041c:	e89d6800 	ldm	sp, {fp, sp, lr}
+ c100420:	e12fff1e 	bx	lr
+ c100424:	01d00018 	.word	0x01d00018
+ c100428:	01d00020 	.word	0x01d00020
+
+0c10042c <uart0_getchar>:
+
+char uart0_getchar( void )
+{
+ c10042c:	e1a0c00d 	mov	ip, sp
+ c100430:	e92dd800 	push	{fp, ip, lr, pc}
+ c100434:	e24cb004 	sub	fp, ip, #4
+    while( (UFSTAT0 & 0xf) == 0 ); // leemos del URx fifo
+ c100438:	e1a00000 	nop			; (mov r0, r0)
+ c10043c:	e59f3028 	ldr	r3, [pc, #40]	; c10046c <uart0_getchar+0x40>
+ c100440:	e5933000 	ldr	r3, [r3]
+ c100444:	e203300f 	and	r3, r3, #15
+ c100448:	e3530000 	cmp	r3, #0
+ c10044c:	0afffffa 	beq	c10043c <uart0_getchar+0x10>
+    return URXH0;
+ c100450:	e59f3018 	ldr	r3, [pc, #24]	; c100470 <uart0_getchar+0x44>
+ c100454:	e5933000 	ldr	r3, [r3]
+ c100458:	e20330ff 	and	r3, r3, #255	; 0xff
+}
+ c10045c:	e1a00003 	mov	r0, r3
+ c100460:	e24bd00c 	sub	sp, fp, #12
+ c100464:	e89d6800 	ldm	sp, {fp, sp, lr}
+ c100468:	e12fff1e 	bx	lr
+ c10046c:	01d00018 	.word	0x01d00018
+ c100470:	01d00024 	.word	0x01d00024
+
+0c100474 <uart0_puts>:
+
+void uart0_puts( char *s )
+{
+ c100474:	e1a0c00d 	mov	ip, sp
+ c100478:	e92dd800 	push	{fp, ip, lr, pc}
+ c10047c:	e24cb004 	sub	fp, ip, #4
+ c100480:	e24dd008 	sub	sp, sp, #8
+ c100484:	e50b0010 	str	r0, [fp, #-16]
+	while( *s  ) uart0_putchar( *s++ );
+ c100488:	ea000006 	b	c1004a8 <uart0_puts+0x34>
+ c10048c:	e51b3010 	ldr	r3, [fp, #-16]
+ c100490:	e5d33000 	ldrb	r3, [r3]
+ c100494:	e51b2010 	ldr	r2, [fp, #-16]
+ c100498:	e2822001 	add	r2, r2, #1
+ c10049c:	e50b2010 	str	r2, [fp, #-16]
+ c1004a0:	e1a00003 	mov	r0, r3
+ c1004a4:	ebffffcc 	bl	c1003dc <uart0_putchar>
+ c1004a8:	e51b3010 	ldr	r3, [fp, #-16]
+ c1004ac:	e5d33000 	ldrb	r3, [r3]
+ c1004b0:	e3530000 	cmp	r3, #0
+ c1004b4:	1afffff4 	bne	c10048c <uart0_puts+0x18>
+}
+ c1004b8:	e24bd00c 	sub	sp, fp, #12
+ c1004bc:	e89d6800 	ldm	sp, {fp, sp, lr}
+ c1004c0:	e12fff1e 	bx	lr
+
+0c1004c4 <uart0_putint>:
+
+void uart0_putint( int32 i )
+{
+ c1004c4:	e1a0c00d 	mov	ip, sp
+ c1004c8:	e92dd800 	push	{fp, ip, lr, pc}
+ c1004cc:	e24cb004 	sub	fp, ip, #4
+ c1004d0:	e24dd020 	sub	sp, sp, #32
+ c1004d4:	e50b0028 	str	r0, [fp, #-40]	; 0xffffffd8
+	int8 num = 1;
+ c1004d8:	e3a03001 	mov	r3, #1
+ c1004dc:	e54b300d 	strb	r3, [fp, #-13]
+	if(i < 0) {
+ c1004e0:	e51b3028 	ldr	r3, [fp, #-40]	; 0xffffffd8
+ c1004e4:	e3530000 	cmp	r3, #0
+ c1004e8:	aa000004 	bge	c100500 <uart0_putint+0x3c>
+		num = -1;
+ c1004ec:	e3e03000 	mvn	r3, #0
+ c1004f0:	e54b300d 	strb	r3, [fp, #-13]
+		i *= -1;
+ c1004f4:	e51b3028 	ldr	r3, [fp, #-40]	; 0xffffffd8
+ c1004f8:	e2633000 	rsb	r3, r3, #0
+ c1004fc:	e50b3028 	str	r3, [fp, #-40]	; 0xffffffd8
+	}
+
+    char buf[8 + 1];
+    char *p = buf + 8;
+ c100500:	e24b3020 	sub	r3, fp, #32
+ c100504:	e2833008 	add	r3, r3, #8
+ c100508:	e50b3014 	str	r3, [fp, #-20]	; 0xffffffec
+    int8 c;
+
+    *p = '\0';
+ c10050c:	e51b3014 	ldr	r3, [fp, #-20]	; 0xffffffec
+ c100510:	e3a02000 	mov	r2, #0
+ c100514:	e5c32000 	strb	r2, [r3]
+
+    do {
+        c = i % 10;
+ c100518:	e51b1028 	ldr	r1, [fp, #-40]	; 0xffffffd8
+ c10051c:	e59f30a8 	ldr	r3, [pc, #168]	; c1005cc <uart0_putint+0x108>
+ c100520:	e0c32391 	smull	r2, r3, r1, r3
+ c100524:	e1a02143 	asr	r2, r3, #2
+ c100528:	e1a03fc1 	asr	r3, r1, #31
+ c10052c:	e0632002 	rsb	r2, r3, r2
+ c100530:	e1a03002 	mov	r3, r2
+ c100534:	e1a03103 	lsl	r3, r3, #2
+ c100538:	e0833002 	add	r3, r3, r2
+ c10053c:	e1a03083 	lsl	r3, r3, #1
+ c100540:	e0632001 	rsb	r2, r3, r1
+ c100544:	e1a03002 	mov	r3, r2
+ c100548:	e54b3015 	strb	r3, [fp, #-21]	; 0xffffffeb
+        *--p = '0' + c;
+ c10054c:	e51b3014 	ldr	r3, [fp, #-20]	; 0xffffffec
+ c100550:	e2433001 	sub	r3, r3, #1
+ c100554:	e50b3014 	str	r3, [fp, #-20]	; 0xffffffec
+ c100558:	e55b3015 	ldrb	r3, [fp, #-21]	; 0xffffffeb
+ c10055c:	e2833030 	add	r3, r3, #48	; 0x30
+ c100560:	e20320ff 	and	r2, r3, #255	; 0xff
+ c100564:	e51b3014 	ldr	r3, [fp, #-20]	; 0xffffffec
+ c100568:	e5c32000 	strb	r2, [r3]
+        i /= 10;
+ c10056c:	e51b3028 	ldr	r3, [fp, #-40]	; 0xffffffd8
+ c100570:	e59f2054 	ldr	r2, [pc, #84]	; c1005cc <uart0_putint+0x108>
+ c100574:	e0c21293 	smull	r1, r2, r3, r2
+ c100578:	e1a02142 	asr	r2, r2, #2
+ c10057c:	e1a03fc3 	asr	r3, r3, #31
+ c100580:	e0633002 	rsb	r3, r3, r2
+ c100584:	e50b3028 	str	r3, [fp, #-40]	; 0xffffffd8
+    } while( i > 0 );
+ c100588:	e51b3028 	ldr	r3, [fp, #-40]	; 0xffffffd8
+ c10058c:	e3530000 	cmp	r3, #0
+ c100590:	caffffe0 	bgt	c100518 <uart0_putint+0x54>
+
+    if(num == -1) *--p = '-';
+ c100594:	e15b30dd 	ldrsb	r3, [fp, #-13]
+ c100598:	e3730001 	cmn	r3, #1
+ c10059c:	1a000005 	bne	c1005b8 <uart0_putint+0xf4>
+ c1005a0:	e51b3014 	ldr	r3, [fp, #-20]	; 0xffffffec
+ c1005a4:	e2433001 	sub	r3, r3, #1
+ c1005a8:	e50b3014 	str	r3, [fp, #-20]	; 0xffffffec
+ c1005ac:	e51b3014 	ldr	r3, [fp, #-20]	; 0xffffffec
+ c1005b0:	e3a0202d 	mov	r2, #45	; 0x2d
+ c1005b4:	e5c32000 	strb	r2, [r3]
+
+    uart0_puts( p );
+ c1005b8:	e51b0014 	ldr	r0, [fp, #-20]	; 0xffffffec
+ c1005bc:	ebffffac 	bl	c100474 <uart0_puts>
+}
+ c1005c0:	e24bd00c 	sub	sp, fp, #12
+ c1005c4:	e89d6800 	ldm	sp, {fp, sp, lr}
+ c1005c8:	e12fff1e 	bx	lr
+ c1005cc:	66666667 	.word	0x66666667
+
+0c1005d0 <uart0_puthex>:
+
+void uart0_puthex( uint32 i )
+{
+ c1005d0:	e1a0c00d 	mov	ip, sp
+ c1005d4:	e92dd800 	push	{fp, ip, lr, pc}
+ c1005d8:	e24cb004 	sub	fp, ip, #4
+ c1005dc:	e24dd018 	sub	sp, sp, #24
+ c1005e0:	e50b0020 	str	r0, [fp, #-32]	; 0xffffffe0
+    char buf[8 + 1];
+    char *p = buf + 8;
+ c1005e4:	e24b301c 	sub	r3, fp, #28
+ c1005e8:	e2833008 	add	r3, r3, #8
+ c1005ec:	e50b3010 	str	r3, [fp, #-16]
+    uint8 c;
+
+    *p = '\0';
+ c1005f0:	e51b3010 	ldr	r3, [fp, #-16]
+ c1005f4:	e3a02000 	mov	r2, #0
+ c1005f8:	e5c32000 	strb	r2, [r3]
+
+    do {
+        c = i & 0xf;
+ c1005fc:	e51b3020 	ldr	r3, [fp, #-32]	; 0xffffffe0
+ c100600:	e20330ff 	and	r3, r3, #255	; 0xff
+ c100604:	e203300f 	and	r3, r3, #15
+ c100608:	e54b3011 	strb	r3, [fp, #-17]	; 0xffffffef
+        if( c < 10 )
+ c10060c:	e55b3011 	ldrb	r3, [fp, #-17]	; 0xffffffef
+ c100610:	e3530009 	cmp	r3, #9
+ c100614:	8a000008 	bhi	c10063c <uart0_puthex+0x6c>
+            *--p = '0' + c;
+ c100618:	e51b3010 	ldr	r3, [fp, #-16]
+ c10061c:	e2433001 	sub	r3, r3, #1
+ c100620:	e50b3010 	str	r3, [fp, #-16]
+ c100624:	e55b3011 	ldrb	r3, [fp, #-17]	; 0xffffffef
+ c100628:	e2833030 	add	r3, r3, #48	; 0x30
+ c10062c:	e20320ff 	and	r2, r3, #255	; 0xff
+ c100630:	e51b3010 	ldr	r3, [fp, #-16]
+ c100634:	e5c32000 	strb	r2, [r3]
+ c100638:	ea000007 	b	c10065c <uart0_puthex+0x8c>
+        else
+            *--p = 'a' + c - 10;
+ c10063c:	e51b3010 	ldr	r3, [fp, #-16]
+ c100640:	e2433001 	sub	r3, r3, #1
+ c100644:	e50b3010 	str	r3, [fp, #-16]
+ c100648:	e55b3011 	ldrb	r3, [fp, #-17]	; 0xffffffef
+ c10064c:	e2833057 	add	r3, r3, #87	; 0x57
+ c100650:	e20320ff 	and	r2, r3, #255	; 0xff
+ c100654:	e51b3010 	ldr	r3, [fp, #-16]
+ c100658:	e5c32000 	strb	r2, [r3]
+        i = i >> 4;
+ c10065c:	e51b3020 	ldr	r3, [fp, #-32]	; 0xffffffe0
+ c100660:	e1a03223 	lsr	r3, r3, #4
+ c100664:	e50b3020 	str	r3, [fp, #-32]	; 0xffffffe0
+    } while( i );
+ c100668:	e51b3020 	ldr	r3, [fp, #-32]	; 0xffffffe0
+ c10066c:	e3530000 	cmp	r3, #0
+ c100670:	1affffe1 	bne	c1005fc <uart0_puthex+0x2c>
+
+    uart0_puts( p );
+ c100674:	e51b0010 	ldr	r0, [fp, #-16]
+ c100678:	ebffff7d 	bl	c100474 <uart0_puts>
+}
+ c10067c:	e24bd00c 	sub	sp, fp, #12
+ c100680:	e89d6800 	ldm	sp, {fp, sp, lr}
+ c100684:	e12fff1e 	bx	lr
+
+0c100688 <uart0_gets>:
+
+void uart0_gets( char *s )
+{
+ c100688:	e1a0c00d 	mov	ip, sp
+ c10068c:	e92dd810 	push	{r4, fp, ip, lr, pc}
+ c100690:	e24cb004 	sub	fp, ip, #4
+ c100694:	e24dd014 	sub	sp, sp, #20
+ c100698:	e50b0020 	str	r0, [fp, #-32]	; 0xffffffe0
+	int i = 0;
+ c10069c:	e3a03000 	mov	r3, #0
+ c1006a0:	e50b3018 	str	r3, [fp, #-24]	; 0xffffffe8
+	while( (s[i] = uart0_getchar( )) != '\n' ) i++;
+ c1006a4:	ea000002 	b	c1006b4 <uart0_gets+0x2c>
+ c1006a8:	e51b3018 	ldr	r3, [fp, #-24]	; 0xffffffe8
+ c1006ac:	e2833001 	add	r3, r3, #1
+ c1006b0:	e50b3018 	str	r3, [fp, #-24]	; 0xffffffe8
+ c1006b4:	e51b3018 	ldr	r3, [fp, #-24]	; 0xffffffe8
+ c1006b8:	e51b2020 	ldr	r2, [fp, #-32]	; 0xffffffe0
+ c1006bc:	e0824003 	add	r4, r2, r3
+ c1006c0:	ebffff59 	bl	c10042c <uart0_getchar>
+ c1006c4:	e1a03000 	mov	r3, r0
+ c1006c8:	e5c43000 	strb	r3, [r4]
+ c1006cc:	e5d43000 	ldrb	r3, [r4]
+ c1006d0:	e353000a 	cmp	r3, #10
+ c1006d4:	1afffff3 	bne	c1006a8 <uart0_gets+0x20>
+	s[i] = '\0';
+ c1006d8:	e51b3018 	ldr	r3, [fp, #-24]	; 0xffffffe8
+ c1006dc:	e51b2020 	ldr	r2, [fp, #-32]	; 0xffffffe0
+ c1006e0:	e0823003 	add	r3, r2, r3
+ c1006e4:	e3a02000 	mov	r2, #0
+ c1006e8:	e5c32000 	strb	r2, [r3]
+}
+ c1006ec:	e24bd010 	sub	sp, fp, #16
+ c1006f0:	e89d6810 	ldm	sp, {r4, fp, sp, lr}
+ c1006f4:	e12fff1e 	bx	lr
+
+0c1006f8 <uart0_getint>:
+
+int32 uart0_getint( void )
+{
+ c1006f8:	e1a0c00d 	mov	ip, sp
+ c1006fc:	e92dd800 	push	{fp, ip, lr, pc}
+ c100700:	e24cb004 	sub	fp, ip, #4
+ c100704:	e24dd008 	sub	sp, sp, #8
+	int32 num = 0;
+ c100708:	e3a03000 	mov	r3, #0
+ c10070c:	e50b3010 	str	r3, [fp, #-16]
+	char n = uart0_getchar( );
+ c100710:	ebffff45 	bl	c10042c <uart0_getchar>
+ c100714:	e1a03000 	mov	r3, r0
+ c100718:	e54b3011 	strb	r3, [fp, #-17]	; 0xffffffef
+	int8 neg = 1;
+ c10071c:	e3a03001 	mov	r3, #1
+ c100720:	e54b3012 	strb	r3, [fp, #-18]	; 0xffffffee
+
+	while( n != '\n' ) {
+ c100724:	ea000013 	b	c100778 <uart0_getint+0x80>
+		if(n == '-') neg = -1;
+ c100728:	e55b3011 	ldrb	r3, [fp, #-17]	; 0xffffffef
+ c10072c:	e353002d 	cmp	r3, #45	; 0x2d
+ c100730:	1a000002 	bne	c100740 <uart0_getint+0x48>
+ c100734:	e3e03000 	mvn	r3, #0
+ c100738:	e54b3012 	strb	r3, [fp, #-18]	; 0xffffffee
+ c10073c:	ea00000a 	b	c10076c <uart0_getint+0x74>
+		else {
+			num *= 10;
+ c100740:	e51b2010 	ldr	r2, [fp, #-16]
+ c100744:	e1a03002 	mov	r3, r2
+ c100748:	e1a03103 	lsl	r3, r3, #2
+ c10074c:	e0833002 	add	r3, r3, r2
+ c100750:	e1a03083 	lsl	r3, r3, #1
+ c100754:	e50b3010 	str	r3, [fp, #-16]
+			num += (n - '0');
+ c100758:	e55b3011 	ldrb	r3, [fp, #-17]	; 0xffffffef
+ c10075c:	e2433030 	sub	r3, r3, #48	; 0x30
+ c100760:	e51b2010 	ldr	r2, [fp, #-16]
+ c100764:	e0823003 	add	r3, r2, r3
+ c100768:	e50b3010 	str	r3, [fp, #-16]
+		}
+		n = uart0_getchar( );
+ c10076c:	ebffff2e 	bl	c10042c <uart0_getchar>
+ c100770:	e1a03000 	mov	r3, r0
+ c100774:	e54b3011 	strb	r3, [fp, #-17]	; 0xffffffef
+{
+	int32 num = 0;
+	char n = uart0_getchar( );
+	int8 neg = 1;
+
+	while( n != '\n' ) {
+ c100778:	e55b3011 	ldrb	r3, [fp, #-17]	; 0xffffffef
+ c10077c:	e353000a 	cmp	r3, #10
+ c100780:	1affffe8 	bne	c100728 <uart0_getint+0x30>
+			num *= 10;
+			num += (n - '0');
+		}
+		n = uart0_getchar( );
+	}
+	return num * neg;
+ c100784:	e15b31d2 	ldrsb	r3, [fp, #-18]	; 0xffffffee
+ c100788:	e51b2010 	ldr	r2, [fp, #-16]
+ c10078c:	e0030392 	mul	r3, r2, r3
+}
+ c100790:	e1a00003 	mov	r0, r3
+ c100794:	e24bd00c 	sub	sp, fp, #12
+ c100798:	e89d6800 	ldm	sp, {fp, sp, lr}
+ c10079c:	e12fff1e 	bx	lr
+
+0c1007a0 <uart0_gethex>:
+
+uint32 uart0_gethex( void )
+{
+ c1007a0:	e1a0c00d 	mov	ip, sp
+ c1007a4:	e92dd800 	push	{fp, ip, lr, pc}
+ c1007a8:	e24cb004 	sub	fp, ip, #4
+ c1007ac:	e24dd008 	sub	sp, sp, #8
+	uint32 num = 0;
+ c1007b0:	e3a03000 	mov	r3, #0
+ c1007b4:	e50b3010 	str	r3, [fp, #-16]
+	char n = uart0_getchar( );
+ c1007b8:	ebffff1b 	bl	c10042c <uart0_getchar>
+ c1007bc:	e1a03000 	mov	r3, r0
+ c1007c0:	e54b3011 	strb	r3, [fp, #-17]	; 0xffffffef
+
+	while( n != '\n' ) {
+ c1007c4:	ea000014 	b	c10081c <uart0_gethex+0x7c>
+		num *= 16;
+ c1007c8:	e51b3010 	ldr	r3, [fp, #-16]
+ c1007cc:	e1a03203 	lsl	r3, r3, #4
+ c1007d0:	e50b3010 	str	r3, [fp, #-16]
+		if(n - '0' < 10) num += (n - '0');
+ c1007d4:	e55b3011 	ldrb	r3, [fp, #-17]	; 0xffffffef
+ c1007d8:	e2433030 	sub	r3, r3, #48	; 0x30
+ c1007dc:	e3530009 	cmp	r3, #9
+ c1007e0:	ca000005 	bgt	c1007fc <uart0_gethex+0x5c>
+ c1007e4:	e55b2011 	ldrb	r2, [fp, #-17]	; 0xffffffef
+ c1007e8:	e51b3010 	ldr	r3, [fp, #-16]
+ c1007ec:	e0823003 	add	r3, r2, r3
+ c1007f0:	e2433030 	sub	r3, r3, #48	; 0x30
+ c1007f4:	e50b3010 	str	r3, [fp, #-16]
+ c1007f8:	ea000004 	b	c100810 <uart0_gethex+0x70>
+		else num += ((n - 'A') + 10);
+ c1007fc:	e55b2011 	ldrb	r2, [fp, #-17]	; 0xffffffef
+ c100800:	e51b3010 	ldr	r3, [fp, #-16]
+ c100804:	e0823003 	add	r3, r2, r3
+ c100808:	e2433037 	sub	r3, r3, #55	; 0x37
+ c10080c:	e50b3010 	str	r3, [fp, #-16]
+		n = uart0_getchar( );
+ c100810:	ebffff05 	bl	c10042c <uart0_getchar>
+ c100814:	e1a03000 	mov	r3, r0
+ c100818:	e54b3011 	strb	r3, [fp, #-17]	; 0xffffffef
+uint32 uart0_gethex( void )
+{
+	uint32 num = 0;
+	char n = uart0_getchar( );
+
+	while( n != '\n' ) {
+ c10081c:	e55b3011 	ldrb	r3, [fp, #-17]	; 0xffffffef
+ c100820:	e353000a 	cmp	r3, #10
+ c100824:	1affffe7 	bne	c1007c8 <uart0_gethex+0x28>
+		num *= 16;
+		if(n - '0' < 10) num += (n - '0');
+		else num += ((n - 'A') + 10);
+		n = uart0_getchar( );
+	}
+	return num;
+ c100828:	e51b3010 	ldr	r3, [fp, #-16]
+}
+ c10082c:	e1a00003 	mov	r0, r3
+ c100830:	e24bd00c 	sub	sp, fp, #12
+ c100834:	e89d6800 	ldm	sp, {fp, sp, lr}
+ c100838:	e12fff1e 	bx	lr

@@ -1,0 +1,1067 @@
+   1              		.cpu arm7tdmi
+   2              		.fpu softvfp
+   3              		.eabi_attribute 20, 1
+   4              		.eabi_attribute 21, 1
+   5              		.eabi_attribute 23, 3
+   6              		.eabi_attribute 24, 1
+   7              		.eabi_attribute 25, 1
+   8              		.eabi_attribute 26, 1
+   9              		.eabi_attribute 30, 6
+  10              		.eabi_attribute 18, 4
+  11              		.file	"keypad.c"
+  21              	.Ltext0:
+  22              		.file 1 "../src/keypad.c"
+ 1962              		.align	2
+ 1963              		.global	keypad_scan
+ 1965              	keypad_scan:
+ 1966              	.LFB0:
+   1:../src/keypad.c **** 
+   2:../src/keypad.c **** #include <s3c44b0x.h>
+   3:../src/keypad.c **** #include <s3cev40.h>
+   4:../src/keypad.c **** #include <timers.h>
+   5:../src/keypad.c **** #include <keypad.h>
+   6:../src/keypad.c **** 
+   7:../src/keypad.c **** extern void isr_KEYPAD_dummy( void );
+   8:../src/keypad.c **** 
+   9:../src/keypad.c **** uint8 keypad_scan( void )
+  10:../src/keypad.c **** {
+ 1967              		.loc 1 10 0
+ 1968              		.cfi_startproc
+ 1969              		@ Function supports interworking.
+ 1970              		@ args = 0, pretend = 0, frame = 8
+ 1971              		@ frame_needed = 1, uses_anonymous_args = 0
+ 1972 0000 0DC0A0E1 		mov	ip, sp
+ 1973              	.LCFI0:
+ 1974              		.cfi_def_cfa_register 12
+ 1975 0004 00D82DE9 		stmfd	sp!, {fp, ip, lr, pc}
+ 1976 0008 04B04CE2 		sub	fp, ip, #4
+ 1977              		.cfi_offset 14, -8
+ 1978              		.cfi_offset 13, -12
+ 1979              		.cfi_offset 11, -16
+ 1980              	.LCFI1:
+ 1981              		.cfi_def_cfa 11, 4
+ 1982 000c 08D04DE2 		sub	sp, sp, #8
+  11:../src/keypad.c ****     uint8 aux;
+  12:../src/keypad.c **** 
+  13:../src/keypad.c ****     aux = *( KEYPAD_ADDR + 0x1c );
+ 1983              		.loc 1 13 0
+ 1984 0010 FC319FE5 		ldr	r3, .L19
+ 1985 0014 0030D3E5 		ldrb	r3, [r3, #0]
+ 1986 0018 0D304BE5 		strb	r3, [fp, #-13]
+  14:../src/keypad.c ****     if( (aux & 0x0f) != 0x0f )
+ 1987              		.loc 1 14 0
+ 1988 001c 0D305BE5 		ldrb	r3, [fp, #-13]	@ zero_extendqisi2
+ 1989 0020 0F3003E2 		and	r3, r3, #15
+ 1990 0024 0F0053E3 		cmp	r3, #15
+ 1991 0028 1700000A 		beq	.L2
+  15:../src/keypad.c ****     {
+  16:../src/keypad.c ****         if( (aux & 0x8) == 0 )
+ 1992              		.loc 1 16 0
+ 1993 002c 0D305BE5 		ldrb	r3, [fp, #-13]	@ zero_extendqisi2
+ 1994 0030 083003E2 		and	r3, r3, #8
+ 1995 0034 000053E3 		cmp	r3, #0
+ 1996 0038 0100001A 		bne	.L3
+  17:../src/keypad.c ****             return KEYPAD_KEY0;
+ 1997              		.loc 1 17 0
+ 1998 003c 0030A0E3 		mov	r3, #0
+ 1999 0040 6F0000EA 		b	.L4
+ 2000              	.L3:
+  18:../src/keypad.c ****         else if( (aux & 0x4) == 0 )
+ 2001              		.loc 1 18 0
+ 2002 0044 0D305BE5 		ldrb	r3, [fp, #-13]	@ zero_extendqisi2
+ 2003 0048 043003E2 		and	r3, r3, #4
+ 2004 004c 000053E3 		cmp	r3, #0
+ 2005 0050 0100001A 		bne	.L5
+  19:../src/keypad.c ****             return KEYPAD_KEY1;
+ 2006              		.loc 1 19 0
+ 2007 0054 0130A0E3 		mov	r3, #1
+ 2008 0058 690000EA 		b	.L4
+ 2009              	.L5:
+  20:../src/keypad.c ****         else if( (aux & 0x2) == 0 )
+ 2010              		.loc 1 20 0
+ 2011 005c 0D305BE5 		ldrb	r3, [fp, #-13]	@ zero_extendqisi2
+ 2012 0060 023003E2 		and	r3, r3, #2
+ 2013 0064 000053E3 		cmp	r3, #0
+ 2014 0068 0100001A 		bne	.L6
+  21:../src/keypad.c ****             return KEYPAD_KEY2;
+ 2015              		.loc 1 21 0
+ 2016 006c 0230A0E3 		mov	r3, #2
+ 2017 0070 630000EA 		b	.L4
+ 2018              	.L6:
+  22:../src/keypad.c ****         else if( (aux & 0x1) == 0 )
+ 2019              		.loc 1 22 0
+ 2020 0074 0D305BE5 		ldrb	r3, [fp, #-13]	@ zero_extendqisi2
+ 2021 0078 013003E2 		and	r3, r3, #1
+ 2022 007c 000053E3 		cmp	r3, #0
+ 2023 0080 0100001A 		bne	.L2
+  23:../src/keypad.c ****             return KEYPAD_KEY3;
+ 2024              		.loc 1 23 0
+ 2025 0084 0330A0E3 		mov	r3, #3
+ 2026 0088 5D0000EA 		b	.L4
+ 2027              	.L2:
+  24:../src/keypad.c ****     }
+  25:../src/keypad.c **** 
+  26:../src/keypad.c ****     aux = *( KEYPAD_ADDR + 0x1a );
+ 2028              		.loc 1 26 0
+ 2029 008c 84319FE5 		ldr	r3, .L19+4
+ 2030 0090 0030D3E5 		ldrb	r3, [r3, #0]
+ 2031 0094 0D304BE5 		strb	r3, [fp, #-13]
+  27:../src/keypad.c ****     if( (aux & 0x0f) != 0x0f )
+ 2032              		.loc 1 27 0
+ 2033 0098 0D305BE5 		ldrb	r3, [fp, #-13]	@ zero_extendqisi2
+ 2034 009c 0F3003E2 		and	r3, r3, #15
+ 2035 00a0 0F0053E3 		cmp	r3, #15
+ 2036 00a4 1700000A 		beq	.L7
+  28:../src/keypad.c ****     {
+  29:../src/keypad.c ****         if( (aux & 0x8) == 0 )
+ 2037              		.loc 1 29 0
+ 2038 00a8 0D305BE5 		ldrb	r3, [fp, #-13]	@ zero_extendqisi2
+ 2039 00ac 083003E2 		and	r3, r3, #8
+ 2040 00b0 000053E3 		cmp	r3, #0
+ 2041 00b4 0100001A 		bne	.L8
+  30:../src/keypad.c ****             return KEYPAD_KEY4;
+ 2042              		.loc 1 30 0
+ 2043 00b8 0430A0E3 		mov	r3, #4
+ 2044 00bc 500000EA 		b	.L4
+ 2045              	.L8:
+  31:../src/keypad.c ****         else if( (aux & 0x4) == 0 )
+ 2046              		.loc 1 31 0
+ 2047 00c0 0D305BE5 		ldrb	r3, [fp, #-13]	@ zero_extendqisi2
+ 2048 00c4 043003E2 		and	r3, r3, #4
+ 2049 00c8 000053E3 		cmp	r3, #0
+ 2050 00cc 0100001A 		bne	.L9
+  32:../src/keypad.c ****             return KEYPAD_KEY5;
+ 2051              		.loc 1 32 0
+ 2052 00d0 0530A0E3 		mov	r3, #5
+ 2053 00d4 4A0000EA 		b	.L4
+ 2054              	.L9:
+  33:../src/keypad.c ****         else if( (aux & 0x2) == 0 )
+ 2055              		.loc 1 33 0
+ 2056 00d8 0D305BE5 		ldrb	r3, [fp, #-13]	@ zero_extendqisi2
+ 2057 00dc 023003E2 		and	r3, r3, #2
+ 2058 00e0 000053E3 		cmp	r3, #0
+ 2059 00e4 0100001A 		bne	.L10
+  34:../src/keypad.c ****             return KEYPAD_KEY6;
+ 2060              		.loc 1 34 0
+ 2061 00e8 0630A0E3 		mov	r3, #6
+ 2062 00ec 440000EA 		b	.L4
+ 2063              	.L10:
+  35:../src/keypad.c ****         else if( (aux & 0x1) == 0 )
+ 2064              		.loc 1 35 0
+ 2065 00f0 0D305BE5 		ldrb	r3, [fp, #-13]	@ zero_extendqisi2
+ 2066 00f4 013003E2 		and	r3, r3, #1
+ 2067 00f8 000053E3 		cmp	r3, #0
+ 2068 00fc 0100001A 		bne	.L7
+  36:../src/keypad.c ****             return KEYPAD_KEY7;
+ 2069              		.loc 1 36 0
+ 2070 0100 0730A0E3 		mov	r3, #7
+ 2071 0104 3E0000EA 		b	.L4
+ 2072              	.L7:
+  37:../src/keypad.c ****     }
+  38:../src/keypad.c **** 
+  39:../src/keypad.c ****     aux = *( KEYPAD_ADDR + 0x16 );
+ 2073              		.loc 1 39 0
+ 2074 0108 0C319FE5 		ldr	r3, .L19+8
+ 2075 010c 0030D3E5 		ldrb	r3, [r3, #0]
+ 2076 0110 0D304BE5 		strb	r3, [fp, #-13]
+  40:../src/keypad.c ****     if( (aux & 0x0f) != 0x0f )
+ 2077              		.loc 1 40 0
+ 2078 0114 0D305BE5 		ldrb	r3, [fp, #-13]	@ zero_extendqisi2
+ 2079 0118 0F3003E2 		and	r3, r3, #15
+ 2080 011c 0F0053E3 		cmp	r3, #15
+ 2081 0120 1700000A 		beq	.L11
+  41:../src/keypad.c ****     {
+  42:../src/keypad.c ****         if( (aux & 0x8) == 0 )
+ 2082              		.loc 1 42 0
+ 2083 0124 0D305BE5 		ldrb	r3, [fp, #-13]	@ zero_extendqisi2
+ 2084 0128 083003E2 		and	r3, r3, #8
+ 2085 012c 000053E3 		cmp	r3, #0
+ 2086 0130 0100001A 		bne	.L12
+  43:../src/keypad.c ****             return KEYPAD_KEY8;
+ 2087              		.loc 1 43 0
+ 2088 0134 0830A0E3 		mov	r3, #8
+ 2089 0138 310000EA 		b	.L4
+ 2090              	.L12:
+  44:../src/keypad.c ****         else if( (aux & 0x4) == 0 )
+ 2091              		.loc 1 44 0
+ 2092 013c 0D305BE5 		ldrb	r3, [fp, #-13]	@ zero_extendqisi2
+ 2093 0140 043003E2 		and	r3, r3, #4
+ 2094 0144 000053E3 		cmp	r3, #0
+ 2095 0148 0100001A 		bne	.L13
+  45:../src/keypad.c ****             return KEYPAD_KEY9;
+ 2096              		.loc 1 45 0
+ 2097 014c 0930A0E3 		mov	r3, #9
+ 2098 0150 2B0000EA 		b	.L4
+ 2099              	.L13:
+  46:../src/keypad.c ****         else if( (aux & 0x2) == 0 )
+ 2100              		.loc 1 46 0
+ 2101 0154 0D305BE5 		ldrb	r3, [fp, #-13]	@ zero_extendqisi2
+ 2102 0158 023003E2 		and	r3, r3, #2
+ 2103 015c 000053E3 		cmp	r3, #0
+ 2104 0160 0100001A 		bne	.L14
+  47:../src/keypad.c ****             return KEYPAD_KEYA;
+ 2105              		.loc 1 47 0
+ 2106 0164 0A30A0E3 		mov	r3, #10
+ 2107 0168 250000EA 		b	.L4
+ 2108              	.L14:
+  48:../src/keypad.c ****         else if( (aux & 0x1) == 0 )
+ 2109              		.loc 1 48 0
+ 2110 016c 0D305BE5 		ldrb	r3, [fp, #-13]	@ zero_extendqisi2
+ 2111 0170 013003E2 		and	r3, r3, #1
+ 2112 0174 000053E3 		cmp	r3, #0
+ 2113 0178 0100001A 		bne	.L11
+  49:../src/keypad.c ****             return KEYPAD_KEYB;
+ 2114              		.loc 1 49 0
+ 2115 017c 0B30A0E3 		mov	r3, #11
+ 2116 0180 1F0000EA 		b	.L4
+ 2117              	.L11:
+  50:../src/keypad.c ****     }
+  51:../src/keypad.c **** 
+  52:../src/keypad.c ****     aux = *( KEYPAD_ADDR + 0xee );
+ 2118              		.loc 1 52 0
+ 2119 0184 94309FE5 		ldr	r3, .L19+12
+ 2120 0188 0030D3E5 		ldrb	r3, [r3, #0]
+ 2121 018c 0D304BE5 		strb	r3, [fp, #-13]
+  53:../src/keypad.c ****     if( (aux & 0x0f) != 0x0f )
+ 2122              		.loc 1 53 0
+ 2123 0190 0D305BE5 		ldrb	r3, [fp, #-13]	@ zero_extendqisi2
+ 2124 0194 0F3003E2 		and	r3, r3, #15
+ 2125 0198 0F0053E3 		cmp	r3, #15
+ 2126 019c 1700000A 		beq	.L15
+  54:../src/keypad.c ****     {
+  55:../src/keypad.c ****         if( (aux & 0x8) == 0 )
+ 2127              		.loc 1 55 0
+ 2128 01a0 0D305BE5 		ldrb	r3, [fp, #-13]	@ zero_extendqisi2
+ 2129 01a4 083003E2 		and	r3, r3, #8
+ 2130 01a8 000053E3 		cmp	r3, #0
+ 2131 01ac 0100001A 		bne	.L16
+  56:../src/keypad.c ****             return KEYPAD_KEYC;
+ 2132              		.loc 1 56 0
+ 2133 01b0 0C30A0E3 		mov	r3, #12
+ 2134 01b4 120000EA 		b	.L4
+ 2135              	.L16:
+  57:../src/keypad.c ****         else if( (aux & 0x4) == 0 )
+ 2136              		.loc 1 57 0
+ 2137 01b8 0D305BE5 		ldrb	r3, [fp, #-13]	@ zero_extendqisi2
+ 2138 01bc 043003E2 		and	r3, r3, #4
+ 2139 01c0 000053E3 		cmp	r3, #0
+ 2140 01c4 0100001A 		bne	.L17
+  58:../src/keypad.c ****             return KEYPAD_KEYD;
+ 2141              		.loc 1 58 0
+ 2142 01c8 0D30A0E3 		mov	r3, #13
+ 2143 01cc 0C0000EA 		b	.L4
+ 2144              	.L17:
+  59:../src/keypad.c ****         else if( (aux & 0x2) == 0 )
+ 2145              		.loc 1 59 0
+ 2146 01d0 0D305BE5 		ldrb	r3, [fp, #-13]	@ zero_extendqisi2
+ 2147 01d4 023003E2 		and	r3, r3, #2
+ 2148 01d8 000053E3 		cmp	r3, #0
+ 2149 01dc 0100001A 		bne	.L18
+  60:../src/keypad.c ****             return KEYPAD_KEYE;
+ 2150              		.loc 1 60 0
+ 2151 01e0 0E30A0E3 		mov	r3, #14
+ 2152 01e4 060000EA 		b	.L4
+ 2153              	.L18:
+  61:../src/keypad.c ****         else if( (aux & 0x1) == 0 )
+ 2154              		.loc 1 61 0
+ 2155 01e8 0D305BE5 		ldrb	r3, [fp, #-13]	@ zero_extendqisi2
+ 2156 01ec 013003E2 		and	r3, r3, #1
+ 2157 01f0 000053E3 		cmp	r3, #0
+ 2158 01f4 0100001A 		bne	.L15
+  62:../src/keypad.c ****             return KEYPAD_KEYF;
+ 2159              		.loc 1 62 0
+ 2160 01f8 0F30A0E3 		mov	r3, #15
+ 2161 01fc 000000EA 		b	.L4
+ 2162              	.L15:
+  63:../src/keypad.c ****     }
+  64:../src/keypad.c **** 
+  65:../src/keypad.c ****     return KEYPAD_FAILURE;
+ 2163              		.loc 1 65 0
+ 2164 0200 FF30A0E3 		mov	r3, #255
+ 2165              	.L4:
+  66:../src/keypad.c **** }
+ 2166              		.loc 1 66 0
+ 2167 0204 0300A0E1 		mov	r0, r3
+ 2168 0208 0CD04BE2 		sub	sp, fp, #12
+ 2169 020c 00689DE8 		ldmfd	sp, {fp, sp, lr}
+ 2170 0210 1EFF2FE1 		bx	lr
+ 2171              	.L20:
+ 2172              		.align	2
+ 2173              	.L19:
+ 2174 0214 1C000006 		.word	100663324
+ 2175 0218 1A000006 		.word	100663322
+ 2176 021c 16000006 		.word	100663318
+ 2177 0220 EE000006 		.word	100663534
+ 2178              		.cfi_endproc
+ 2179              	.LFE0:
+ 2181              		.align	2
+ 2182              		.global	keypad_status
+ 2184              	keypad_status:
+ 2185              	.LFB1:
+  67:../src/keypad.c **** 
+  68:../src/keypad.c **** uint8 keypad_status( uint8 scancode )
+  69:../src/keypad.c **** {
+ 2186              		.loc 1 69 0
+ 2187              		.cfi_startproc
+ 2188              		@ Function supports interworking.
+ 2189              		@ args = 0, pretend = 0, frame = 8
+ 2190              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2191 0224 0DC0A0E1 		mov	ip, sp
+ 2192              	.LCFI2:
+ 2193              		.cfi_def_cfa_register 12
+ 2194 0228 00D82DE9 		stmfd	sp!, {fp, ip, lr, pc}
+ 2195 022c 04B04CE2 		sub	fp, ip, #4
+ 2196              		.cfi_offset 14, -8
+ 2197              		.cfi_offset 13, -12
+ 2198              		.cfi_offset 11, -16
+ 2199              	.LCFI3:
+ 2200              		.cfi_def_cfa 11, 4
+ 2201 0230 08D04DE2 		sub	sp, sp, #8
+ 2202 0234 0030A0E1 		mov	r3, r0
+ 2203 0238 0D304BE5 		strb	r3, [fp, #-13]
+  70:../src/keypad.c **** 	if(!(PDATG & (1<<1))){
+ 2204              		.loc 1 70 0
+ 2205 023c 50309FE5 		ldr	r3, .L25
+ 2206 0240 003093E5 		ldr	r3, [r3, #0]
+ 2207 0244 023003E2 		and	r3, r3, #2
+ 2208 0248 000053E3 		cmp	r3, #0
+ 2209 024c 0900001A 		bne	.L22
+  71:../src/keypad.c **** 		if((scancode & keypad_scan())==0) return KEY_UP;
+ 2210              		.loc 1 71 0
+ 2211 0250 FEFFFFEB 		bl	keypad_scan
+ 2212 0254 0030A0E1 		mov	r3, r0
+ 2213 0258 0320A0E1 		mov	r2, r3
+ 2214 025c 0D305BE5 		ldrb	r3, [fp, #-13]
+ 2215 0260 033002E0 		and	r3, r2, r3
+ 2216 0264 FF3003E2 		and	r3, r3, #255
+ 2217 0268 000053E3 		cmp	r3, #0
+ 2218 026c 0300001A 		bne	.L23
+ 2219              		.loc 1 71 0 is_stmt 0 discriminator 1
+ 2220 0270 0030A0E3 		mov	r3, #0
+ 2221 0274 020000EA 		b	.L24
+ 2222              	.L22:
+  72:../src/keypad.c **** 	}
+  73:../src/keypad.c **** 	else return KEY_DOWN;
+ 2223              		.loc 1 73 0 is_stmt 1
+ 2224 0278 0130A0E3 		mov	r3, #1
+ 2225 027c 000000EA 		b	.L24
+ 2226              	.L23:
+ 2227 0280 FFFFFFEA 		b	.L21
+ 2228              	.L24:
+ 2229              	.L21:
+  74:../src/keypad.c **** }
+ 2230              		.loc 1 74 0
+ 2231 0284 0300A0E1 		mov	r0, r3
+ 2232 0288 0CD04BE2 		sub	sp, fp, #12
+ 2233 028c 00689DE8 		ldmfd	sp, {fp, sp, lr}
+ 2234 0290 1EFF2FE1 		bx	lr
+ 2235              	.L26:
+ 2236              		.align	2
+ 2237              	.L25:
+ 2238 0294 4400D201 		.word	30539844
+ 2239              		.cfi_endproc
+ 2240              	.LFE1:
+ 2242              		.align	2
+ 2243              		.global	keypad_open
+ 2245              	keypad_open:
+ 2246              	.LFB2:
+  75:../src/keypad.c **** 
+  76:../src/keypad.c **** void keypad_open( void (*isr)(void) )
+  77:../src/keypad.c **** {
+ 2247              		.loc 1 77 0
+ 2248              		.cfi_startproc
+ 2249              		@ Function supports interworking.
+ 2250              		@ args = 0, pretend = 0, frame = 8
+ 2251              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2252 0298 0DC0A0E1 		mov	ip, sp
+ 2253              	.LCFI4:
+ 2254              		.cfi_def_cfa_register 12
+ 2255 029c 00D82DE9 		stmfd	sp!, {fp, ip, lr, pc}
+ 2256 02a0 04B04CE2 		sub	fp, ip, #4
+ 2257              		.cfi_offset 14, -8
+ 2258              		.cfi_offset 13, -12
+ 2259              		.cfi_offset 11, -16
+ 2260              	.LCFI5:
+ 2261              		.cfi_def_cfa 11, 4
+ 2262 02a4 08D04DE2 		sub	sp, sp, #8
+ 2263 02a8 10000BE5 		str	r0, [fp, #-16]
+  78:../src/keypad.c **** 	pISR_KEYPAD = (uint32) isr;
+ 2264              		.loc 1 78 0
+ 2265 02ac 30309FE5 		ldr	r3, .L28
+ 2266 02b0 10201BE5 		ldr	r2, [fp, #-16]
+ 2267 02b4 002083E5 		str	r2, [r3, #0]
+  79:../src/keypad.c **** 	I_ISPC = BIT_KEYPAD;
+ 2268              		.loc 1 79 0
+ 2269 02b8 28309FE5 		ldr	r3, .L28+4
+ 2270 02bc 0124A0E3 		mov	r2, #16777216
+ 2271 02c0 002083E5 		str	r2, [r3, #0]
+  80:../src/keypad.c **** 	INTMSK &= ~(BIT_GLOBAL | BIT_KEYPAD);
+ 2272              		.loc 1 80 0
+ 2273 02c4 20309FE5 		ldr	r3, .L28+8
+ 2274 02c8 1C209FE5 		ldr	r2, .L28+8
+ 2275 02cc 002092E5 		ldr	r2, [r2, #0]
+ 2276 02d0 0524C2E3 		bic	r2, r2, #83886080
+ 2277 02d4 002083E5 		str	r2, [r3, #0]
+  81:../src/keypad.c **** }
+ 2278              		.loc 1 81 0
+ 2279 02d8 0CD04BE2 		sub	sp, fp, #12
+ 2280 02dc 00689DE8 		ldmfd	sp, {fp, sp, lr}
+ 2281 02e0 1EFF2FE1 		bx	lr
+ 2282              	.L29:
+ 2283              		.align	2
+ 2284              	.L28:
+ 2285 02e4 80FF7F0C 		.word	209715072
+ 2286 02e8 2400E001 		.word	31457316
+ 2287 02ec 0C00E001 		.word	31457292
+ 2288              		.cfi_endproc
+ 2289              	.LFE2:
+ 2291              		.align	2
+ 2292              		.global	keypad_close
+ 2294              	keypad_close:
+ 2295              	.LFB3:
+  82:../src/keypad.c **** 
+  83:../src/keypad.c **** void keypad_close( void )
+  84:../src/keypad.c **** {
+ 2296              		.loc 1 84 0
+ 2297              		.cfi_startproc
+ 2298              		@ Function supports interworking.
+ 2299              		@ args = 0, pretend = 0, frame = 0
+ 2300              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2301 02f0 0DC0A0E1 		mov	ip, sp
+ 2302              	.LCFI6:
+ 2303              		.cfi_def_cfa_register 12
+ 2304 02f4 00D82DE9 		stmfd	sp!, {fp, ip, lr, pc}
+ 2305 02f8 04B04CE2 		sub	fp, ip, #4
+ 2306              		.cfi_offset 14, -8
+ 2307              		.cfi_offset 13, -12
+ 2308              		.cfi_offset 11, -16
+ 2309              	.LCFI7:
+ 2310              		.cfi_def_cfa 11, 4
+  85:../src/keypad.c **** 	pISR_KEYPAD= (uint32) isr_KEYPAD_dummy;
+ 2311              		.loc 1 85 0
+ 2312 02fc 24309FE5 		ldr	r3, .L31
+ 2313 0300 24209FE5 		ldr	r2, .L31+4
+ 2314 0304 002083E5 		str	r2, [r3, #0]
+  86:../src/keypad.c **** 	INTMSK |= BIT_KEYPAD;
+ 2315              		.loc 1 86 0
+ 2316 0308 20309FE5 		ldr	r3, .L31+8
+ 2317 030c 1C209FE5 		ldr	r2, .L31+8
+ 2318 0310 002092E5 		ldr	r2, [r2, #0]
+ 2319 0314 012482E3 		orr	r2, r2, #16777216
+ 2320 0318 002083E5 		str	r2, [r3, #0]
+  87:../src/keypad.c **** }
+ 2321              		.loc 1 87 0
+ 2322 031c 0CD04BE2 		sub	sp, fp, #12
+ 2323 0320 00689DE8 		ldmfd	sp, {fp, sp, lr}
+ 2324 0324 1EFF2FE1 		bx	lr
+ 2325              	.L32:
+ 2326              		.align	2
+ 2327              	.L31:
+ 2328 0328 80FF7F0C 		.word	209715072
+ 2329 032c 00000000 		.word	isr_KEYPAD_dummy
+ 2330 0330 0C00E001 		.word	31457292
+ 2331              		.cfi_endproc
+ 2332              	.LFE3:
+ 2334              		.align	2
+ 2335              		.global	keypad_init
+ 2337              	keypad_init:
+ 2338              	.LFB4:
+  88:../src/keypad.c **** 
+  89:../src/keypad.c **** #if KEYPAD_IO_METHOD == POOLING
+  90:../src/keypad.c **** 
+  91:../src/keypad.c **** 
+  92:../src/keypad.c **** void keypad_init( void )
+  93:../src/keypad.c **** {
+ 2339              		.loc 1 93 0
+ 2340              		.cfi_startproc
+ 2341              		@ Function supports interworking.
+ 2342              		@ args = 0, pretend = 0, frame = 0
+ 2343              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2344 0334 0DC0A0E1 		mov	ip, sp
+ 2345              	.LCFI8:
+ 2346              		.cfi_def_cfa_register 12
+ 2347 0338 00D82DE9 		stmfd	sp!, {fp, ip, lr, pc}
+ 2348 033c 04B04CE2 		sub	fp, ip, #4
+ 2349              		.cfi_offset 14, -8
+ 2350              		.cfi_offset 13, -12
+ 2351              		.cfi_offset 11, -16
+ 2352              	.LCFI9:
+ 2353              		.cfi_def_cfa 11, 4
+  94:../src/keypad.c **** 	EXTINT = (EXTINT & ~(0XF<<4)) | (2<<4);
+ 2354              		.loc 1 94 0
+ 2355 0340 20309FE5 		ldr	r3, .L34
+ 2356 0344 1C209FE5 		ldr	r2, .L34
+ 2357 0348 002092E5 		ldr	r2, [r2, #0]
+ 2358 034c F020C2E3 		bic	r2, r2, #240
+ 2359 0350 202082E3 		orr	r2, r2, #32
+ 2360 0354 002083E5 		str	r2, [r3, #0]
+  95:../src/keypad.c **** 	timers_init();
+ 2361              		.loc 1 95 0
+ 2362 0358 FEFFFFEB 		bl	timers_init
+  96:../src/keypad.c **** };
+ 2363              		.loc 1 96 0
+ 2364 035c 0CD04BE2 		sub	sp, fp, #12
+ 2365 0360 00689DE8 		ldmfd	sp, {fp, sp, lr}
+ 2366 0364 1EFF2FE1 		bx	lr
+ 2367              	.L35:
+ 2368              		.align	2
+ 2369              	.L34:
+ 2370 0368 5000D201 		.word	30539856
+ 2371              		.cfi_endproc
+ 2372              	.LFE4:
+ 2374              		.align	2
+ 2375              		.global	keypad_wait_keydown
+ 2377              	keypad_wait_keydown:
+ 2378              	.LFB5:
+  97:../src/keypad.c **** 
+  98:../src/keypad.c **** 
+  99:../src/keypad.c **** void keypad_wait_keydown( uint8 scancode )
+ 100:../src/keypad.c **** {
+ 2379              		.loc 1 100 0
+ 2380              		.cfi_startproc
+ 2381              		@ Function supports interworking.
+ 2382              		@ args = 0, pretend = 0, frame = 8
+ 2383              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2384 036c 0DC0A0E1 		mov	ip, sp
+ 2385              	.LCFI10:
+ 2386              		.cfi_def_cfa_register 12
+ 2387 0370 00D82DE9 		stmfd	sp!, {fp, ip, lr, pc}
+ 2388 0374 04B04CE2 		sub	fp, ip, #4
+ 2389              		.cfi_offset 14, -8
+ 2390              		.cfi_offset 13, -12
+ 2391              		.cfi_offset 11, -16
+ 2392              	.LCFI11:
+ 2393              		.cfi_def_cfa 11, 4
+ 2394 0378 08D04DE2 		sub	sp, sp, #8
+ 2395 037c 0030A0E1 		mov	r3, r0
+ 2396 0380 0D304BE5 		strb	r3, [fp, #-13]
+ 101:../src/keypad.c ****      while( 1 ) 
+ 102:../src/keypad.c ****      {
+ 103:../src/keypad.c ****     	while(PDATG & (1<<1));
+ 2397              		.loc 1 103 0
+ 2398 0384 0000A0E1 		mov	r0, r0	@ nop
+ 2399              	.L37:
+ 2400              		.loc 1 103 0 is_stmt 0 discriminator 1
+ 2401 0388 5C309FE5 		ldr	r3, .L42
+ 2402 038c 003093E5 		ldr	r3, [r3, #0]
+ 2403 0390 023003E2 		and	r3, r3, #2
+ 2404 0394 000053E3 		cmp	r3, #0
+ 2405 0398 FAFFFF1A 		bne	.L37
+ 104:../src/keypad.c ****         sw_delay_ms( KEYPAD_KEYDOWN_DELAY );
+ 2406              		.loc 1 104 0 is_stmt 1
+ 2407 039c 1E00A0E3 		mov	r0, #30
+ 2408 03a0 FEFFFFEB 		bl	sw_delay_ms
+ 105:../src/keypad.c ****         if ( scancode == keypad_scan() )
+ 2409              		.loc 1 105 0
+ 2410 03a4 FEFFFFEB 		bl	keypad_scan
+ 2411 03a8 0030A0E1 		mov	r3, r0
+ 2412 03ac 0D205BE5 		ldrb	r2, [fp, #-13]	@ zero_extendqisi2
+ 2413 03b0 030052E1 		cmp	r2, r3
+ 2414 03b4 0900000A 		beq	.L41
+ 106:../src/keypad.c ****             return;
+ 107:../src/keypad.c ****         while(!(PDATG & (1<<1)));
+ 2415              		.loc 1 107 0
+ 2416 03b8 0000A0E1 		mov	r0, r0	@ nop
+ 2417              	.L39:
+ 2418              		.loc 1 107 0 is_stmt 0 discriminator 1
+ 2419 03bc 28309FE5 		ldr	r3, .L42
+ 2420 03c0 003093E5 		ldr	r3, [r3, #0]
+ 2421 03c4 023003E2 		and	r3, r3, #2
+ 2422 03c8 000053E3 		cmp	r3, #0
+ 2423 03cc FAFFFF0A 		beq	.L39
+ 108:../src/keypad.c ****         sw_delay_ms( KEYPAD_KEYUP_DELAY );
+ 2424              		.loc 1 108 0 is_stmt 1
+ 2425 03d0 6400A0E3 		mov	r0, #100
+ 2426 03d4 FEFFFFEB 		bl	sw_delay_ms
+ 109:../src/keypad.c ****     }         
+ 2427              		.loc 1 109 0
+ 2428 03d8 0000A0E1 		mov	r0, r0	@ nop
+ 103:../src/keypad.c ****     	while(PDATG & (1<<1));
+ 2429              		.loc 1 103 0
+ 2430 03dc E9FFFFEA 		b	.L37
+ 2431              	.L41:
+ 110:../src/keypad.c **** }
+ 2432              		.loc 1 110 0
+ 2433 03e0 0CD04BE2 		sub	sp, fp, #12
+ 2434 03e4 00689DE8 		ldmfd	sp, {fp, sp, lr}
+ 2435 03e8 1EFF2FE1 		bx	lr
+ 2436              	.L43:
+ 2437              		.align	2
+ 2438              	.L42:
+ 2439 03ec 4400D201 		.word	30539844
+ 2440              		.cfi_endproc
+ 2441              	.LFE5:
+ 2443              		.align	2
+ 2444              		.global	keypad_wait_keyup
+ 2446              	keypad_wait_keyup:
+ 2447              	.LFB6:
+ 111:../src/keypad.c **** 
+ 112:../src/keypad.c **** void keypad_wait_keyup( uint8 scancode )
+ 113:../src/keypad.c **** {
+ 2448              		.loc 1 113 0
+ 2449              		.cfi_startproc
+ 2450              		@ Function supports interworking.
+ 2451              		@ args = 0, pretend = 0, frame = 8
+ 2452              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2453 03f0 0DC0A0E1 		mov	ip, sp
+ 2454              	.LCFI12:
+ 2455              		.cfi_def_cfa_register 12
+ 2456 03f4 00D82DE9 		stmfd	sp!, {fp, ip, lr, pc}
+ 2457 03f8 04B04CE2 		sub	fp, ip, #4
+ 2458              		.cfi_offset 14, -8
+ 2459              		.cfi_offset 13, -12
+ 2460              		.cfi_offset 11, -16
+ 2461              	.LCFI13:
+ 2462              		.cfi_def_cfa 11, 4
+ 2463 03fc 08D04DE2 		sub	sp, sp, #8
+ 2464 0400 0030A0E1 		mov	r3, r0
+ 2465 0404 0D304BE5 		strb	r3, [fp, #-13]
+ 114:../src/keypad.c **** 	keypad_wait_keydown(scancode);
+ 2466              		.loc 1 114 0
+ 2467 0408 0D305BE5 		ldrb	r3, [fp, #-13]	@ zero_extendqisi2
+ 2468 040c 0300A0E1 		mov	r0, r3
+ 2469 0410 FEFFFFEB 		bl	keypad_wait_keydown
+ 115:../src/keypad.c **** 
+ 116:../src/keypad.c **** 	while (keypad_status(scancode) == KEY_DOWN) ;
+ 2470              		.loc 1 116 0
+ 2471 0414 0000A0E1 		mov	r0, r0	@ nop
+ 2472              	.L45:
+ 2473              		.loc 1 116 0 is_stmt 0 discriminator 1
+ 2474 0418 0D305BE5 		ldrb	r3, [fp, #-13]	@ zero_extendqisi2
+ 2475 041c 0300A0E1 		mov	r0, r3
+ 2476 0420 FEFFFFEB 		bl	keypad_status
+ 2477 0424 0030A0E1 		mov	r3, r0
+ 2478 0428 010053E3 		cmp	r3, #1
+ 2479 042c F9FFFF0A 		beq	.L45
+ 117:../src/keypad.c **** 	sw_delay_ms(KEYPAD_KEYUP_DELAY);
+ 2480              		.loc 1 117 0 is_stmt 1
+ 2481 0430 6400A0E3 		mov	r0, #100
+ 2482 0434 FEFFFFEB 		bl	sw_delay_ms
+ 118:../src/keypad.c **** }
+ 2483              		.loc 1 118 0
+ 2484 0438 0CD04BE2 		sub	sp, fp, #12
+ 2485 043c 00689DE8 		ldmfd	sp, {fp, sp, lr}
+ 2486 0440 1EFF2FE1 		bx	lr
+ 2487              		.cfi_endproc
+ 2488              	.LFE6:
+ 2490              		.align	2
+ 2491              		.global	keypad_wait_any_keydown
+ 2493              	keypad_wait_any_keydown:
+ 2494              	.LFB7:
+ 119:../src/keypad.c **** 
+ 120:../src/keypad.c **** void keypad_wait_any_keydown( void )
+ 121:../src/keypad.c **** {
+ 2495              		.loc 1 121 0
+ 2496              		.cfi_startproc
+ 2497              		@ Function supports interworking.
+ 2498              		@ args = 0, pretend = 0, frame = 0
+ 2499              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2500 0444 0DC0A0E1 		mov	ip, sp
+ 2501              	.LCFI14:
+ 2502              		.cfi_def_cfa_register 12
+ 2503 0448 00D82DE9 		stmfd	sp!, {fp, ip, lr, pc}
+ 2504 044c 04B04CE2 		sub	fp, ip, #4
+ 2505              		.cfi_offset 14, -8
+ 2506              		.cfi_offset 13, -12
+ 2507              		.cfi_offset 11, -16
+ 2508              	.LCFI15:
+ 2509              		.cfi_def_cfa 11, 4
+ 122:../src/keypad.c **** 	while (keypad_scan() == KEYPAD_FAILURE);
+ 2510              		.loc 1 122 0
+ 2511 0450 0000A0E1 		mov	r0, r0	@ nop
+ 2512              	.L47:
+ 2513              		.loc 1 122 0 is_stmt 0 discriminator 1
+ 2514 0454 FEFFFFEB 		bl	keypad_scan
+ 2515 0458 0030A0E1 		mov	r3, r0
+ 2516 045c FF0053E3 		cmp	r3, #255
+ 2517 0460 FBFFFF0A 		beq	.L47
+ 123:../src/keypad.c **** }
+ 2518              		.loc 1 123 0 is_stmt 1
+ 2519 0464 0CD04BE2 		sub	sp, fp, #12
+ 2520 0468 00689DE8 		ldmfd	sp, {fp, sp, lr}
+ 2521 046c 1EFF2FE1 		bx	lr
+ 2522              		.cfi_endproc
+ 2523              	.LFE7:
+ 2525              		.align	2
+ 2526              		.global	keypad_wait_any_keyup
+ 2528              	keypad_wait_any_keyup:
+ 2529              	.LFB8:
+ 124:../src/keypad.c **** 
+ 125:../src/keypad.c **** void keypad_wait_any_keyup( void )
+ 126:../src/keypad.c **** {
+ 2530              		.loc 1 126 0
+ 2531              		.cfi_startproc
+ 2532              		@ Function supports interworking.
+ 2533              		@ args = 0, pretend = 0, frame = 0
+ 2534              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2535 0470 0DC0A0E1 		mov	ip, sp
+ 2536              	.LCFI16:
+ 2537              		.cfi_def_cfa_register 12
+ 2538 0474 00D82DE9 		stmfd	sp!, {fp, ip, lr, pc}
+ 2539 0478 04B04CE2 		sub	fp, ip, #4
+ 2540              		.cfi_offset 14, -8
+ 2541              		.cfi_offset 13, -12
+ 2542              		.cfi_offset 11, -16
+ 2543              	.LCFI17:
+ 2544              		.cfi_def_cfa 11, 4
+ 127:../src/keypad.c **** 	while(PDATG & (1<<1)) ;
+ 2545              		.loc 1 127 0
+ 2546 047c 0000A0E1 		mov	r0, r0	@ nop
+ 2547              	.L49:
+ 2548              		.loc 1 127 0 is_stmt 0 discriminator 1
+ 2549 0480 40309FE5 		ldr	r3, .L51
+ 2550 0484 003093E5 		ldr	r3, [r3, #0]
+ 2551 0488 023003E2 		and	r3, r3, #2
+ 2552 048c 000053E3 		cmp	r3, #0
+ 2553 0490 FAFFFF1A 		bne	.L49
+ 128:../src/keypad.c **** 	sw_delay_ms(KEYPAD_KEYDOWN_DELAY);
+ 2554              		.loc 1 128 0 is_stmt 1
+ 2555 0494 1E00A0E3 		mov	r0, #30
+ 2556 0498 FEFFFFEB 		bl	sw_delay_ms
+ 129:../src/keypad.c **** 
+ 130:../src/keypad.c **** 	while(!(PDATG & (1<<1))) ;
+ 2557              		.loc 1 130 0
+ 2558 049c 0000A0E1 		mov	r0, r0	@ nop
+ 2559              	.L50:
+ 2560              		.loc 1 130 0 is_stmt 0 discriminator 1
+ 2561 04a0 20309FE5 		ldr	r3, .L51
+ 2562 04a4 003093E5 		ldr	r3, [r3, #0]
+ 2563 04a8 023003E2 		and	r3, r3, #2
+ 2564 04ac 000053E3 		cmp	r3, #0
+ 2565 04b0 FAFFFF0A 		beq	.L50
+ 131:../src/keypad.c **** 	sw_delay_ms(KEYPAD_KEYUP_DELAY);
+ 2566              		.loc 1 131 0 is_stmt 1
+ 2567 04b4 6400A0E3 		mov	r0, #100
+ 2568 04b8 FEFFFFEB 		bl	sw_delay_ms
+ 132:../src/keypad.c **** 
+ 133:../src/keypad.c **** 	return ;
+ 134:../src/keypad.c **** }
+ 2569              		.loc 1 134 0
+ 2570 04bc 0CD04BE2 		sub	sp, fp, #12
+ 2571 04c0 00689DE8 		ldmfd	sp, {fp, sp, lr}
+ 2572 04c4 1EFF2FE1 		bx	lr
+ 2573              	.L52:
+ 2574              		.align	2
+ 2575              	.L51:
+ 2576 04c8 4400D201 		.word	30539844
+ 2577              		.cfi_endproc
+ 2578              	.LFE8:
+ 2580              		.align	2
+ 2581              		.global	keypad_getchar
+ 2583              	keypad_getchar:
+ 2584              	.LFB9:
+ 135:../src/keypad.c **** 
+ 136:../src/keypad.c **** uint8 keypad_getchar( void )
+ 137:../src/keypad.c **** {
+ 2585              		.loc 1 137 0
+ 2586              		.cfi_startproc
+ 2587              		@ Function supports interworking.
+ 2588              		@ args = 0, pretend = 0, frame = 8
+ 2589              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2590 04cc 0DC0A0E1 		mov	ip, sp
+ 2591              	.LCFI18:
+ 2592              		.cfi_def_cfa_register 12
+ 2593 04d0 00D82DE9 		stmfd	sp!, {fp, ip, lr, pc}
+ 2594 04d4 04B04CE2 		sub	fp, ip, #4
+ 2595              		.cfi_offset 14, -8
+ 2596              		.cfi_offset 13, -12
+ 2597              		.cfi_offset 11, -16
+ 2598              	.LCFI19:
+ 2599              		.cfi_def_cfa 11, 4
+ 2600 04d8 08D04DE2 		sub	sp, sp, #8
+ 138:../src/keypad.c **** 	uint8 scan;
+ 139:../src/keypad.c **** 
+ 140:../src/keypad.c **** 	while(PDATG & (1<<1));
+ 2601              		.loc 1 140 0
+ 2602 04dc 0000A0E1 		mov	r0, r0	@ nop
+ 2603              	.L54:
+ 2604              		.loc 1 140 0 is_stmt 0 discriminator 1
+ 2605 04e0 54309FE5 		ldr	r3, .L56
+ 2606 04e4 003093E5 		ldr	r3, [r3, #0]
+ 2607 04e8 023003E2 		and	r3, r3, #2
+ 2608 04ec 000053E3 		cmp	r3, #0
+ 2609 04f0 FAFFFF1A 		bne	.L54
+ 141:../src/keypad.c **** 	sw_delay_ms(KEYPAD_KEYDOWN_DELAY);
+ 2610              		.loc 1 141 0 is_stmt 1
+ 2611 04f4 1E00A0E3 		mov	r0, #30
+ 2612 04f8 FEFFFFEB 		bl	sw_delay_ms
+ 142:../src/keypad.c **** 
+ 143:../src/keypad.c **** 	scan = keypad_scan();
+ 2613              		.loc 1 143 0
+ 2614 04fc FEFFFFEB 		bl	keypad_scan
+ 2615 0500 0030A0E1 		mov	r3, r0
+ 2616 0504 0D304BE5 		strb	r3, [fp, #-13]
+ 144:../src/keypad.c **** 	while(!(PDATG & (1<<1)));
+ 2617              		.loc 1 144 0
+ 2618 0508 0000A0E1 		mov	r0, r0	@ nop
+ 2619              	.L55:
+ 2620              		.loc 1 144 0 is_stmt 0 discriminator 1
+ 2621 050c 28309FE5 		ldr	r3, .L56
+ 2622 0510 003093E5 		ldr	r3, [r3, #0]
+ 2623 0514 023003E2 		and	r3, r3, #2
+ 2624 0518 000053E3 		cmp	r3, #0
+ 2625 051c FAFFFF0A 		beq	.L55
+ 145:../src/keypad.c **** 	sw_delay_ms(KEYPAD_KEYUP_DELAY);
+ 2626              		.loc 1 145 0 is_stmt 1
+ 2627 0520 6400A0E3 		mov	r0, #100
+ 2628 0524 FEFFFFEB 		bl	sw_delay_ms
+ 146:../src/keypad.c **** 
+ 147:../src/keypad.c **** 	return scan;
+ 2629              		.loc 1 147 0
+ 2630 0528 0D305BE5 		ldrb	r3, [fp, #-13]	@ zero_extendqisi2
+ 148:../src/keypad.c **** }
+ 2631              		.loc 1 148 0
+ 2632 052c 0300A0E1 		mov	r0, r3
+ 2633 0530 0CD04BE2 		sub	sp, fp, #12
+ 2634 0534 00689DE8 		ldmfd	sp, {fp, sp, lr}
+ 2635 0538 1EFF2FE1 		bx	lr
+ 2636              	.L57:
+ 2637              		.align	2
+ 2638              	.L56:
+ 2639 053c 4400D201 		.word	30539844
+ 2640              		.cfi_endproc
+ 2641              	.LFE9:
+ 2643              		.align	2
+ 2644              		.global	keypad_getchartime
+ 2646              	keypad_getchartime:
+ 2647              	.LFB10:
+ 149:../src/keypad.c **** 
+ 150:../src/keypad.c **** uint8 keypad_getchartime( uint16 *ms )
+ 151:../src/keypad.c **** {
+ 2648              		.loc 1 151 0
+ 2649              		.cfi_startproc
+ 2650              		@ Function supports interworking.
+ 2651              		@ args = 0, pretend = 0, frame = 16
+ 2652              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2653 0540 0DC0A0E1 		mov	ip, sp
+ 2654              	.LCFI20:
+ 2655              		.cfi_def_cfa_register 12
+ 2656 0544 00D82DE9 		stmfd	sp!, {fp, ip, lr, pc}
+ 2657 0548 04B04CE2 		sub	fp, ip, #4
+ 2658              		.cfi_offset 14, -8
+ 2659              		.cfi_offset 13, -12
+ 2660              		.cfi_offset 11, -16
+ 2661              	.LCFI21:
+ 2662              		.cfi_def_cfa 11, 4
+ 2663 054c 10D04DE2 		sub	sp, sp, #16
+ 2664 0550 18000BE5 		str	r0, [fp, #-24]
+ 152:../src/keypad.c **** 	uint8 scan;
+ 153:../src/keypad.c **** 
+ 154:../src/keypad.c **** 	while(PDATG & (1<<1));
+ 2665              		.loc 1 154 0
+ 2666 0554 0000A0E1 		mov	r0, r0	@ nop
+ 2667              	.L59:
+ 2668              		.loc 1 154 0 is_stmt 0 discriminator 1
+ 2669 0558 80309FE5 		ldr	r3, .L61
+ 2670 055c 003093E5 		ldr	r3, [r3, #0]
+ 2671 0560 023003E2 		and	r3, r3, #2
+ 2672 0564 000053E3 		cmp	r3, #0
+ 2673 0568 FAFFFF1A 		bne	.L59
+ 155:../src/keypad.c **** 	timer3_start();
+ 2674              		.loc 1 155 0 is_stmt 1
+ 2675 056c FEFFFFEB 		bl	timer3_start
+ 156:../src/keypad.c **** 	sw_delay_ms(KEYPAD_KEYDOWN_DELAY);
+ 2676              		.loc 1 156 0
+ 2677 0570 1E00A0E3 		mov	r0, #30
+ 2678 0574 FEFFFFEB 		bl	sw_delay_ms
+ 157:../src/keypad.c **** 
+ 158:../src/keypad.c **** 	scan = keypad_scan();
+ 2679              		.loc 1 158 0
+ 2680 0578 FEFFFFEB 		bl	keypad_scan
+ 2681 057c 0030A0E1 		mov	r3, r0
+ 2682 0580 0D304BE5 		strb	r3, [fp, #-13]
+ 159:../src/keypad.c **** 	while(!(PDATG & (1<<1)));
+ 2683              		.loc 1 159 0
+ 2684 0584 0000A0E1 		mov	r0, r0	@ nop
+ 2685              	.L60:
+ 2686              		.loc 1 159 0 is_stmt 0 discriminator 1
+ 2687 0588 50309FE5 		ldr	r3, .L61
+ 2688 058c 003093E5 		ldr	r3, [r3, #0]
+ 2689 0590 023003E2 		and	r3, r3, #2
+ 2690 0594 000053E3 		cmp	r3, #0
+ 2691 0598 FAFFFF0A 		beq	.L60
+ 160:../src/keypad.c **** 	*ms = timer3_stop() / 10;
+ 2692              		.loc 1 160 0 is_stmt 1
+ 2693 059c FEFFFFEB 		bl	timer3_stop
+ 2694 05a0 0030A0E1 		mov	r3, r0
+ 2695 05a4 0320A0E1 		mov	r2, r3
+ 2696 05a8 34309FE5 		ldr	r3, .L61+4
+ 2697 05ac 921383E0 		umull	r1, r3, r2, r3
+ 2698 05b0 A331A0E1 		mov	r3, r3, lsr #3
+ 2699 05b4 0338A0E1 		mov	r3, r3, asl #16
+ 2700 05b8 2328A0E1 		mov	r2, r3, lsr #16
+ 2701 05bc 18301BE5 		ldr	r3, [fp, #-24]
+ 2702 05c0 B020C3E1 		strh	r2, [r3, #0]	@ movhi
+ 161:../src/keypad.c **** 	sw_delay_ms(KEYPAD_KEYUP_DELAY);
+ 2703              		.loc 1 161 0
+ 2704 05c4 6400A0E3 		mov	r0, #100
+ 2705 05c8 FEFFFFEB 		bl	sw_delay_ms
+ 162:../src/keypad.c **** 
+ 163:../src/keypad.c **** 	return scan;
+ 2706              		.loc 1 163 0
+ 2707 05cc 0D305BE5 		ldrb	r3, [fp, #-13]	@ zero_extendqisi2
+ 164:../src/keypad.c **** }
+ 2708              		.loc 1 164 0
+ 2709 05d0 0300A0E1 		mov	r0, r3
+ 2710 05d4 0CD04BE2 		sub	sp, fp, #12
+ 2711 05d8 00689DE8 		ldmfd	sp, {fp, sp, lr}
+ 2712 05dc 1EFF2FE1 		bx	lr
+ 2713              	.L62:
+ 2714              		.align	2
+ 2715              	.L61:
+ 2716 05e0 4400D201 		.word	30539844
+ 2717 05e4 CDCCCCCC 		.word	-858993459
+ 2718              		.cfi_endproc
+ 2719              	.LFE10:
+ 2721              		.align	2
+ 2722              		.global	keypad_timeout_getchar
+ 2724              	keypad_timeout_getchar:
+ 2725              	.LFB11:
+ 165:../src/keypad.c **** 
+ 166:../src/keypad.c **** uint8 keypad_timeout_getchar( uint16 ms )
+ 167:../src/keypad.c **** {
+ 2726              		.loc 1 167 0
+ 2727              		.cfi_startproc
+ 2728              		@ Function supports interworking.
+ 2729              		@ args = 0, pretend = 0, frame = 16
+ 2730              		@ frame_needed = 1, uses_anonymous_args = 0
+ 2731 05e8 0DC0A0E1 		mov	ip, sp
+ 2732              	.LCFI22:
+ 2733              		.cfi_def_cfa_register 12
+ 2734 05ec 00D82DE9 		stmfd	sp!, {fp, ip, lr, pc}
+ 2735 05f0 04B04CE2 		sub	fp, ip, #4
+ 2736              		.cfi_offset 14, -8
+ 2737              		.cfi_offset 13, -12
+ 2738              		.cfi_offset 11, -16
+ 2739              	.LCFI23:
+ 2740              		.cfi_def_cfa 11, 4
+ 2741 05f4 10D04DE2 		sub	sp, sp, #16
+ 2742 05f8 0030A0E1 		mov	r3, r0
+ 2743 05fc B6314BE1 		strh	r3, [fp, #-22]	@ movhi
+ 168:../src/keypad.c **** 	uint8 scan;
+ 169:../src/keypad.c **** 
+ 170:../src/keypad.c **** 	if(ms < 6554){
+ 2744              		.loc 1 170 0
+ 2745 0600 B6215BE1 		ldrh	r2, [fp, #-22]
+ 2746 0604 88309FE5 		ldr	r3, .L69
+ 2747 0608 030052E1 		cmp	r2, r3
+ 2748 060c 1B00008A 		bhi	.L64
+ 171:../src/keypad.c **** 
+ 172:../src/keypad.c **** 		timer3_start_timeout(ms);
+ 2749              		.loc 1 172 0
+ 2750 0610 B6315BE1 		ldrh	r3, [fp, #-22]
+ 2751 0614 0300A0E1 		mov	r0, r3
+ 2752 0618 FEFFFFEB 		bl	timer3_start_timeout
+ 173:../src/keypad.c **** 		while(timer3_timeout()!=0){
+ 2753              		.loc 1 173 0
+ 2754 061c 130000EA 		b	.L65
+ 2755              	.L68:
+ 174:../src/keypad.c **** 
+ 175:../src/keypad.c **** 			if(PDATG & (1<<1)){
+ 2756              		.loc 1 175 0
+ 2757 0620 70309FE5 		ldr	r3, .L69+4
+ 2758 0624 003093E5 		ldr	r3, [r3, #0]
+ 2759 0628 023003E2 		and	r3, r3, #2
+ 2760 062c 000053E3 		cmp	r3, #0
+ 2761 0630 0E00000A 		beq	.L65
+ 176:../src/keypad.c **** 				sw_delay_ms(KEYPAD_KEYDOWN_DELAY);
+ 2762              		.loc 1 176 0
+ 2763 0634 1E00A0E3 		mov	r0, #30
+ 2764 0638 FEFFFFEB 		bl	sw_delay_ms
+ 177:../src/keypad.c **** 				scan = keypad_scan();
+ 2765              		.loc 1 177 0
+ 2766 063c FEFFFFEB 		bl	keypad_scan
+ 2767 0640 0030A0E1 		mov	r3, r0
+ 2768 0644 0D304BE5 		strb	r3, [fp, #-13]
+ 178:../src/keypad.c **** 				while(!(PDATG & (1<<1)));
+ 2769              		.loc 1 178 0
+ 2770 0648 0000A0E1 		mov	r0, r0	@ nop
+ 2771              	.L66:
+ 2772              		.loc 1 178 0 is_stmt 0 discriminator 1
+ 2773 064c 44309FE5 		ldr	r3, .L69+4
+ 2774 0650 003093E5 		ldr	r3, [r3, #0]
+ 2775 0654 023003E2 		and	r3, r3, #2
+ 2776 0658 000053E3 		cmp	r3, #0
+ 2777 065c FAFFFF0A 		beq	.L66
+ 179:../src/keypad.c **** 				sw_delay_ms(KEYPAD_KEYUP_DELAY);
+ 2778              		.loc 1 179 0 is_stmt 1
+ 2779 0660 6400A0E3 		mov	r0, #100
+ 2780 0664 FEFFFFEB 		bl	sw_delay_ms
+ 180:../src/keypad.c **** 
+ 181:../src/keypad.c **** 				return scan;
+ 2781              		.loc 1 181 0
+ 2782 0668 0D305BE5 		ldrb	r3, [fp, #-13]	@ zero_extendqisi2
+ 2783 066c 040000EA 		b	.L67
+ 2784              	.L65:
+ 173:../src/keypad.c **** 		while(timer3_timeout()!=0){
+ 2785              		.loc 1 173 0 discriminator 1
+ 2786 0670 FEFFFFEB 		bl	timer3_timeout
+ 2787 0674 0030A0E1 		mov	r3, r0
+ 2788 0678 000053E3 		cmp	r3, #0
+ 2789 067c E7FFFF1A 		bne	.L68
+ 2790              	.L64:
+ 182:../src/keypad.c **** 			}
+ 183:../src/keypad.c **** 		}
+ 184:../src/keypad.c **** 	}
+ 185:../src/keypad.c **** 	return KEYPAD_TIMEOUT;
+ 2791              		.loc 1 185 0
+ 2792 0680 FE30A0E3 		mov	r3, #254
+ 2793              	.L67:
+ 186:../src/keypad.c **** }
+ 2794              		.loc 1 186 0
+ 2795 0684 0300A0E1 		mov	r0, r3
+ 2796 0688 0CD04BE2 		sub	sp, fp, #12
+ 2797 068c 00689DE8 		ldmfd	sp, {fp, sp, lr}
+ 2798 0690 1EFF2FE1 		bx	lr
+ 2799              	.L70:
+ 2800              		.align	2
+ 2801              	.L69:
+ 2802 0694 99190000 		.word	6553
+ 2803 0698 4400D201 		.word	30539844
+ 2804              		.cfi_endproc
+ 2805              	.LFE11:
+ 2807              	.Letext0:
+DEFINED SYMBOLS
+                            *ABS*:00000000 keypad.c
+C:\Users\baneg\AppData\Local\Temp\ccOTxzd4.s:1962   .text:00000000 $a
+C:\Users\baneg\AppData\Local\Temp\ccOTxzd4.s:1965   .text:00000000 keypad_scan
+C:\Users\baneg\AppData\Local\Temp\ccOTxzd4.s:2174   .text:00000214 $d
+C:\Users\baneg\AppData\Local\Temp\ccOTxzd4.s:2181   .text:00000224 $a
+C:\Users\baneg\AppData\Local\Temp\ccOTxzd4.s:2184   .text:00000224 keypad_status
+C:\Users\baneg\AppData\Local\Temp\ccOTxzd4.s:2238   .text:00000294 $d
+C:\Users\baneg\AppData\Local\Temp\ccOTxzd4.s:2242   .text:00000298 $a
+C:\Users\baneg\AppData\Local\Temp\ccOTxzd4.s:2245   .text:00000298 keypad_open
+C:\Users\baneg\AppData\Local\Temp\ccOTxzd4.s:2285   .text:000002e4 $d
+C:\Users\baneg\AppData\Local\Temp\ccOTxzd4.s:2291   .text:000002f0 $a
+C:\Users\baneg\AppData\Local\Temp\ccOTxzd4.s:2294   .text:000002f0 keypad_close
+C:\Users\baneg\AppData\Local\Temp\ccOTxzd4.s:2328   .text:00000328 $d
+C:\Users\baneg\AppData\Local\Temp\ccOTxzd4.s:2334   .text:00000334 $a
+C:\Users\baneg\AppData\Local\Temp\ccOTxzd4.s:2337   .text:00000334 keypad_init
+C:\Users\baneg\AppData\Local\Temp\ccOTxzd4.s:2370   .text:00000368 $d
+C:\Users\baneg\AppData\Local\Temp\ccOTxzd4.s:2374   .text:0000036c $a
+C:\Users\baneg\AppData\Local\Temp\ccOTxzd4.s:2377   .text:0000036c keypad_wait_keydown
+C:\Users\baneg\AppData\Local\Temp\ccOTxzd4.s:2439   .text:000003ec $d
+C:\Users\baneg\AppData\Local\Temp\ccOTxzd4.s:2443   .text:000003f0 $a
+C:\Users\baneg\AppData\Local\Temp\ccOTxzd4.s:2446   .text:000003f0 keypad_wait_keyup
+C:\Users\baneg\AppData\Local\Temp\ccOTxzd4.s:2493   .text:00000444 keypad_wait_any_keydown
+C:\Users\baneg\AppData\Local\Temp\ccOTxzd4.s:2528   .text:00000470 keypad_wait_any_keyup
+C:\Users\baneg\AppData\Local\Temp\ccOTxzd4.s:2576   .text:000004c8 $d
+C:\Users\baneg\AppData\Local\Temp\ccOTxzd4.s:2580   .text:000004cc $a
+C:\Users\baneg\AppData\Local\Temp\ccOTxzd4.s:2583   .text:000004cc keypad_getchar
+C:\Users\baneg\AppData\Local\Temp\ccOTxzd4.s:2639   .text:0000053c $d
+C:\Users\baneg\AppData\Local\Temp\ccOTxzd4.s:2643   .text:00000540 $a
+C:\Users\baneg\AppData\Local\Temp\ccOTxzd4.s:2646   .text:00000540 keypad_getchartime
+C:\Users\baneg\AppData\Local\Temp\ccOTxzd4.s:2716   .text:000005e0 $d
+C:\Users\baneg\AppData\Local\Temp\ccOTxzd4.s:2721   .text:000005e8 $a
+C:\Users\baneg\AppData\Local\Temp\ccOTxzd4.s:2724   .text:000005e8 keypad_timeout_getchar
+C:\Users\baneg\AppData\Local\Temp\ccOTxzd4.s:2802   .text:00000694 $d
+                     .debug_frame:00000010 $d
+
+UNDEFINED SYMBOLS
+isr_KEYPAD_dummy
+timers_init
+sw_delay_ms
+timer3_start
+timer3_stop
+timer3_start_timeout
+timer3_timeout

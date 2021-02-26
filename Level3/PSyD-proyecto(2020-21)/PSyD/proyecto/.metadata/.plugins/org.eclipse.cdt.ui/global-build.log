@@ -1,0 +1,163 @@
+19:55:31 **** Build of configuration Debug for project proyecto ****
+cs-make all 
+'Building file: ../os_port/os_cpu_a.asm'
+'Invoking: ARM Sourcery Windows GCC Assembler'
+arm-none-eabi-gcc -x assembler-with-cpp -I../../BSP/include -Wall -Wa,-adhlns="os_port/os_cpu_a.o.lst" -c -fmessage-length=0 -MMD -MP -MF"os_port/os_cpu_a.d" -MT"os_port/os_cpu_a.d" -mcpu=arm7tdmi -g3 -gdwarf-2 -o "os_port/os_cpu_a.o" "../os_port/os_cpu_a.asm"
+'Finished building: ../os_port/os_cpu_a.asm'
+' '
+'Building file: ../os_port/os_cpu_c.c'
+'Invoking: ARM Sourcery Windows GCC C Compiler'
+arm-none-eabi-gcc -I../../BSP/include -O0 -Wall -Wa,-adhlns="os_port/os_cpu_c.o.lst" -c -fmessage-length=0 -mapcs-frame -MMD -MP -MF"os_port/os_cpu_c.d" -MT"os_port/os_cpu_c.d" -mcpu=arm7tdmi -g3 -gdwarf-2 -o "os_port/os_cpu_c.o" "../os_port/os_cpu_c.c"
+'Finished building: ../os_port/os_cpu_c.c'
+' '
+'Building file: ../os_port/os_cpu_isr_wrapper.asm'
+'Invoking: ARM Sourcery Windows GCC Assembler'
+arm-none-eabi-gcc -x assembler-with-cpp -I../../BSP/include -Wall -Wa,-adhlns="os_port/os_cpu_isr_wrapper.o.lst" -c -fmessage-length=0 -MMD -MP -MF"os_port/os_cpu_isr_wrapper.d" -MT"os_port/os_cpu_isr_wrapper.d" -mcpu=arm7tdmi -g3 -gdwarf-2 -o "os_port/os_cpu_isr_wrapper.o" "../os_port/os_cpu_isr_wrapper.asm"
+'Finished building: ../os_port/os_cpu_isr_wrapper.asm'
+' '
+'Building file: ../os_core/os_core.c'
+'Invoking: ARM Sourcery Windows GCC C Compiler'
+arm-none-eabi-gcc -I../../BSP/include -O0 -Wall -Wa,-adhlns="os_core/os_core.o.lst" -c -fmessage-length=0 -mapcs-frame -MMD -MP -MF"os_core/os_core.d" -MT"os_core/os_core.d" -mcpu=arm7tdmi -g3 -gdwarf-2 -o "os_core/os_core.o" "../os_core/os_core.c"
+'Finished building: ../os_core/os_core.c'
+' '
+'Building file: ../os_core/os_dbg_r.c'
+'Invoking: ARM Sourcery Windows GCC C Compiler'
+arm-none-eabi-gcc -I../../BSP/include -O0 -Wall -Wa,-adhlns="os_core/os_dbg_r.o.lst" -c -fmessage-length=0 -mapcs-frame -MMD -MP -MF"os_core/os_dbg_r.d" -MT"os_core/os_dbg_r.d" -mcpu=arm7tdmi -g3 -gdwarf-2 -o "os_core/os_dbg_r.o" "../os_core/os_dbg_r.c"
+'Finished building: ../os_core/os_dbg_r.c'
+' '
+'Building file: ../os_core/os_flag.c'
+'Invoking: ARM Sourcery Windows GCC C Compiler'
+arm-none-eabi-gcc -I../../BSP/include -O0 -Wall -Wa,-adhlns="os_core/os_flag.o.lst" -c -fmessage-length=0 -mapcs-frame -MMD -MP -MF"os_core/os_flag.d" -MT"os_core/os_flag.d" -mcpu=arm7tdmi -g3 -gdwarf-2 -o "os_core/os_flag.o" "../os_core/os_flag.c"
+'Finished building: ../os_core/os_flag.c'
+' '
+'Building file: ../os_core/os_mbox.c'
+'Invoking: ARM Sourcery Windows GCC C Compiler'
+arm-none-eabi-gcc -I../../BSP/include -O0 -Wall -Wa,-adhlns="os_core/os_mbox.o.lst" -c -fmessage-length=0 -mapcs-frame -MMD -MP -MF"os_core/os_mbox.d" -MT"os_core/os_mbox.d" -mcpu=arm7tdmi -g3 -gdwarf-2 -o "os_core/os_mbox.o" "../os_core/os_mbox.c"
+'Finished building: ../os_core/os_mbox.c'
+' '
+'Building file: ../os_core/os_mem.c'
+'Invoking: ARM Sourcery Windows GCC C Compiler'
+arm-none-eabi-gcc -I../../BSP/include -O0 -Wall -Wa,-adhlns="os_core/os_mem.o.lst" -c -fmessage-length=0 -mapcs-frame -MMD -MP -MF"os_core/os_mem.d" -MT"os_core/os_mem.d" -mcpu=arm7tdmi -g3 -gdwarf-2 -o "os_core/os_mem.o" "../os_core/os_mem.c"
+'Finished building: ../os_core/os_mem.c'
+' '
+'Building file: ../os_core/os_mutex.c'
+'Invoking: ARM Sourcery Windows GCC C Compiler'
+arm-none-eabi-gcc -I../../BSP/include -O0 -Wall -Wa,-adhlns="os_core/os_mutex.o.lst" -c -fmessage-length=0 -mapcs-frame -MMD -MP -MF"os_core/os_mutex.d" -MT"os_core/os_mutex.d" -mcpu=arm7tdmi -g3 -gdwarf-2 -o "os_core/os_mutex.o" "../os_core/os_mutex.c"
+'Finished building: ../os_core/os_mutex.c'
+' '
+'Building file: ../os_core/os_q.c'
+'Invoking: ARM Sourcery Windows GCC C Compiler'
+arm-none-eabi-gcc -I../../BSP/include -O0 -Wall -Wa,-adhlns="os_core/os_q.o.lst" -c -fmessage-length=0 -mapcs-frame -MMD -MP -MF"os_core/os_q.d" -MT"os_core/os_q.d" -mcpu=arm7tdmi -g3 -gdwarf-2 -o "os_core/os_q.o" "../os_core/os_q.c"
+'Finished building: ../os_core/os_q.c'
+' '
+'Building file: ../os_core/os_sem.c'
+'Invoking: ARM Sourcery Windows GCC C Compiler'
+arm-none-eabi-gcc -I../../BSP/include -O0 -Wall -Wa,-adhlns="os_core/os_sem.o.lst" -c -fmessage-length=0 -mapcs-frame -MMD -MP -MF"os_core/os_sem.d" -MT"os_core/os_sem.d" -mcpu=arm7tdmi -g3 -gdwarf-2 -o "os_core/os_sem.o" "../os_core/os_sem.c"
+'Finished building: ../os_core/os_sem.c'
+' '
+'Building file: ../os_core/os_task.c'
+'Invoking: ARM Sourcery Windows GCC C Compiler'
+arm-none-eabi-gcc -I../../BSP/include -O0 -Wall -Wa,-adhlns="os_core/os_task.o.lst" -c -fmessage-length=0 -mapcs-frame -MMD -MP -MF"os_core/os_task.d" -MT"os_core/os_task.d" -mcpu=arm7tdmi -g3 -gdwarf-2 -o "os_core/os_task.o" "../os_core/os_task.c"
+'Finished building: ../os_core/os_task.c'
+' '
+'Building file: ../os_core/os_time.c'
+'Invoking: ARM Sourcery Windows GCC C Compiler'
+arm-none-eabi-gcc -I../../BSP/include -O0 -Wall -Wa,-adhlns="os_core/os_time.o.lst" -c -fmessage-length=0 -mapcs-frame -MMD -MP -MF"os_core/os_time.d" -MT"os_core/os_time.d" -mcpu=arm7tdmi -g3 -gdwarf-2 -o "os_core/os_time.o" "../os_core/os_time.c"
+'Finished building: ../os_core/os_time.c'
+' '
+'Building file: ../os_core/ucos_ii.c'
+'Invoking: ARM Sourcery Windows GCC C Compiler'
+arm-none-eabi-gcc -I../../BSP/include -O0 -Wall -Wa,-adhlns="os_core/ucos_ii.o.lst" -c -fmessage-length=0 -mapcs-frame -MMD -MP -MF"os_core/ucos_ii.d" -MT"os_core/ucos_ii.d" -mcpu=arm7tdmi -g3 -gdwarf-2 -o "os_core/ucos_ii.o" "../os_core/ucos_ii.c"
+'Finished building: ../os_core/ucos_ii.c'
+' '
+'Building file: ../proyecto.c'
+'Invoking: ARM Sourcery Windows GCC C Compiler'
+arm-none-eabi-gcc -I../../BSP/include -O0 -Wall -Wa,-adhlns="proyecto.o.lst" -c -fmessage-length=0 -mapcs-frame -MMD -MP -MF"proyecto.d" -MT"proyecto.d" -mcpu=arm7tdmi -g3 -gdwarf-2 -o "proyecto.o" "../proyecto.c"
+../proyecto.c: In function 'uart0_putTimeLCD':
+../proyecto.c:165:21: warning: value computed is not used
+../proyecto.c:166:21: warning: value computed is not used
+../proyecto.c: In function 'isr_keypad':
+../proyecto.c:267:20: warning: value computed is not used
+../proyecto.c:275:20: warning: value computed is not used
+../proyecto.c:301:23: warning: value computed is not used
+../proyecto.c:323:20: warning: value computed is not used
+../proyecto.c:332:20: warning: value computed is not used
+../proyecto.c:361:23: warning: value computed is not used
+../proyecto.c:383:19: warning: value computed is not used
+../proyecto.c:392:19: warning: value computed is not used
+../proyecto.c:439:19: warning: value computed is not used
+../proyecto.c:451:19: warning: value computed is not used
+../proyecto.c:493:19: warning: value computed is not used
+../proyecto.c:505:19: warning: value computed is not used
+../proyecto.c:209:37: warning: unused variable 'c'
+../proyecto.c:209:28: warning: unused variable 'minutos'
+../proyecto.c:209:21: warning: unused variable 'horas'
+../proyecto.c: In function 'Task1':
+../proyecto.c:592:15: warning: unused variable 'ms'
+../proyecto.c:592:12: warning: unused variable 'y'
+../proyecto.c:592:9: warning: unused variable 'x'
+../proyecto.c: At top level:
+../proyecto.c:625:6: warning: return type of 'main' is not 'int'
+'Finished building: ../proyecto.c'
+' '
+'Building file: ../sintesisVoz.c'
+'Invoking: ARM Sourcery Windows GCC C Compiler'
+arm-none-eabi-gcc -I../../BSP/include -O0 -Wall -Wa,-adhlns="sintesisVoz.o.lst" -c -fmessage-length=0 -mapcs-frame -MMD -MP -MF"sintesisVoz.d" -MT"sintesisVoz.d" -mcpu=arm7tdmi -g3 -gdwarf-2 -o "sintesisVoz.o" "../sintesisVoz.c"
+../sintesisVoz.c: In function 'iis_textToSpeech':
+../sintesisVoz.c:248:5: warning: suggest parentheses around assignment used as truth value
+../sintesisVoz.c:249:6: warning: passing argument 1 of 'iis_playwawFile' discards qualifiers from pointer target type
+../../BSP/include/iis.h:108:6: note: expected 'uint8 *' but argument is of type 'const uint8 *'
+../sintesisVoz.c: In function 'faseMonolitera':
+../sintesisVoz.c:277:17: warning: initialization makes pointer from integer without a cast
+../sintesisVoz.c:288:57: warning: comparison between pointer and integer
+../sintesisVoz.c:294:6: warning: implicit declaration of function 'isupper'
+../sintesisVoz.c:302:10: warning: assignment makes pointer from integer without a cast
+../sintesisVoz.c:303:6: warning: value computed is not used
+../sintesisVoz.c: In function 'faseBilitera':
+../sintesisVoz.c:551:18: warning: value computed is not used
+../sintesisVoz.c:566:5: warning: value computed is not used
+../sintesisVoz.c:576:5: warning: value computed is not used
+../sintesisVoz.c:587:18: warning: value computed is not used
+../sintesisVoz.c:591:18: warning: value computed is not used
+../sintesisVoz.c:605:5: warning: value computed is not used
+../sintesisVoz.c:613:5: warning: value computed is not used
+../sintesisVoz.c:621:5: warning: value computed is not used
+../sintesisVoz.c:635:5: warning: value computed is not used
+../sintesisVoz.c:642:9: warning: value computed is not used
+'Finished building: ../sintesisVoz.c'
+' '
+'Building target: proyecto.elf'
+'Invoking: ARM Sourcery Windows GCC C Linker'
+arm-none-eabi-gcc -T"../proyecto.ld" -nostartfiles -L../../BSP/Debug -Wl,-Map,proyecto.map -mcpu=arm7tdmi -g3 -gdwarf-2 -o "proyecto.elf"  ./os_port/os_cpu_a.o ./os_port/os_cpu_c.o ./os_port/os_cpu_isr_wrapper.o  ./os_core/os_core.o ./os_core/os_dbg_r.o ./os_core/os_flag.o ./os_core/os_mbox.o ./os_core/os_mem.o ./os_core/os_mutex.o ./os_core/os_q.o ./os_core/os_sem.o ./os_core/os_task.o ./os_core/os_time.o ./os_core/ucos_ii.o  ./proyecto.o ./sintesisVoz.o   -lBSP
+'Finished building target: proyecto.elf'
+' '
+'Invoking: ARM Sourcery Windows GNU Create Flash Image'
+arm-none-eabi-objcopy -O binary proyecto.elf  "proyecto.hex"
+'Finished building: proyecto.hex'
+' '
+'Invoking: ARM Sourcery Windows GNU Create Listing'
+arm-none-eabi-objdump -h -S proyecto.elf > "proyecto.lst"
+'Finished building: proyecto.lst'
+' '
+'Invoking: ARM Sourcery Windows GNU Print Size'
+arm-none-eabi-size  --format=berkeley proyecto.elf
+   text	   data	    bss	    dec	    hex	filename
+  99344	  39148	 131068	 269560	  41cf8	proyecto.elf
+'Finished building: proyecto.siz'
+' '
+19:56:01 **** Incremental Build of configuration Debug for project proyecto ****
+cs-make all 
+'Invoking: ARM Sourcery Windows GNU Print Size'
+arm-none-eabi-size  --format=berkeley proyecto.elf
+   text	   data	    bss	    dec	    hex	filename
+  99344	  39148	 131068	 269560	  41cf8	proyecto.elf
+'Finished building: proyecto.siz'
+' '
+19:56:23 **** Incremental Build of configuration Debug for project proyecto ****
+cs-make all 
+'Invoking: ARM Sourcery Windows GNU Print Size'
+arm-none-eabi-size  --format=berkeley proyecto.elf
+   text	   data	    bss	    dec	    hex	filename
+  99344	  39148	 131068	 269560	  41cf8	proyecto.elf
+'Finished building: proyecto.siz'
+' '

@@ -1,0 +1,7 @@
+17:13:36 **** Clean-only build of configuration Debug for project BSP ****
+cs-make clean 
+cs-rm -rf  ./include/s3c44b0x.o ./include/s3cev40.o  ./include/s3c44b0x.d ./include/s3cev40.d  libcommon.a
+' '
+
+17:13:37 Build Finished (took 911ms)
+

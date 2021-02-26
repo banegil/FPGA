@@ -1,0 +1,30 @@
+#include <s3c44b0x.h>
+#include <leds.h>
+
+static uint8 state;
+
+void leds_init( void )
+{
+	state &= ~( (0<<10) | 0<<9 );
+	PDATB &= state;
+}
+
+void led_on( uint8 led )
+{
+
+}
+
+void led_off( uint8 led )
+{
+
+}
+
+void led_toggle( uint8 led )
+{
+	led_on(led);
+}
+
+uint8 led_status( uint8 led )
+{
+    return state;
+}

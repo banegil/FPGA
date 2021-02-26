@@ -1,0 +1,44 @@
+#include <s3c44b0x.h>
+#include <leds.h>
+
+static uint8 state, toggle, cont;
+
+void leds_init( void )
+{
+	cont = 0;
+	state = OFF;
+	toggle = OFF;
+	PDATB = ~( (0<<10) | 0<<9 );
+}
+
+void led_on( uint8 led )
+{
+	if(led == LEFT_LED) PDATB = ~(1<<10);
+	else if(led == RIGHT_LED) PDATB = ~(1<<9);
+	state = ON;
+}
+
+void led_off( uint8 led )
+{
+	if(led == LEFT_LED) PDATB = ~(0<<10);
+	else if(led == RIGHT_LED) PDATB = ~(0<<9);
+	state = OFF;
+}
+
+void led_toggle( uint8 led )
+{
+	if(toggle == OFF) {
+		led_on(led);
+		toggle = ON;
+	}
+	else if(toggle == ON){
+		led_off(led);
+		cont++;
+		if(cont == 2) toggle = OFF;
+	}
+}
+
+uint8 led_status( uint8 led )
+{
+    return state;
+}
