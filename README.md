@@ -1,2 +1,2 @@
 # FPGA
-Real-time C/VHDL processing
+Real-time C processing
